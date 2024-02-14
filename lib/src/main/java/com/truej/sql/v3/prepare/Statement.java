@@ -4,6 +4,7 @@ import com.truej.sql.v3.fetch.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.function.Function;
 
 public final class Statement implements
     ToPreparedStatement,
@@ -14,14 +15,23 @@ public final class Statement implements
         return null;
     }
 
-    // withGeneratedKeys()
-    // withAffectedRows()
-
     public StatementWithGeneratedKeys withGeneratedKeys(int[] columnIndexes) {
         return null;
     }
 
     public StatementWithGeneratedKeys withGeneratedKeys(String[] columnNames) {
+        return null;
+    }
+
+    public <T> UpdateResult<T> withUpdateCount(
+        Function<StatementWithUpdateCount, T> stmt
+    ) {
+        return withUpdateCount(false, stmt);
+    }
+
+    public <T> UpdateResult<T> withUpdateCount(
+        boolean isLarge, Function<StatementWithUpdateCount, T> stmt
+    ) {
         return null;
     }
 
@@ -33,12 +43,7 @@ public final class Statement implements
         return null;
     }
 
-    @Override
-    public PreparedStatement prepare(Connection connection) {
+    @Override public PreparedStatement prepare(Connection connection) {
         return null;
     }
-
-    public static class StatementWithGeneratedKeys {}
-    public static class StatementWithRowsAffected {}
-    public static class StatementWithGeneratedKeysAndRowsAffected {}
 }

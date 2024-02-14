@@ -6,19 +6,20 @@ import javax.sql.DataSource;
 import java.util.List;
 
 import static com.truej.sql.v3.TrueJdbc.*;
+import static com.truej.sql.v3.TrueJdbc.CallParameters.inout;
+import static com.truej.sql.v3.TrueJdbc.CallParameters.out;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class __16__Call {
+public class __07__Call {
     @Test
-    void fetch(DataSource ds) {
+    void simple(DataSource ds) {
         // Stored procedure get parameter Name
         // Check metadata
         // Check with cursor
-        // TODO: fetchOne only???
         assertEquals(
             Call."call \{out("result")} = some_procedure(\{42}, \{inout("a", 42)}})"
                 .fetchOne(ds, String.class)
-            , List.of("Ivan", "Joe")
+            , "xxx"
         );
     }
 }

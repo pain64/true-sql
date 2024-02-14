@@ -4,13 +4,13 @@ import com.truej.sql.v3.TrueJdbc;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 public interface FetcherManual extends ToPreparedStatement {
-    class ExecutionContext {
-    }
 
+    // FIXME: PreparedCall
     interface PreparedStatementExecutor<T, E extends Exception> {
-        T execute(ExecutionContext ctx) throws E;
+        T execute(PreparedStatement stmt) throws E;
     }
 
     default <T, E extends Exception> T fetch(DataSource ds, PreparedStatementExecutor<T, E> executor) throws E {

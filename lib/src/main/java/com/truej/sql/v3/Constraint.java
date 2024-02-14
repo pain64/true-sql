@@ -1,13 +1,16 @@
 package com.truej.sql.v3;
 
-import java.util.function.Supplier;
+public class Constraint<T, E extends Exception> {
 
-public class Constraint<T> {
+    public interface Handler<T, E extends Exception> {
+        T handle() throws E;
+    }
+
     final String tableName;
     final String constraintName;
-    final Supplier<T> handler;
+    final Handler<T, E> handler;
 
-    public Constraint(String tableName, String constraintName, Supplier<T> handler) {
+    public Constraint(String tableName, String constraintName, Handler<T, E> handler) {
         this.tableName = tableName;
         this.constraintName = constraintName;
         this.handler = handler;

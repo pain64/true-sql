@@ -6,11 +6,11 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 
 public interface FetcherNone extends ToPreparedStatement {
-    default <T> T fetchNone(DataSource ds) {
-        return TrueJdbc.withConnection(ds, cn -> fetchNone(cn));
+    default Void fetchNone(DataSource ds) {
+        return TrueJdbc.withConnection(ds, this::fetchNone);
     }
 
-    default <T> T fetchNone(Connection cn) {
+    default Void fetchNone(Connection cn) {
         return null;
     }
 }

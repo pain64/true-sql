@@ -184,7 +184,7 @@ public class Example {
             );
             return new Ok();
         } catch (ConstraintViolationException e) {
-            return e.is(
+            return e.when(
                 new Constraint<>("users", "name_unique", NotUniqueName::new),
                 new Constraint<>("users", "email_check", () -> {
                     // some logic
