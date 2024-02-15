@@ -22,8 +22,10 @@ public class __01__Fetch {
     }
 
     @Test void oneOrNull(DataSource ds) {
-        assertNull(Stmt. "select name from users where id = \{ 1 }"
-            .fetchOneOrNull(ds, m(String.class)));
+        assertNull(
+            Stmt. "select name from users where id = \{ 1 }"
+                .fetchOneOrNull(ds, m(String.class))
+        );
     }
 
     @Test void oneOptional(DataSource ds) {
