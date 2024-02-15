@@ -18,7 +18,7 @@ import java.util.List;
     @Test void simple(DataSource ds) {
         assertEquals(
             Stmt. "select id, name, email from users where id = \{ 42 }"
-                .fetchOne(ds, User.class)
+                .fetchOne(ds, g(User.class))
             , new User(42, "Joe", "example@email.com")
         );
     }
