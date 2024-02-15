@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test;
 import javax.sql.DataSource;
 import java.util.List;
 
-import static com.truej.sql.v3.TrueJdbc.Call;
-import static com.truej.sql.v3.TrueJdbc.Stmt;
+import static com.truej.sql.v3.TrueJdbc.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __08__Batch {
@@ -16,7 +15,7 @@ public class __08__Batch {
             TrueJdbc.batchStmt(
                 List.of("a", "b", "c"),
                 s -> Stmt. "insert into t1 values(\{ s })"
-            ).withGeneratedKeys().fetchList(ds, Long.class)
+            ).withGeneratedKeys().fetchList(ds, m(Long.class))
             , List.of(1L, 2L, 3L)
         );
     }

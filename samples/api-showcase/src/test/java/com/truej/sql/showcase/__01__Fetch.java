@@ -9,49 +9,57 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.truej.sql.v3.TrueJdbc.Stmt;
+import static com.truej.sql.v3.TrueJdbc.m;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class __01__Fetch {
     @Test void one(DataSource ds) {
         assertEquals(
-            Stmt. "select name from users where id = \{ 42 }" .fetchOne(ds, String.class)
+            Stmt. "select name from users where id = \{ 42 }"
+                .fetchOne(ds, m(String.class))
             , "Joe"
         );
     }
 
     @Test void oneOrNull(DataSource ds) {
-        assertNull(Stmt. "select name from users where id = \{ 1 }" .fetchOneOrNull(ds, String.class));
+        assertNull(Stmt. "select name from users where id = \{ 1 }"
+            .fetchOneOrNull(ds, m(String.class)));
     }
 
     @Test void oneOptional(DataSource ds) {
         assertEquals(
-            Stmt. "select name from users where id = \{ 1 }" .fetchOneOptional(ds, String.class)
+            Stmt. "select name from users where id = \{ 1 }"
+                .fetchOneOptional(ds, m(String.class))
             , Optional.empty()
         );
     }
 
     @Test void none(DataSource ds) {
-        Stmt."insert into users values(1, 'John', 'xxx@email.com')".fetchNone(ds);
+        Stmt."insert into users values(1, 'John', 'xxx@email.com')"
+            .fetchNone(ds);
     }
 
     @Test void array(DataSource ds) {
         assertArrayEquals(
-            Stmt."select name from users".fetchArray(ds, String.class)
+            Stmt."select name from users"
+                .fetchArray(ds, m(String.class))
             , List.of("Ivan", "Joe").toArray()
         );
     }
 
     @Test void list(DataSource ds) {
         assertEquals(
-            Stmt."select name from users".fetchList(ds, String.class)
+            Stmt."select name from users"
+                .fetchList(ds, m(String.class))
             , List.of("Ivan", "Joe")
         );
     }
 
     @Test void stream(DataSource ds) {
         assertEquals(
-            Stmt."select name from users".fetchStream(ds, String.class)
-                .toList(), List.of("Ivan", "Joe")
+            Stmt."select name from users"
+                .fetchStream(ds, m(String.class)).toList()
+            , List.of("Ivan", "Joe")
         );
     }
 

@@ -83,11 +83,13 @@ public class TrueJdbc {
         return null;
     }
 
+    public interface ResultSetMapper<T> {
+    }
 
-    public static <T> Class<T> m(Class<T> aClass) {
+    public static <T> ResultSetMapper<T> m(Class<T> aClass) {
         throw new RuntimeException("unexpected");
     }
-    public static <T> Class<T> g(Class<T> aClass) {
+    public static <T> ResultSetMapper<T> g(Class<T> aClass) {
         throw new RuntimeException("unexpected");
     }
 

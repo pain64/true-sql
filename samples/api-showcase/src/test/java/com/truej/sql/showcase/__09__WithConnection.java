@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 import java.util.List;
 
 import static com.truej.sql.v3.TrueJdbc.Stmt;
+import static com.truej.sql.v3.TrueJdbc.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __09__WithConnection {
@@ -19,7 +20,7 @@ public class __09__WithConnection {
                     """.fetchNone(cn);
 
                 return Stmt."select * from temp_table"
-                    .fetchList(cn, String.class);
+                    .fetchList(cn, m(String.class));
             })
             , List.of("a", "b")
         );

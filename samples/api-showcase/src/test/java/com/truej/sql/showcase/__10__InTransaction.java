@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import javax.sql.DataSource;
 
 import static com.truej.sql.v3.TrueJdbc.Stmt;
+import static com.truej.sql.v3.TrueJdbc.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -20,7 +21,8 @@ public class __10__InTransaction {
                     """.fetchNone(cn);
 
                 assertEquals(
-                    Stmt."select name from users where id = 1".fetchOne(cn, String.class)
+                    Stmt."select name from users where id = 1"
+                        .fetchOne(cn, m(String.class))
                     , "Joe"
                 );
 
@@ -28,7 +30,8 @@ public class __10__InTransaction {
             });
         } catch (ForceRollback ex) {
             assertNull(
-                Stmt."select name from users where id = 1".fetchOneOrNull(ds, String.class)
+                Stmt."select name from users where id = 1"
+                    .fetchOneOrNull(ds, m(String.class))
             );
         }
     }
