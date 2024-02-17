@@ -1,17 +1,20 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.TrueJdbc;
 import com.truej.sql.v3.TrueJdbc.ResultSetMapper;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
+import java.sql.ResultSet;
 
-public interface FetcherOne extends ToPreparedStatement {
-    default <T> T fetchOne(DataSource ds, ResultSetMapper<T> mapper) {
-        return TrueJdbc.withConnection(ds, cn -> fetchOne(cn, mapper));
-    }
+public class FetcherOne {
+    public static <T> T fetch(ResultSet rs, ResultSetMapper<T> mapper) {
+        var iterator = mapper.map(rs);
 
-    default <T> T fetchOne(Connection cn, ResultSetMapper<T> mapper) {
-        return null;
+        if (iterator.hasNext()) {
+            var result = iterator.next();
+            if (iterator.hasNext())
+                throw new TooMuchRowsException();
+            return result;
+        }
+
+        throw new TooFewRowsException();
     }
 }

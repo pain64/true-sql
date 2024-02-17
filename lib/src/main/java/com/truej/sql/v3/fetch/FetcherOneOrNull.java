@@ -1,18 +1,21 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.TrueJdbc;
 import com.truej.sql.v3.TrueJdbc.ResultSetMapper;
 import org.jetbrains.annotations.Nullable;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
+import java.sql.ResultSet;
 
-public interface FetcherOneOrNull extends ToPreparedStatement {
-    @Nullable default <T> T fetchOneOrNull(DataSource ds, ResultSetMapper<T> mapper) {
-        return TrueJdbc.withConnection(ds, cn -> fetchOneOrNull(cn, mapper));
-    }
+public class FetcherOneOrNull {
+    @Nullable public static <T> T fetch(ResultSet rs, ResultSetMapper<T> mapper) {
+        var iterator = mapper.map(rs);
 
-    @Nullable default <T> T fetchOneOrNull(Connection cn, ResultSetMapper<T> mapper) {
+        if (iterator.hasNext()) {
+            var result = iterator.next();
+            if (iterator.hasNext())
+                throw new TooMuchRowsException();
+            return result;
+        }
+
         return null;
     }
 }

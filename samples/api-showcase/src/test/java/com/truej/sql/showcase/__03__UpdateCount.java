@@ -11,7 +11,7 @@ public class __03__UpdateCount {
     @Test void test(DataSource ds) {
         assertEquals(
             Stmt."insert into users(name, email) values('John', 'xxx@email.com')"
-                .withUpdateCount(s -> s.fetchNone(ds)).count
+                .withUpdateCount().fetchNone(ds).count
             , 1L
         );
     }

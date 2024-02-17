@@ -13,6 +13,7 @@ import static com.truej.sql.v3.TrueJdbc.m;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class __01__Fetch {
+
     @Test void one(DataSource ds) {
         assertEquals(
             Stmt. "select name from users where id = \{ 42 }"
@@ -58,11 +59,17 @@ public class __01__Fetch {
     }
 
     @Test void stream(DataSource ds) {
-        assertEquals(
-            Stmt."select name from users"
-                .fetchStream(ds, m(String.class)).toList()
-            , List.of("Ivan", "Joe")
-        );
+        // NB: stream must be closed!
+        try (
+            var stream = Stmt."select name from users"
+                .fetchStream(ds, m(String.class))
+        ) {
+            // stream is lazy, we can iterate over
+            // stream.forEach(System.out::println);
+            assertEquals(
+                stream.toList(), List.of("Ivan", "Joe")
+            );
+        }
     }
 
     @Test void manual(DataSource ds) throws SQLException {

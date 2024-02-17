@@ -1,23 +1,18 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.TrueJdbc;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-public interface FetcherManual extends ToPreparedStatement {
+public class FetcherManual {
 
     // FIXME: PreparedCall
-    interface PreparedStatementExecutor<T, E extends Exception> {
+    public interface PreparedStatementExecutor<T, E extends Exception> {
         T execute(PreparedStatement stmt) throws E;
     }
 
-    default <T, E extends Exception> T fetch(DataSource ds, PreparedStatementExecutor<T, E> executor) throws E {
-        return TrueJdbc.withConnection(ds, cn -> fetch(cn, executor));
-    }
-
-    default <T, E extends Exception> T fetch(Connection cn, PreparedStatementExecutor<T, E> executor) throws E {
+    public static <T, E extends Exception> T fetch(
+        Connection cn, PreparedStatementExecutor<T, E> executor
+    ) throws E {
         return null;
     }
 }

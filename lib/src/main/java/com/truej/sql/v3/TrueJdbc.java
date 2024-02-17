@@ -5,6 +5,8 @@ import com.truej.sql.v3.prepare.Statement;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -84,6 +86,7 @@ public class TrueJdbc {
     }
 
     public interface ResultSetMapper<T> {
+        Iterator<T> map(ResultSet rs);
     }
 
     public static <T> ResultSetMapper<T> m(Class<T> aClass) {
