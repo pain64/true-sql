@@ -1,55 +1,15 @@
 package com.truej.sql.v3.prepare;
 
-import com.truej.sql.v3.TrueJdbc;
 import com.truej.sql.v3.fetch.*;
-import com.truej.sql.v3.fetch.FetcherManual.PreparedStatementExecutor;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.util.List;
-import java.util.stream.Stream;
+import java.sql.PreparedStatement;
 
-public class BatchCallWithUpdateCount {
+public class BatchCallWithUpdateCount implements ToPreparedStatement,
+    FetcherNone.UpdateCount, FetcherArray.UpdateCount,
+    FetcherList.UpdateCount, FetcherStream.UpdateCount,
+    FetcherManual.UpdateCount {
 
-    // Fetchers
-
-    public UpdateResult<Void> fetchNone(DataSource ds) {
-        return TrueJdbc.withConnection(ds, this::fetchNone);
-    }
-
-    public UpdateResult<Void> fetchNone(Connection cn) {
-        return new UpdateResult<>(0, FetcherNone.fetch(cn));
-    }
-
-    public <T> UpdateResult<T[]> fetchArray(DataSource ds, TrueJdbc.ResultSetMapper<T> mapper) {
-        return TrueJdbc.withConnection(ds, cn -> fetchArray(cn, mapper));
-    }
-
-    public <T> UpdateResult<T[]> fetchArray(Connection cn, TrueJdbc.ResultSetMapper<T> mapper) {
-        return new UpdateResult<>(0, FetcherArray.fetch(cn, mapper));
-    }
-
-    public <T> UpdateResult<List<T>> fetchList(DataSource ds, TrueJdbc.ResultSetMapper<T> mapper) {
-        return TrueJdbc.withConnection(ds, cn -> fetchList(cn, mapper));
-    }
-
-    public <T> UpdateResult<List<T>> fetchList(Connection cn, TrueJdbc.ResultSetMapper<T> mapper) {
-        return new UpdateResult<>(0, FetcherList.fetch(cn, mapper));
-    }
-
-    public  <T> UpdateResult<Stream<T>> fetchStream(DataSource ds, TrueJdbc.ResultSetMapper<T> mapper) {
-        return TrueJdbc.withConnection(ds, cn -> fetchStream(cn, mapper));
-    }
-
-    public <T> UpdateResult<Stream<T>> fetchStream(Connection cn, TrueJdbc.ResultSetMapper<T> mapper) {
-        return new UpdateResult<>(0, FetcherStream.fetch(cn, mapper));
-    }
-
-    public <T, E extends Exception> UpdateResult<T> fetch(DataSource ds, PreparedStatementExecutor<T, E> executor) throws E {
-        return TrueJdbc.withConnection(ds, cn -> fetch(cn, executor));
-    }
-
-    public <T, E extends Exception> UpdateResult<T> fetch(Connection cn, PreparedStatementExecutor<T, E> executor) throws E {
-        return new UpdateResult<>(0, FetcherManual.fetch(cn, executor));
+    @Override public PreparedStatement prepare() {
+        return null;
     }
 }

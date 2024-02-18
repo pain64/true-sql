@@ -9,7 +9,7 @@ public class ConstraintViolationException extends RuntimeException {
         this.constraintName = constraintName;
     }
 
-    @SafeVarargs public final <T> T when(Constraint<T>... constraints) {
+    @SafeVarargs public final <T, E extends Exception> T when(Constraint<T, E>... constraints) {
         throw this;
     }
 }

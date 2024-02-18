@@ -1,4 +1,4 @@
-package com.truej.sql.v3.prepare;
+package com.truej.sql.v3.fetch;
 
 public class UpdateResult<T> {
     public final long count;
