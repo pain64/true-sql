@@ -8,7 +8,7 @@ import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static com.truej.sql.v3.TrueJdbc.*;
+import static com.truej.sql.v3.TrueSql.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __05__ToDto {

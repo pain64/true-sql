@@ -1,21 +1,21 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.TrueJdbc;
+import com.truej.sql.v3.TrueSql;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 
-import static com.truej.sql.v3.TrueJdbc.Stmt;
-import static com.truej.sql.v3.TrueJdbc.m;
+import static com.truej.sql.v3.TrueSql.Stmt;
+import static com.truej.sql.v3.TrueSql.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class __10__InTransaction {
-    class ForceRollback extends Exception { }
+    static class ForceRollback extends Exception { }
 
     @Test void simple(DataSource ds) {
         try {
-            TrueJdbc.inTransaction(ds, cn -> {
+            TrueSql.inTransaction(ds, cn -> {
                 Stmt."""
                         insert into users values (1, 'Joe', 'example@email.com')
                     """.fetchNone(cn);

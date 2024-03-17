@@ -1,19 +1,19 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.TrueJdbc;
+import com.truej.sql.v3.TrueSql;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.util.List;
 
-import static com.truej.sql.v3.TrueJdbc.Stmt;
-import static com.truej.sql.v3.TrueJdbc.m;
+import static com.truej.sql.v3.TrueSql.Stmt;
+import static com.truej.sql.v3.TrueSql.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __09__WithConnection {
     @Test void simple(DataSource ds) {
         assertEquals(
-            TrueJdbc.withConnection(ds, cn -> {
+            TrueSql.withConnection(ds, cn -> {
                 Stmt."""
                         create temp table temp_table as
                         with t (s) AS ( values ('a'), ('b') )

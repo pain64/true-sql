@@ -8,7 +8,7 @@ import javax.sql.DataSource;
 
 import java.util.function.Supplier;
 
-import static com.truej.sql.v3.TrueJdbc.Stmt;
+import static com.truej.sql.v3.TrueSql.Stmt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

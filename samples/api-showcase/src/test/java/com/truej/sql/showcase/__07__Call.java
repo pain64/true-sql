@@ -4,9 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 
-import static com.truej.sql.v3.TrueJdbc.*;
-import static com.truej.sql.v3.TrueJdbc.CallParameters.inout;
-import static com.truej.sql.v3.TrueJdbc.CallParameters.out;
+import static com.truej.sql.v3.TrueSql.*;
+import static com.truej.sql.v3.TrueSql.CallParameters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __07__Call {

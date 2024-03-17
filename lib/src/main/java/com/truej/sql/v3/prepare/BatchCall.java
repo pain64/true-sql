@@ -2,22 +2,19 @@ package com.truej.sql.v3.prepare;
 
 import com.truej.sql.v3.fetch.*;
 
-import java.sql.PreparedStatement;
+import java.sql.CallableStatement;
+import java.sql.SQLException;
 
-public class BatchCall implements ToPreparedStatement,
-    FetcherNone.Default, FetcherArray.Default,
-    FetcherList.Default, FetcherStream.Default,
-    FetcherManual.Default {
+public abstract class BatchCall
+    extends CallSettings<BatchCall>
+    implements ToPreparedStatement,
+    FetcherNone.Instance, FetcherArray.Instance,
+    FetcherList.Instance, FetcherStream.Instance,
+    FetcherUpdateCount.Instance, FetcherManual.Instance {
 
-    public BatchCallWithUpdateCount withUpdateCount() {
-        return withUpdateCount(false);
-    }
+    @Override BatchCall self() { return this; }
 
-    public BatchCallWithUpdateCount withUpdateCount(boolean isLarge) {
-        return null;
-    }
-
-    @Override public PreparedStatement prepare() {
-        return null;
+    @Override void execute(CallableStatement stmt) throws SQLException {
+        stmt.executeBatch();
     }
 }

@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 
-import static com.truej.sql.v3.TrueJdbc.Stmt;
-import static com.truej.sql.v3.TrueJdbc.m;
+import static com.truej.sql.v3.TrueSql.Stmt;
+import static com.truej.sql.v3.TrueSql.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __02__GeneratedKeys {

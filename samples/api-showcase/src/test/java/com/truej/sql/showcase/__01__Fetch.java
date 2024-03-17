@@ -1,5 +1,6 @@
 package com.truej.sql.showcase;
 
+import com.truej.sql.v3.fetch.FetcherList;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -8,9 +9,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.truej.sql.v3.TrueJdbc.Stmt;
-import static com.truej.sql.v3.TrueJdbc.m;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.truej.sql.v3.TrueSql.Stmt;
+import static com.truej.sql.v3.TrueSql.m;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class __01__Fetch {
 
@@ -43,7 +45,7 @@ public class __01__Fetch {
     }
 
     @Test void array(DataSource ds) {
-        assertArrayEquals(
+        assertEquals(
             Stmt."select name from users"
                 .fetchArray(ds, m(String.class))
             , List.of("Ivan", "Joe").toArray()
@@ -56,9 +58,64 @@ public class __01__Fetch {
                 .fetchList(ds, m(String.class))
             , List.of("Ivan", "Joe")
         );
+
+        assertEquals(
+            Stmt."select name from users".fetchList(
+                ds, m(String.class, new FetcherList.Hints(10))
+            )
+            , List.of("Ivan", "Joe")
+        );
+
+        assertEquals(
+            Stmt."select name from users".fetchList(
+                ds, m(String.class, new FetcherList.Hints().expectedSize(10)))
+            , List.of("Ivan", "Joe")
+        );
     }
 
     @Test void stream(DataSource ds) {
+        // NB: stream must be closed!
+        try (
+            var stream = Stmt."select name from users"
+                .fetchStream(ds, m(String.class))
+        ) {
+            // stream is lazy, we can iterate over
+            // stream.forEach(System.out::println);
+            assertEquals(
+                stream.toList(), List.of("Ivan", "Joe")
+            );
+        }
+    }
+
+    @Test void updateCount(DataSource ds) {
+        // NB: stream must be closed!
+        try (
+            var stream = Stmt."upda"
+                .fetchStream(ds, m(String.class))
+        ) {
+            // stream is lazy, we can iterate over
+            // stream.forEach(System.out::println);
+            assertEquals(
+                stream.toList(), List.of("Ivan", "Joe")
+            );
+        }
+    }
+
+    @Test void updateCountAndNone(DataSource ds) {
+        // NB: stream must be closed!
+        try (
+            var stream = Stmt."select name from users"
+                .fetchStream(ds, m(String.class))
+        ) {
+            // stream is lazy, we can iterate over
+            // stream.forEach(System.out::println);
+            assertEquals(
+                stream.toList(), List.of("Ivan", "Joe")
+            );
+        }
+    }
+
+    @Test void updateCountAndStream(DataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = Stmt."select name from users"

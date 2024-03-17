@@ -15,7 +15,7 @@ import java.util.List;
 
 import static com.truej.sql.showcase.NewApi.fetch;
 import static com.truej.sql.showcase.NewApi.one;
-import static com.truej.sql.v3.TrueJdbc.*;
+import static com.truej.sql.v3.TrueSql.*;
 
 // TODO:
 //   1. Реализация

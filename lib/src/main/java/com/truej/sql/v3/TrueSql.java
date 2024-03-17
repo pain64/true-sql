@@ -1,15 +1,20 @@
 package com.truej.sql.v3;
 
 import com.truej.sql.v3.fetch.ResultSetMapper;
+import com.truej.sql.v3.fetch.UpdateResult;
+import com.truej.sql.v3.prepare.BatchCall;
+import com.truej.sql.v3.prepare.BatchStatement;
 import com.truej.sql.v3.prepare.Call;
 import com.truej.sql.v3.prepare.Statement;
+import org.jetbrains.annotations.Nullable;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class TrueJdbc {
+public class TrueSql {
 
     public interface WithConnectionAction<T, E extends Exception> {
         T run(Connection cn) throws E;
@@ -20,6 +25,8 @@ public class TrueJdbc {
     ) throws E {
         try (var cn = ds.getConnection()) {
             return action.run(cn);
+        } catch (SQLException e) {
+            throw new SqlExceptionR(e);
         }
     }
 
@@ -54,40 +61,49 @@ public class TrueJdbc {
         public static Void out(String parameterName) {
             return null;
         }
-
-        public static <T> T inout(String parameterName, T value) {
-            return value;
-        }
     }
 
-    public static <T> Statement batchStmt(T[] data, StatementSupplier<T> query) {
+    public static <T> BatchStatement batchStmt(T[] data, StatementSupplier<T> query) {
         return null;
     }
 
-    public static <T> Statement batchStmt(List<T> data, StatementSupplier<T> query) {
+    public static <T> BatchStatement batchStmt(List<T> data, StatementSupplier<T> query) {
         return null;
     }
 
-    public static <T> Statement batchStmt(Stream<T> data, StatementSupplier<T> query) {
+    public static <T> BatchStatement batchStmt(Stream<T> data, StatementSupplier<T> query) {
         return null;
     }
 
-    public static <T> Call batchCall(T[] data, CallSupplier<T> query) {
+    public static <T> BatchCall batchCall(T[] data, CallSupplier<T> query) {
         return null;
     }
 
-    public static <T> Call batchCall(List<T> data, CallSupplier<T> query) {
+    public static <T> BatchCall batchCall(List<T> data, CallSupplier<T> query) {
         return null;
     }
 
-    public static <T> Call batchCall(Stream<T> data, CallSupplier<T> query) {
+    public static <T> BatchCall batchCall(Stream<T> data, CallSupplier<T> query) {
         return null;
     }
 
-    public static <T> ResultSetMapper<T> m(Class<T> aClass) {
+    public static <T> Class<UpdateResult<T>> updateCount(Class<T> aClass) {
+        return null;
+    }
+
+    public static <T, H> ResultSetMapper<T, H> m(Class<T> aClass) {
         throw new RuntimeException("unexpected");
     }
-    public static <T> ResultSetMapper<T> g(Class<T> aClass) {
+
+    public static <T, H> ResultSetMapper<T, H> m(Class<T> aClass, H hints) {
+        throw new RuntimeException("unexpected");
+    }
+
+    public static <T, H> ResultSetMapper<T, H> g(Class<T> aClass) {
+        throw new RuntimeException("unexpected");
+    }
+
+    public static <T, H> ResultSetMapper<T, H> g(Class<T> aClass, H hints) {
         throw new RuntimeException("unexpected");
     }
 
