@@ -1,5 +1,6 @@
 package com.truej.sql.v3.fetch;
 
+import com.truej.sql.v3.Source;
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.TrueSql;
 
@@ -19,16 +20,8 @@ public class FetcherNone {
     }
 
     public interface Instance extends ToPreparedStatement {
-        default Void fetchNone(DataSource ds) {
-            return TrueSql.withConnection(ds, this::fetchNone);
-        }
-
-        default Void fetchNone(Connection cn) {
-            try (var __ = prepareAndExecute(cn)) {
-                return null;
-            } catch (SQLException e) {
-                throw new SqlExceptionR(e);
-            }
+        default Void fetchNone(Source source) {
+            return managed(source, () -> false, _ -> null);
         }
     }
 }

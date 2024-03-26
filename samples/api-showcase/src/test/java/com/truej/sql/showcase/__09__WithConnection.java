@@ -11,9 +11,9 @@ import static com.truej.sql.v3.TrueSql.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __09__WithConnection {
-    @Test void simple(DataSource ds) {
+    @Test void simple(MainDataSource ds) {
         assertEquals(
-            TrueSql.withConnection(ds, cn -> {
+            ds.withConnection(cn -> {
                 Stmt."""
                         create temp table temp_table as
                         with t (s) AS ( values ('a'), ('b') )

@@ -6,46 +6,18 @@ import com.truej.sql.v3.prepare.BatchCall;
 import com.truej.sql.v3.prepare.BatchStatement;
 import com.truej.sql.v3.prepare.Call;
 import com.truej.sql.v3.prepare.Statement;
-import org.jetbrains.annotations.Nullable;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class TrueSql {
-
-    public interface WithConnectionAction<T, E extends Exception> {
-        T run(Connection cn) throws E;
-    }
-
-    public static <T, E extends Exception> T withConnection(
-        DataSource ds, WithConnectionAction<T, E> action
-    ) throws E {
-        try (var cn = ds.getConnection()) {
-            return action.run(cn);
-        } catch (SQLException e) {
-            throw new SqlExceptionR(e);
-        }
-    }
-
-    public interface InTransactionAction<T, E extends Exception> {
-        T run(Connection cn) throws E;
-    }
-
-    public static <T, E extends Exception> T inTransaction(
-        Connection connection, InTransactionAction<T, E> action
-    ) throws E {
-        // TODO
-        return action.run(connection);
-    }
-
-    public static <T, E extends Exception> T inTransaction(
-        DataSource ds, InTransactionAction<T, E> action
-    ) throws E {
-        return withConnection(ds, conn -> inTransaction(conn, action));
-    }
+    @Retention(RetentionPolicy.SOURCE)
+    @Target(ElementType.TYPE)
+    public @interface Process {}
 
     @FunctionalInterface
     public interface StatementSupplier<T> {
@@ -61,10 +33,10 @@ public class TrueSql {
         public static Void out(String parameterName) {
             return null;
         }
-    }
 
-    public static <T> BatchStatement batchStmt(T[] data, StatementSupplier<T> query) {
-        return null;
+        public static <T> T inout(String parameterName, T value) {
+            return value;
+        }
     }
 
     public static <T> BatchStatement batchStmt(List<T> data, StatementSupplier<T> query) {
@@ -75,19 +47,11 @@ public class TrueSql {
         return null;
     }
 
-    public static <T> BatchCall batchCall(T[] data, CallSupplier<T> query) {
-        return null;
-    }
-
     public static <T> BatchCall batchCall(List<T> data, CallSupplier<T> query) {
         return null;
     }
 
     public static <T> BatchCall batchCall(Stream<T> data, CallSupplier<T> query) {
-        return null;
-    }
-
-    public static <T> Class<UpdateResult<T>> updateCount(Class<T> aClass) {
         return null;
     }
 

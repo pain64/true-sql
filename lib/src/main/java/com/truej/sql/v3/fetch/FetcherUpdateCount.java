@@ -1,10 +1,7 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.Source;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -12,32 +9,35 @@ public class FetcherUpdateCount {
     public static class Hints { }
 
     public interface Next<T> {
-        default boolean isPreparedStatementMoved() { return false; }
-        T apply(PreparedStatement stmt);
+        boolean willPreparedStatementBeMoved();
+        T apply(PreparedStatement stmt) throws SQLException;
     }
 
-    public static <T> UpdateResult<T> fetch(PreparedStatement stmt, Next<T> next) {
-        try {
-            return new UpdateResult<>(
-                // TODO: fallback from updateCount to updateCountLarge
-                stmt.getUpdateCount(), next.apply(stmt)
-            );
-        } catch (SQLException e) {
-            throw new SqlExceptionR(e);
-        }
+    public static <T> UpdateResult<T> apply(
+        PreparedStatement stmt, Next<T> next
+    ) throws SQLException {
+        return new UpdateResult<>(stmt.getLargeUpdateCount(), next.apply(stmt));
     }
 
     public interface Instance extends ToPreparedStatement {
-        default <T> UpdateResult<T> fetchUpdateCount(DataSource ds, Next<T> next) {
-            return TrueSql.withConnection(ds, cn -> fetchUpdateCount(cn, next));
+        default <T> UpdateResult<T> fetchUpdateCount(
+            Source source, Next<T> next
+        ) {
+            return managed(
+                source, next::willPreparedStatementBeMoved, stmt -> apply(stmt, next)
+            );
         }
 
-        default <T> UpdateResult<T> fetchUpdateCount(Connection cn, Next<T> next) {
-            try (var stmt = prepareAndExecute(cn)) {
-                return fetch(stmt, next);
-            } catch (SQLException e) {
-                throw new SqlExceptionR(e);
-            }
+        default UpdateResult<Void> fetchUpdateCount(Source source) {
+            return fetchUpdateCount(source, new Next<>() {
+                @Override public boolean willPreparedStatementBeMoved() {
+                    return false;
+                }
+                @Override public Void apply(PreparedStatement stmt) {
+                    return null;
+                }
+            });
         }
     }
+
 }

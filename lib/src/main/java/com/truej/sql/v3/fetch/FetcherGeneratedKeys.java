@@ -1,40 +1,34 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.Source;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class FetcherGeneratedKeys {
-
+public class FetcherGeneratedKeys<T> implements FetcherUpdateCount.Next<T> {
     public interface Next<T> {
-        default boolean isPreparedStatementMoved() { return false; }
-        T apply(ResultSet rs);
+        boolean willPreparedStatementBeMoved();
+        T apply(Concrete source) throws SQLException;
     }
 
-    public static <T> T apply(PreparedStatement stmt, Next<T> next) {
-        try {
-            return next.apply(stmt.getGeneratedKeys());
-        } catch (SQLException e) {
-            throw new SqlExceptionR(e);
-        }
+    private final Next<T> next;
+    public FetcherGeneratedKeys(Next<T> next) {
+        this.next = next;
+    }
+
+    @Override public boolean willPreparedStatementBeMoved() {
+        return next.willPreparedStatementBeMoved();
+    }
+    @Override public T apply(PreparedStatement stmt) throws SQLException {
+        return next.apply(new Concrete(stmt, stmt.getGeneratedKeys()));
     }
 
     public interface Instance extends ToPreparedStatement {
-        default <T> T fetchGeneratedKeys(DataSource ds, Next<T> next) {
-            return TrueSql.withConnection(ds, cn -> fetchGeneratedKeys(cn, next));
-        }
-
-        default <T> T fetchGeneratedKeys(Connection cn, Next<T> next) {
-            try (var stmt = prepareAndExecute(cn)) {
-                return apply(stmt, next);
-            } catch (SQLException e) {
-                throw new SqlExceptionR(e);
-            }
+        default <T> T fetchGeneratedKeys(Source source, Next<T> next) {
+            return managed(
+                source, next::willPreparedStatementBeMoved, stmt ->
+                    new FetcherGeneratedKeys<>(next).apply(stmt)
+            );
         }
     }
 }

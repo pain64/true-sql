@@ -1,25 +1,18 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.Source;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FetcherList {
+public class FetcherList<T> implements
+    FetcherUpdateCount.Next<List<T>>, FetcherGeneratedKeys.Next<List<T>> {
+
     public static class Hints {
-        int expectedSize = 0;
-
-        public Hints() { }
-
-        public Hints(int expectedSize) {
-            this.expectedSize = expectedSize;
-        }
+        private int expectedSize = 0;
 
         public Hints expectedSize(int n) {
             this.expectedSize = n;
@@ -27,7 +20,9 @@ public class FetcherList {
         }
     }
 
-    public static <T> List<T> apply(ResultSet rs, ResultSetMapper<T, Hints> mapper) {
+    public static <T> List<T> apply(
+        ResultSet rs, ResultSetMapper<T, Hints> mapper
+    ) throws SQLException {
         var hints = mapper.hints();
         var iterator = mapper.map(rs);
 
@@ -41,28 +36,27 @@ public class FetcherList {
         return result;
     }
 
-    public static <T> List<T> apply(PreparedStatement stmt, ResultSetMapper<T, Hints> mapper) {
-        try {
-            var rs = stmt.getResultSet();
-            return apply(rs, mapper);
-        } catch (SQLException e) {
-            throw new SqlExceptionR(e);
-        }
+    private final ResultSetMapper<T, Hints> mapper;
+    public FetcherList(ResultSetMapper<T, Hints> mapper) {
+        this.mapper = mapper;
+    }
+
+    @Override public boolean willPreparedStatementBeMoved() {
+        return false;
+    }
+    @Override public List<T> apply(PreparedStatement stmt) throws SQLException {
+        return apply(new Concrete(stmt, stmt.getResultSet()));
+    }
+    @Override public List<T> apply(Concrete source) throws SQLException {
+        return apply(source.rs, this.mapper);
     }
 
     public interface Instance extends ToPreparedStatement {
-        default <T> List<T> fetchList(DataSource ds, ResultSetMapper<T, Hints> mapper) {
-            return TrueSql.withConnection(ds, cn -> fetchList(cn, mapper));
-        }
-
-        default <T> List<T> fetchList(Connection cn, ResultSetMapper<T, Hints> mapper) {
-            try (
-                var stmt = prepareAndExecute(cn)
-            ) {
-                return apply(stmt, mapper);
-            } catch (SQLException e) {
-                throw new SqlExceptionR(e);
-            }
+        default <T> List<T> fetchList(Source source, ResultSetMapper<T, Hints> mapper) {
+            return managed(
+                // FIXME: deduplicate
+                source, () -> false, stmt -> new FetcherList<>(mapper).apply(stmt)
+            );
         }
     }
 }

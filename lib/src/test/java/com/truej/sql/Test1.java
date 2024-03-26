@@ -1,20 +1,62 @@
 package com.truej.sql;
 
-import com.truej.sql.v3.SqlExceptionR;
+import com.truej.sql.v3.*;
 import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.config.Configuration;
 import com.truej.sql.v3.fetch.*;
 import com.truej.sql.v3.prepare.Statement;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.Iterator;
-import java.util.stream.Stream;
+import java.util.List;
 
 import static com.truej.sql.v3.TrueSql.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test1 {
+
+    record PgConnection(Connection w) implements ConnectionW { }
+    @Configuration record PgDataSource(DataSource w) implements DataSourceW { }
+
+    static DataSource createDs() { return null; }
+
+    public static void main(String[] args) {
+        var pg = new PgDataSource(createDs());
+    }
+
+    // @Database class PgDataSource extends DataSourceW {}
+    // @Database class PgConnection extends ConnectionW {}
+    // @Database class OracleDataSource extends DbConfig {}
+    // void main () {
+    //    var pg = new PgDatabase(new DataSource(...))
+    //    pg.withConnection()
+    //    var oracle = new OracleDatabase(new DataSource(...))
+    //
+    //    Stmt."select v from t1".fetchOne(pg.ds, m(String.class))
+    // }
+    // // void doSome(DataSource pg) {
+    //    //     Stmt."select v from t1".fetchOne(pg, m(String.class))
+    //    // }
+    // record Databases(
+    //     @Database() DataSource pg,
+    //     @Database() DataSource oracle
+    // ) {}
+    //public class Databases {
+    //   public final @Database() DataSource pg;
+    //   public final @Database() DataSource oracle;
+    //
+    //   public Databases(DataSource pg, DataSource oracle) {
+    //       this.pg = pg;
+    //       this.oracle = oracle;
+    //   }`````````````````````
+    //}
+    // void doSome(Databases db) {
+    //     Stmt."select v from t1".fetchOne(db.pg, m(String.class))
+    // }
+    // @Database() DataSource ds
     interface Argument {
         void set(int i, PreparedStatement stmt) throws SQLException;
     }
@@ -35,8 +77,11 @@ public class Test1 {
     static class Generated {
         static Statement stmt_20_12(Argument a1) {
             return new Statement() {
+                @Override public RuntimeException mapException(SQLException e) {
+                    return new SqlExceptionR(e);
+                }
                 @Override public String query() {
-                    return "select name from users where id = ?";
+                    return "select id from users where id != ?";
                 }
                 @Override public void bindArgs(PreparedStatement stmt) throws SQLException {
                     a1.set(1, stmt);
@@ -44,17 +89,13 @@ public class Test1 {
             };
         }
 
-        static <H> ResultSetMapper<String, H> mapper_30_10() {
+        static <H> ResultSetMapper<Long, H> mapper_30_10() {
             return new ResultSetMapper<>() {
-                @Override public Class<String> tClass() {
-                    return String.class;
-                }
-
                 @Override @Nullable public H hints() {
                     return null;
                 }
 
-                @Override public Iterator<String> map(ResultSet rs) {
+                @Override public Iterator<Long> map(ResultSet rs) {
                     return new Iterator<>() {
                         @Override public boolean hasNext() {
                             try {
@@ -63,9 +104,9 @@ public class Test1 {
                                 throw new SqlExceptionR(e);
                             }
                         }
-                        @Override public String next() {
+                        @Override public Long next() {
                             try {
-                                return rs.getString(1);
+                                return rs.getLong(1);
                             } catch (SQLException e) {
                                 throw new SqlExceptionR(e);
                             }
@@ -82,15 +123,19 @@ public class Test1 {
     // TODO: PreparedStatement.setFetchSize
     // TODO: orIsNull pattern
 
-    @Test void test1() throws SQLException {
-        var cn = DriverManager
-            .getConnection("jdbc:hsqldb:mem:xxx", "SA", "");
 
-        cn.createStatement().execute("""
+    record MainConnection(Connection w) implements ConnectionW { }
+
+    @Test void test1() throws SQLException {
+        var cn = new MainConnection(
+            DriverManager.getConnection("jdbc:hsqldb:mem:xxx", "SA", "")
+        );
+
+        cn.w.createStatement().execute("""
                 create table users (id bigint, name varchar(64), email varchar(64));
             """);
 
-        cn.createStatement().execute("""
+        cn.w.createStatement().execute("""
                 insert into users values (42, 'Joe', 'example@email.com');
             """);
 
@@ -131,15 +176,15 @@ public class Test1 {
         //.fetchGeneratedKeys(cn, rs -> FetcherList.apply(rs, m(Long.class)));
 
         TrueSql.batchStmt(
-                new String[]{ "a", "b", "c" },
+                List.of("a", "b", "c"),
                 x -> Stmt."insert into t1(v) values(\{x})"
             )
             .withGeneratedKeys()
             .afterPrepare(s -> s.setFetchSize(42))
             //.fetchUpdateCount(cn, stmt -> FetcherList.apply(stmt, m(String.class)));
-            .fetchUpdateCount(cn, stmt ->
-                FetcherGeneratedKeys.apply(stmt, rs ->
-                    FetcherList.apply(rs, m(String.class))
+            .fetchUpdateCount(
+                cn, new FetcherGeneratedKeys<>(
+                    new FetcherList<>(m(String.class))
                 )
             );
 
@@ -185,7 +230,7 @@ public class Test1 {
 
 
         try (
-            var stmt = cn.prepareStatement("select name from users where id = ?")
+            var stmt = cn.w.prepareStatement("select name from users where id = ?")
         ) {
             stmt.setLong(1, 42);
             stmt.execute();
@@ -193,7 +238,7 @@ public class Test1 {
             var rs = stmt.getResultSet();
             rs.next();
 
-            name = rs.getString(1);
+            name = rs.getLong(1);
         }
 
         assertEquals(name, "Joe");

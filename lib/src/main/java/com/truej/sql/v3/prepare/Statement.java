@@ -9,11 +9,10 @@ import java.sql.SQLException;
 public abstract class Statement
     extends StatementSettings<Statement>
     implements ToPreparedStatement,
-    FetcherNone.Instance, FetcherOne.Instance,
-    FetcherOneOptional.Instance, FetcherOneOrNull.Instance,
-    FetcherArray.Instance, FetcherList.Instance,
-    FetcherStream.Instance, FetcherUpdateCount.Instance,
-    FetcherGeneratedKeys.Instance, FetcherManual.Instance {
+    FetcherManual.Instance, FetcherNone.Instance,
+    FetcherOne.Instance, FetcherOneOptional.Instance, FetcherOneOrNull.Instance,
+    FetcherList.Instance, FetcherStream.Instance,
+    FetcherUpdateCount.Instance, FetcherGeneratedKeys.Instance {
 
     @Override Statement self() { return this; }
 

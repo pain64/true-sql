@@ -3,8 +3,6 @@ package com.truej.sql.v3.prepare;
 import com.truej.sql.v3.fetch.*;
 
 import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public abstract class Call

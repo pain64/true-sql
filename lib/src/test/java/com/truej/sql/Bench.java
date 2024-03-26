@@ -1,5 +1,6 @@
 package com.truej.sql;
 
+import com.truej.sql.v3.ConnectionW;
 import com.truej.sql.v3.SqlExceptionR;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -23,9 +24,11 @@ public class Bench {
         new Runner(opt).run();
     }
 
+    record MainConnection(Connection w) implements ConnectionW { }
+
     @State(Scope.Thread)
     public static class S {
-        final Connection connection;
+        final MainConnection connection;
 
         // -Xcomp -XX:+UnlockDiagnosticVMOptions -XX:CompileCommand=print,*.trueSql
 
@@ -33,14 +36,125 @@ public class Bench {
         public S() {
             // connection = new FakeConnection();
             try {
-                connection = DriverManager
-                    .getConnection("jdbc:hsqldb:mem:xxx", "SA", "");
+                connection = new MainConnection(
+                    DriverManager.getConnection("jdbc:hsqldb:mem:xxx", "SA", "")
+                );
 
-                connection.createStatement().execute("""
+                connection.w.createStatement().execute("""
                         create table users (id bigint, name varchar(64), email varchar(64));
                     """);
 
-                connection.createStatement().execute("""
+                connection.w.createStatement().execute("""
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        insert into users values (1, 'Joe', 'example@email.com');
+                        
                         insert into users values (42, 'Joe', 'example@email.com');
                     """);
             } catch (SQLException e) {
@@ -49,23 +163,38 @@ public class Bench {
         }
     }
 
-    @Benchmark public String trueSql(S state) {
-        return Test1.Generated.stmt_20_12(
-            new Test1.LongArgument(42)
-        ).fetchOne(state.connection, Test1.Generated.mapper_30_10());
+    @Benchmark public long[] trueSql(S state) {
+//        return Test1.Generated.stmt_20_12(
+//            new Test1.LongArgument(42)
+//        ).fetchOne(state.connection, Test1.Generated.mapper_30_10());
+
+        try (
+            var s = Test1.Generated.stmt_20_12(
+                new Test1.LongArgument(42)
+            ).fetchStream(state.connection, Test1.Generated.mapper_30_10())
+        ) {
+            return s.mapToLong(v -> v).toArray();
+        }
     }
 
-    @Benchmark public String rawJdbc(S state) throws SQLException {
+    @Benchmark public long[] rawJdbc(S state) throws SQLException {
         try (
-            var stmt = state.connection
-                .prepareStatement("select name from users where id = ?")
+            var stmt = state.connection.w
+                .prepareStatement("select id from users where id != ?")
         ) {
+            var result = new long[100]; // "super optimal"
             stmt.setLong(1, 42);
             stmt.execute();
             var rs = stmt.getResultSet();
-            rs.next();
+            var i = 0;
 
-            return rs.getString(1);
+            while(rs.next()) {
+                result[i] = rs.getLong(1);
+                i++;
+            }
+
+            return result;
+            //return rs.getLong(1);
         }
     }
 }

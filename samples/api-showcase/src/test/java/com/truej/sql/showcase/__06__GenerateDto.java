@@ -1,6 +1,5 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.GenerateDto;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -14,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigDecimal;
 import java.util.List;
 
-@GenerateDto public class __06__GenerateDto {
+public class __06__GenerateDto {
 //    @Test void simple(DataSource ds) {
 //        assertEquals(
 //            Stmt. "select id, name, email from users where id = \{ 42 }"

@@ -19,13 +19,13 @@ abstract class StatementSettings<T> extends Settings<T, PreparedStatement> {
         return self();
     }
 
-    public T withGeneratedKeys(int[] columnIndexes) {
+    public T withGeneratedKeys(int... columnIndexes) {
         this.constructor = (connection, sql) ->
             connection.prepareStatement(sql, columnIndexes);
         return self();
     }
 
-    public T withGeneratedKeys(String[] columnNames) {
+    public T withGeneratedKeys(String... columnNames) {
         this.constructor = (connection, sql) ->
             connection.prepareStatement(sql, columnNames);
         return self();

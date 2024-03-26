@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class __01__Fetch {
 
-    @Test void one(DataSource ds) {
+    @Test void one(MainDataSource ds) {
         assertEquals(
             Stmt. "select name from users where id = \{ 42 }"
                 .fetchOne(ds, m(String.class))
@@ -24,14 +24,14 @@ public class __01__Fetch {
         );
     }
 
-    @Test void oneOrNull(DataSource ds) {
+    @Test void oneOrNull(MainDataSource ds) {
         assertNull(
             Stmt. "select name from users where id = \{ 1 }"
                 .fetchOneOrNull(ds, m(String.class))
         );
     }
 
-    @Test void oneOptional(DataSource ds) {
+    @Test void oneOptional(MainDataSource ds) {
         assertEquals(
             Stmt. "select name from users where id = \{ 1 }"
                 .fetchOneOptional(ds, m(String.class))
@@ -39,12 +39,12 @@ public class __01__Fetch {
         );
     }
 
-    @Test void none(DataSource ds) {
+    @Test void none(MainDataSource ds) {
         Stmt."insert into users values(1, 'John', 'xxx@email.com')"
             .fetchNone(ds);
     }
 
-    @Test void array(DataSource ds) {
+    @Test void array(MainDataSource ds) {
         assertEquals(
             Stmt."select name from users"
                 .fetchArray(ds, m(String.class))
@@ -52,7 +52,7 @@ public class __01__Fetch {
         );
     }
 
-    @Test void list(DataSource ds) {
+    @Test void list(MainDataSource ds) {
         assertEquals(
             Stmt."select name from users"
                 .fetchList(ds, m(String.class))
@@ -73,7 +73,7 @@ public class __01__Fetch {
         );
     }
 
-    @Test void stream(DataSource ds) {
+    @Test void stream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = Stmt."select name from users"
@@ -87,7 +87,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCount(DataSource ds) {
+    @Test void updateCount(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = Stmt."upda"
@@ -101,7 +101,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCountAndNone(DataSource ds) {
+    @Test void updateCountAndNone(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = Stmt."select name from users"
@@ -115,7 +115,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCountAndStream(DataSource ds) {
+    @Test void updateCountAndStream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = Stmt."select name from users"
@@ -129,7 +129,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void manual(DataSource ds) throws SQLException {
+    @Test void manual(MainDataSource ds) throws SQLException {
         assertEquals(
             Stmt."select name from users".fetch(ds, stmt -> {
                 var rs = stmt.getResultSet();

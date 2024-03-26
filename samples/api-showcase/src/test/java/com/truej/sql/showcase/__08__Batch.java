@@ -10,7 +10,7 @@ import static com.truej.sql.v3.TrueSql.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __08__Batch {
-    @Test void statement(DataSource ds) {
+    @Test void statement(MainDataSource ds) {
         assertEquals(
             TrueSql.batchStmt(
                 List.of("a", "b", "c"),
@@ -20,7 +20,7 @@ public class __08__Batch {
         );
     }
 
-    @Test void call(DataSource ds) {
+    @Test void call(MainDataSource ds) {
         TrueSql.batchCall(
             List.of(1, 2, 3),
             s -> Call. "call some_proc(\{ s })"

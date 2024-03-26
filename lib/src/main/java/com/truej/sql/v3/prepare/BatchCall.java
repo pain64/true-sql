@@ -8,8 +8,7 @@ import java.sql.SQLException;
 public abstract class BatchCall
     extends CallSettings<BatchCall>
     implements ToPreparedStatement,
-    FetcherNone.Instance, FetcherArray.Instance,
-    FetcherList.Instance, FetcherStream.Instance,
+    FetcherNone.Instance, FetcherList.Instance, FetcherStream.Instance,
     FetcherUpdateCount.Instance, FetcherManual.Instance {
 
     @Override BatchCall self() { return this; }

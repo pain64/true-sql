@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __07__Call {
     @Test
-    void simple(DataSource ds) {
+    void simple(MainDataSource ds) {
         // Stored procedure get parameter Name
         // Check metadata
         // Check with cursor

@@ -1,5 +1,6 @@
 package com.truej.sql.v3.fetch;
 
+import com.truej.sql.v3.Source;
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.TrueSql;
 import org.jetbrains.annotations.Nullable;
@@ -10,10 +11,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class FetcherOneOrNull {
+public class FetcherOneOrNull<T> implements
+    FetcherUpdateCount.Next<@Nullable T>,
+    FetcherGeneratedKeys.Next<@Nullable T> {
+
     public static class Hints { }
 
-    public static <T> @Nullable T apply(ResultSet rs, ResultSetMapper<T, Hints> mapper) {
+    public static <T> @Nullable T apply(
+        ResultSet rs, ResultSetMapper<T, Hints> mapper
+    ) throws SQLException {
         var iterator = mapper.map(rs);
 
         if (iterator.hasNext()) {
@@ -26,26 +32,35 @@ public class FetcherOneOrNull {
         return null;
     }
 
-    public static <T> @Nullable T apply(PreparedStatement stmt, ResultSetMapper<T, Hints> mapper) {
-        try {
-            var rs = stmt.getResultSet();
-            return apply(rs, mapper);
-        } catch (SQLException e) {
-            throw new SqlExceptionR(e);
-        }
+    private final ResultSetMapper<T, Hints> mapper;
+    public FetcherOneOrNull(ResultSetMapper<T, Hints> mapper) {
+        this.mapper = mapper;
+    }
+
+    @Override public boolean willPreparedStatementBeMoved() {
+        return false;
+    }
+    @Override public @Nullable T apply(PreparedStatement stmt) throws SQLException {
+        return apply(new Concrete(stmt, stmt.getResultSet()));
+    }
+    @Override public @Nullable T apply(Concrete source) throws SQLException {
+        return apply(source.rs, mapper);
+    }
+
+    public static <T> @Nullable T apply(
+        Concrete source, ResultSetMapper<T, Hints> mapper
+    ) throws SQLException {
+        return apply(source.rs, mapper);
     }
 
     public interface Instance extends ToPreparedStatement {
-        default <T> @Nullable T fetchOneOrNull(DataSource ds, ResultSetMapper<T, Hints> mapper) {
-            return TrueSql.withConnection(ds, cn -> fetchOneOrNull(cn, mapper));
-        }
-
-        default <T> @Nullable T fetchOneOrNull(Connection cn, ResultSetMapper<T, Hints> mapper) {
-            try (var stmt = prepareAndExecute(cn)) {
-                return apply(stmt, mapper);
-            } catch (SQLException e) {
-                throw new SqlExceptionR(e);
-            }
+        default <T> @Nullable T fetchOneOrNull(
+            Source source, ResultSetMapper<T, Hints> mapper
+        ) {
+            return managed(
+                source, () -> false, stmt ->
+                    apply(new Concrete(stmt, stmt.getResultSet()), mapper)
+            );
         }
     }
 }

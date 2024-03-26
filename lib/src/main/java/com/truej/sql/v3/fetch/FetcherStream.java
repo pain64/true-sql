@@ -1,12 +1,9 @@
 package com.truej.sql.v3.fetch;
 
+import com.truej.sql.v3.Source;
 import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -14,78 +11,59 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.Iterator;
 
-public class FetcherStream {
-    public static class Hints { }
+public class FetcherStream<T> implements
+    FetcherUpdateCount.Next<Stream<T>>,
+    FetcherGeneratedKeys.Next<Stream<T>> {
 
-    public static <T> FetcherGeneratedKeys.Next<Stream<T>> forResultSet(
-        ResultSetMapper<T, Hints> mapper
-    ) {
-        return new FetcherGeneratedKeys.Next<>() {
+    private final ResultSetMapper<T, Hints> mapper;
 
-            @Override public boolean isPreparedStatementMoved() {
-                return true;
-            }
-
-            @Override public Stream<T> apply(ResultSet rs) {
-                final Iterator<T> iterator;
-                try {
-                    iterator = mapper.map(rs);
-                } catch (Exception e) {
-                    try {
-                        rs.getStatement().close();
-                    } catch (SQLException closeError) {
-                        e.addSuppressed(closeError);
-                    }
-
-                    throw e;
-                }
-
-                return StreamSupport.stream(
-                    Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
-                ).onClose(() -> {
-                    try {
-                        rs.getStatement().close();
-                    } catch (SQLException e) {
-                        throw new SqlExceptionR(e);
-                    }
-                });
-            }
-        };
+    @Override public boolean willPreparedStatementBeMoved() {
+        return true;
     }
-
-    public static <T> FetcherUpdateCount.Next<Stream<T>> forStatement(
-        ResultSetMapper<T, Hints> mapper
-    ) {
-        return new FetcherUpdateCount.Next<>() {
-
-            @Override public boolean isPreparedStatementMoved() {
-                return FetcherUpdateCount.Next.super.isPreparedStatementMoved();
-            }
-
-            @Override public Stream<T> apply(PreparedStatement stmt) {
-                try {
-                    return forResultSet(mapper).apply(stmt.getResultSet());
-                } catch (SQLException e) {
-                    throw new SqlExceptionR(e);
-                }
-            }
-        };
+    @Override public Stream<T> apply(PreparedStatement stmt) throws SQLException {
+        return apply(new Concrete(stmt, stmt.getResultSet()));
     }
+    @Override public Stream<T> apply(Concrete source) throws SQLException {
+        final Iterator<T> iterator;
+        // FIXME: remove this try/catch???
+        try {
+            iterator = mapper.map(source.rs);
+        } catch (Exception e) {
+            try {
+                source.rs.getStatement().close();
+            } catch (SQLException closeError) {
+                e.addSuppressed(closeError);
+            }
 
-    public interface Instance extends ToPreparedStatement {
-        default <T> Stream<T> fetchStream(DataSource ds, ResultSetMapper<T, Hints> mapper) {
-            return TrueSql.withConnection(ds, cn -> fetchStream(cn, mapper));
+            throw e;
         }
 
-        default <T> Stream<T> fetchStream(Connection cn, ResultSetMapper<T, Hints> mapper) {
-            final PreparedStatement stmt;
+        return StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
+        ).onClose(() -> {
             try {
-                stmt = prepareAndExecute(cn);
+                // FIXME
+                source.rs.getStatement().close();
             } catch (SQLException e) {
+                // FIXME: mapException???
                 throw new SqlExceptionR(e);
             }
+        });
+    }
 
-            return forStatement(mapper).apply(stmt);
+    public FetcherStream(ResultSetMapper<T, Hints> mapper) {
+        this.mapper = mapper;
+    }
+
+    public static class Hints { }
+
+    public interface Instance extends ToPreparedStatement {
+        default <T> Stream<T> fetchStream(
+            Source source, ResultSetMapper<T, Hints> mapper
+        ) {
+            return managed(
+                source, () -> true, stmt -> new FetcherStream<>(mapper).apply(stmt)
+            );
         }
     }
 }
