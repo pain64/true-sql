@@ -11,10 +11,8 @@ import java.sql.SQLException;
 
 public class FetcherGeneratedKeysTest {
     // TODO:
-    //  0. updateCount и batch: long -> long[]
     //  1. Покрытие тестами всех фетчеров
     //  2. Генерализовать код еще - убрать дублирование логики moved
-    //  3. Обработать -1 в getUpdateCount - бросать исключение X
     static class Fail extends RuntimeException { }
 
     @Test void fetchGeneratedKeys() throws SQLException {

@@ -12,6 +12,7 @@ import java.util.stream.StreamSupport;
 import java.util.Iterator;
 
 public class FetcherStream<T> implements
+    ToPreparedStatement.ManagedAction<Stream<T>>,
     FetcherUpdateCount.Next<Stream<T>>,
     FetcherGeneratedKeys.Next<Stream<T>> {
 
@@ -25,27 +26,14 @@ public class FetcherStream<T> implements
     }
     @Override public Stream<T> apply(Concrete source) throws SQLException {
         final Iterator<T> iterator;
-        // FIXME: remove this try/catch???
-        try {
-            iterator = mapper.map(source.rs);
-        } catch (Exception e) {
-            try {
-                source.rs.getStatement().close();
-            } catch (SQLException closeError) {
-                e.addSuppressed(closeError);
-            }
-
-            throw e;
-        }
+        iterator = mapper.map(source.rs);
 
         return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
         ).onClose(() -> {
             try {
-                // FIXME
-                source.rs.getStatement().close();
+                source.stmt.close();
             } catch (SQLException e) {
-                // FIXME: mapException???
                 throw new SqlExceptionR(e);
             }
         });
@@ -61,9 +49,8 @@ public class FetcherStream<T> implements
         default <T> Stream<T> fetchStream(
             Source source, ResultSetMapper<T, Hints> mapper
         ) {
-            return managed(
-                source, () -> true, stmt -> new FetcherStream<>(mapper).apply(stmt)
-            );
+            (BatchCall|Call|Statement|BatchStatment) this
+            return managed(source, new FetcherStream<>(mapper));
         }
     }
 }

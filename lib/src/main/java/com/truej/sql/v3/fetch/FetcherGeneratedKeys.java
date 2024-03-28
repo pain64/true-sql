@@ -5,7 +5,10 @@ import com.truej.sql.v3.Source;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class FetcherGeneratedKeys<T> implements FetcherUpdateCount.Next<T> {
+public class FetcherGeneratedKeys<R, T> implements
+    ToPreparedStatement.ManagedAction<R, T>,
+    FetcherUpdateCount.Next<T> {
+
     public interface Next<T> {
         boolean willPreparedStatementBeMoved();
         T apply(Concrete source) throws SQLException;
@@ -25,10 +28,7 @@ public class FetcherGeneratedKeys<T> implements FetcherUpdateCount.Next<T> {
 
     public interface Instance extends ToPreparedStatement {
         default <T> T fetchGeneratedKeys(Source source, Next<T> next) {
-            return managed(
-                source, next::willPreparedStatementBeMoved, stmt ->
-                    new FetcherGeneratedKeys<>(next).apply(stmt)
-            );
+            return managed(source, new FetcherGeneratedKeys<>(next));
         }
     }
 }

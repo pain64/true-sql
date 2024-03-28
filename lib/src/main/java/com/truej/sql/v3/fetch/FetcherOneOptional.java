@@ -14,7 +14,9 @@ import java.util.Iterator;
 import java.util.Optional;
 
 public class FetcherOneOptional<T> implements
-    FetcherUpdateCount.Next<Optional<T>>, FetcherGeneratedKeys.Next<Optional<T>> {
+    ToPreparedStatement.ManagedAction<Optional<T>>,
+    FetcherUpdateCount.Next<Optional<T>>,
+    FetcherGeneratedKeys.Next<Optional<T>> {
 
     public static class Hints { }
 
@@ -48,9 +50,7 @@ public class FetcherOneOptional<T> implements
         default <T> Optional<T> fetchOneOptional(
             Source source, ResultSetMapper<T, Hints> mapper
         ) {
-            return managed(
-                source, () -> false, stmt -> new FetcherOneOptional<>(mapper).apply(stmt)
-            );
+            return managed(source, new FetcherOneOptional<>(mapper));
         }
     }
 }

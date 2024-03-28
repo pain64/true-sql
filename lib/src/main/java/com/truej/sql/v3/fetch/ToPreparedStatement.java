@@ -8,25 +8,27 @@ import java.sql.SQLException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public interface ToPreparedStatement {
-    PreparedStatement prepareAndExecute(Connection cn) throws SQLException;
-    // execute vs executeUpdate -> T (long, int[])
+public interface ToPreparedStatement<R> {
+    PreparedStatement prepare(Connection cn) throws SQLException;
+    R execute(PreparedStatement stmt) throws SQLException;
     RuntimeException mapException(SQLException e);
 
-    interface ManagedAction<T> {
+    interface ManagedAction<R, T> {
+        boolean willPreparedStatementBeMoved();
         T apply(PreparedStatement stmt) throws SQLException;
     }
 
     default <T> T managed(
-        Source source, Supplier<Boolean> willBeMoved, ManagedAction<T> action
+        Source source, ManagedAction<R, T> action
     ) {
         return source.withConnection(cn -> {
             try {
                 var triedToClose = false;
-                var stmt = prepareAndExecute(cn.w());
+                var stmt = prepare(cn.w());
+                var execResult = execute(stmt);
 
                 try {
-                    return action.apply(stmt);
+                    return action.apply(execResult, stmt);
                 } catch (Exception e) {
                     triedToClose = true;
                     try {
@@ -37,7 +39,7 @@ public interface ToPreparedStatement {
 
                     throw e;
                 } finally {
-                    if (!triedToClose && !willBeMoved.get())
+                    if (!triedToClose && !action.willPreparedStatementBeMoved())
                         stmt.close();
                 }
             } catch (SQLException e) {

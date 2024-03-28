@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FetcherList<T> implements
-    FetcherUpdateCount.Next<List<T>>, FetcherGeneratedKeys.Next<List<T>> {
+    ToPreparedStatement.ManagedAction<List<T>>,
+    FetcherUpdateCount.Next<List<T>>,
+    FetcherGeneratedKeys.Next<List<T>> {
 
     public static class Hints {
         private int expectedSize = 0;
@@ -53,10 +55,7 @@ public class FetcherList<T> implements
 
     public interface Instance extends ToPreparedStatement {
         default <T> List<T> fetchList(Source source, ResultSetMapper<T, Hints> mapper) {
-            return managed(
-                // FIXME: deduplicate
-                source, () -> false, stmt -> new FetcherList<>(mapper).apply(stmt)
-            );
+            return managed(source, new FetcherList<>(mapper));
         }
     }
 }

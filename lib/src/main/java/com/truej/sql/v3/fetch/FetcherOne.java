@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class FetcherOne<T> implements
-    FetcherUpdateCount.Next<T>, FetcherGeneratedKeys.Next<T> {
+    ToPreparedStatement.ManagedAction<T>,
+    FetcherUpdateCount.Next<T>,
+    FetcherGeneratedKeys.Next<T> {
 
     public static class Hints { }
 
@@ -48,9 +50,7 @@ public class FetcherOne<T> implements
 
     public interface Instance extends ToPreparedStatement {
         default <T> T fetchOne(Source source, ResultSetMapper<T, Hints> mapper) {
-            return managed(
-                source, () -> false, stmt -> new FetcherOne<>(mapper).apply(stmt)
-            );
+            return managed(source, new FetcherOne<>(mapper));
         }
     }
 }

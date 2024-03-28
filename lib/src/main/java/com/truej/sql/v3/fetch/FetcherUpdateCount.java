@@ -1,6 +1,7 @@
 package com.truej.sql.v3.fetch;
 
 import com.truej.sql.v3.Source;
+import com.truej.sql.v3.prepare.BatchCall;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -13,22 +14,33 @@ public class FetcherUpdateCount {
         T apply(PreparedStatement stmt) throws SQLException;
     }
 
-    public static <T> UpdateResult<T> apply(
-        PreparedStatement stmt, Next<T> next
-    ) throws SQLException {
-        return new UpdateResult<>(stmt.getLargeUpdateCount(), next.apply(stmt));
-    }
+    public interface Instance<U> extends ToPreparedStatement {
+        U getUpdateCount(PreparedStatement stmt) throws SQLException;
 
-    public interface Instance extends ToPreparedStatement {
-        default <T> UpdateResult<T> fetchUpdateCount(
-            Source source, Next<T> next
+        default <V> UpdateResult<U, V> fetchUpdateCount(
+            Source source, Next<V> next
         ) {
+            var self = this;
+
             return managed(
-                source, next::willPreparedStatementBeMoved, stmt -> apply(stmt, next)
+                source, new ManagedAction<>() {
+                    @Override public boolean willPreparedStatementBeMoved() {
+                        return next.willPreparedStatementBeMoved();
+                    }
+                    @Override public UpdateResult<U, V> apply(
+                        PreparedStatement stmt
+                    ) throws SQLException {
+                        // a little FP-style
+                        switch (self) {
+                            case BatchCall bc -> bc.
+                        }
+                                                return new UpdateResult<>(getUpdateCount(stmt), next.apply(stmt));
+                    }
+                }
             );
         }
 
-        default UpdateResult<Void> fetchUpdateCount(Source source) {
+        default UpdateResult<U, Void> fetchUpdateCount(Source source) {
             return fetchUpdateCount(source, new Next<>() {
                 @Override public boolean willPreparedStatementBeMoved() {
                     return false;

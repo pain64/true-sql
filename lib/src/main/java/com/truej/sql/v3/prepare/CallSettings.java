@@ -4,7 +4,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public abstract class CallSettings<T> extends Settings <T, CallableStatement> {
+public abstract class CallSettings<T, U> extends Settings <T, U, CallableStatement> {
     @Override CallableStatement defaultConstructor(
         Connection connection, String sql
     ) throws SQLException {

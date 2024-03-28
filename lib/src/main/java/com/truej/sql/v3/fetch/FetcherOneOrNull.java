@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class FetcherOneOrNull<T> implements
+    ToPreparedStatement.ManagedAction<@Nullable T>,
     FetcherUpdateCount.Next<@Nullable T>,
     FetcherGeneratedKeys.Next<@Nullable T> {
 
@@ -57,10 +58,7 @@ public class FetcherOneOrNull<T> implements
         default <T> @Nullable T fetchOneOrNull(
             Source source, ResultSetMapper<T, Hints> mapper
         ) {
-            return managed(
-                source, () -> false, stmt ->
-                    apply(new Concrete(stmt, stmt.getResultSet()), mapper)
-            );
+            return managed(source, new FetcherOneOrNull<>(mapper));
         }
     }
 }

@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-abstract class StatementSettings<T> extends Settings<T, PreparedStatement> {
+abstract class StatementSettings<T, U> extends Settings<T, U, PreparedStatement> {
 
     @Override PreparedStatement defaultConstructor(
         Connection connection, String sql

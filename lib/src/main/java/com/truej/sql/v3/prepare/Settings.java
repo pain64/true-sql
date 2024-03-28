@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-abstract class Settings<T, S extends PreparedStatement>
+abstract class Settings<T, U, S extends PreparedStatement>
     implements ToPreparedStatement {
 
     public abstract String query();
@@ -27,6 +27,7 @@ abstract class Settings<T, S extends PreparedStatement>
     abstract T self();
     abstract S defaultConstructor(Connection connection, String sql) throws SQLException;
     abstract void execute(S stmt) throws SQLException;
+    // abstract protected U getUpdateCount(PreparedStatement stmt) throws SQLException;
 
     public T afterPrepare(StatementConfigurator<S> config) {
         this.afterPrepare = config;
