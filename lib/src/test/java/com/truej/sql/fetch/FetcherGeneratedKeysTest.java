@@ -57,7 +57,7 @@ public class FetcherGeneratedKeysTest {
                             return true;
                         }
                         @Override public PreparedStatement apply(Concrete source) {
-                            return source.stmt;
+                            return source.stmt();
                         }
                     }
                 )

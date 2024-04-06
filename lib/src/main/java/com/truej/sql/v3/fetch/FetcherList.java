@@ -1,6 +1,6 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.Source;
+import com.truej.sql.v3.prepare.ManagedAction;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,10 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FetcherList<T> implements
-    ToPreparedStatement.ManagedAction<List<T>>,
-    FetcherUpdateCount.Next<List<T>>,
-    FetcherGeneratedKeys.Next<List<T>> {
+public final class FetcherList<T> implements
+    ManagedAction.Simple<PreparedStatement, List<T>>, FetcherGeneratedKeys.Next<List<T>> {
 
     public static class Hints {
         private int expectedSize = 0;
@@ -50,12 +48,6 @@ public class FetcherList<T> implements
         return apply(new Concrete(stmt, stmt.getResultSet()));
     }
     @Override public List<T> apply(Concrete source) throws SQLException {
-        return apply(source.rs, this.mapper);
-    }
-
-    public interface Instance extends ToPreparedStatement {
-        default <T> List<T> fetchList(Source source, ResultSetMapper<T, Hints> mapper) {
-            return managed(source, new FetcherList<>(mapper));
-        }
+        return apply(source.rs(), this.mapper);
     }
 }

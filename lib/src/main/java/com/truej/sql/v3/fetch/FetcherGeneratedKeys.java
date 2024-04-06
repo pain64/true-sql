@@ -1,13 +1,11 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.Source;
+import com.truej.sql.v3.prepare.ManagedAction;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class FetcherGeneratedKeys<R, T> implements
-    ToPreparedStatement.ManagedAction<R, T>,
-    FetcherUpdateCount.Next<T> {
+public final class FetcherGeneratedKeys<T> implements ManagedAction.Simple<PreparedStatement, T> {
 
     public interface Next<T> {
         boolean willPreparedStatementBeMoved();
@@ -24,11 +22,5 @@ public class FetcherGeneratedKeys<R, T> implements
     }
     @Override public T apply(PreparedStatement stmt) throws SQLException {
         return next.apply(new Concrete(stmt, stmt.getGeneratedKeys()));
-    }
-
-    public interface Instance extends ToPreparedStatement {
-        default <T> T fetchGeneratedKeys(Source source, Next<T> next) {
-            return managed(source, new FetcherGeneratedKeys<>(next));
-        }
     }
 }

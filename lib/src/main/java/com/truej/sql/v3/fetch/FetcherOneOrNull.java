@@ -1,20 +1,14 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.Source;
-import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.prepare.ManagedAction;
 import org.jetbrains.annotations.Nullable;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class FetcherOneOrNull<T> implements
-    ToPreparedStatement.ManagedAction<@Nullable T>,
-    FetcherUpdateCount.Next<@Nullable T>,
-    FetcherGeneratedKeys.Next<@Nullable T> {
+public final class FetcherOneOrNull<T> implements
+    ManagedAction.Simple<PreparedStatement, @Nullable T>, FetcherGeneratedKeys.Next<@Nullable T> {
 
     public static class Hints { }
 
@@ -45,20 +39,12 @@ public class FetcherOneOrNull<T> implements
         return apply(new Concrete(stmt, stmt.getResultSet()));
     }
     @Override public @Nullable T apply(Concrete source) throws SQLException {
-        return apply(source.rs, mapper);
+        return apply(source.rs(), mapper);
     }
 
     public static <T> @Nullable T apply(
         Concrete source, ResultSetMapper<T, Hints> mapper
     ) throws SQLException {
-        return apply(source.rs, mapper);
-    }
-
-    public interface Instance extends ToPreparedStatement {
-        default <T> @Nullable T fetchOneOrNull(
-            Source source, ResultSetMapper<T, Hints> mapper
-        ) {
-            return managed(source, new FetcherOneOrNull<>(mapper));
-        }
+        return apply(source.rs(), mapper);
     }
 }

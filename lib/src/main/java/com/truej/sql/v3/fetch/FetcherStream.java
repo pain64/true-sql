@@ -1,7 +1,7 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.Source;
 import com.truej.sql.v3.SqlExceptionR;
+import com.truej.sql.v3.prepare.ManagedAction;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -11,10 +11,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.Iterator;
 
-public class FetcherStream<T> implements
-    ToPreparedStatement.ManagedAction<Stream<T>>,
-    FetcherUpdateCount.Next<Stream<T>>,
-    FetcherGeneratedKeys.Next<Stream<T>> {
+public final class FetcherStream<T> implements
+    ManagedAction.Simple<PreparedStatement, Stream<T>>, FetcherGeneratedKeys.Next<Stream<T>> {
 
     private final ResultSetMapper<T, Hints> mapper;
 
@@ -26,13 +24,13 @@ public class FetcherStream<T> implements
     }
     @Override public Stream<T> apply(Concrete source) throws SQLException {
         final Iterator<T> iterator;
-        iterator = mapper.map(source.rs);
+        iterator = mapper.map(source.rs());
 
         return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
         ).onClose(() -> {
             try {
-                source.stmt.close();
+                source.stmt().close();
             } catch (SQLException e) {
                 throw new SqlExceptionR(e);
             }
@@ -44,13 +42,4 @@ public class FetcherStream<T> implements
     }
 
     public static class Hints { }
-
-    public interface Instance extends ToPreparedStatement {
-        default <T> Stream<T> fetchStream(
-            Source source, ResultSetMapper<T, Hints> mapper
-        ) {
-            (BatchCall|Call|Statement|BatchStatment) this
-            return managed(source, new FetcherStream<>(mapper));
-        }
-    }
 }

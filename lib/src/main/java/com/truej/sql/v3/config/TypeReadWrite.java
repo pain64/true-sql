@@ -1,6 +1,6 @@
 package com.truej.sql.v3.config;
 
-public interface TypeRW {
+public interface TypeReadWrite {
     // read: rs(1) -> MyEnum.valueOf(rs.getString(1)) -> TJava
     String generateRead(String sqlType, String javaClass, String source, int columnNumber);
     // write: JValue -> stmt.setXXX(1, v)

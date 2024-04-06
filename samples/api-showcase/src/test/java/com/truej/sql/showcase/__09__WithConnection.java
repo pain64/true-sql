@@ -14,9 +14,10 @@ public class __09__WithConnection {
     @Test void simple(MainDataSource ds) {
         assertEquals(
             ds.withConnection(cn -> {
-                cn.withConnection(cn2 -> {
-                    cn2.withConnection()
-                })
+                cn.inTransaction(() -> {
+                   return null;
+                });
+
                 Stmt."""
                         create temp table temp_table as
                         with t (s) AS ( values ('a'), ('b') )

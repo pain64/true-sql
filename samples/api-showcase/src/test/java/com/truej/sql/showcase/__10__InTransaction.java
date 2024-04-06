@@ -1,10 +1,6 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.Source;
-import com.truej.sql.v3.TrueSql;
 import org.junit.jupiter.api.Test;
-
-import javax.sql.DataSource;
 
 import static com.truej.sql.v3.TrueSql.Stmt;
 import static com.truej.sql.v3.TrueSql.m;

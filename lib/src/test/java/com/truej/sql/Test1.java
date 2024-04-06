@@ -5,6 +5,8 @@ import com.truej.sql.v3.TrueSql;
 import com.truej.sql.v3.config.Configuration;
 import com.truej.sql.v3.fetch.*;
 import com.truej.sql.v3.prepare.Statement;
+import com.truej.sql.v3.source.ConnectionW;
+import com.truej.sql.v3.source.DataSourceW;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -77,13 +79,14 @@ public class Test1 {
     static class Generated {
         static Statement stmt_20_12(Argument a1) {
             return new Statement() {
-                @Override public RuntimeException mapException(SQLException e) {
+                @Override protected RuntimeException mapException(SQLException e) {
                     return new SqlExceptionR(e);
                 }
-                @Override public String query() {
-                    return "select id from users where id != ?";
+                @Override protected String query() {
+                    //return "select id from users where id != ?";
+                    return "select id from users where id = ?";
                 }
-                @Override public void bindArgs(PreparedStatement stmt) throws SQLException {
+                @Override protected void bindArgs(PreparedStatement stmt) throws SQLException {
                     a1.set(1, stmt);
                 }
             };

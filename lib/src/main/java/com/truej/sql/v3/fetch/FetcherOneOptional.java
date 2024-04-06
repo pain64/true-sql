@@ -1,22 +1,16 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.Source;
-import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.TrueSql;
+import com.truej.sql.v3.prepare.ManagedAction;
 import org.jetbrains.annotations.Nullable;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Optional;
 
-public class FetcherOneOptional<T> implements
-    ToPreparedStatement.ManagedAction<Optional<T>>,
-    FetcherUpdateCount.Next<Optional<T>>,
-    FetcherGeneratedKeys.Next<Optional<T>> {
+public final class FetcherOneOptional<T> implements
+    ManagedAction.Simple<PreparedStatement, Optional<T>>, FetcherGeneratedKeys.Next<Optional<T>> {
 
     public static class Hints { }
 
@@ -43,14 +37,6 @@ public class FetcherOneOptional<T> implements
         return apply(new Concrete(stmt, stmt.getResultSet()));
     }
     @Override public Optional<T> apply(Concrete source) throws SQLException {
-        return apply(source.rs, this.mapper);
-    }
-
-    public interface Instance extends ToPreparedStatement {
-        default <T> Optional<T> fetchOneOptional(
-            Source source, ResultSetMapper<T, Hints> mapper
-        ) {
-            return managed(source, new FetcherOneOptional<>(mapper));
-        }
+        return apply(source.rs(), this.mapper);
     }
 }

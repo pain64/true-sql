@@ -1,6 +1,6 @@
 package com.truej.sql.fetch;
 
-import com.truej.sql.v3.ConnectionW;
+import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.config.*;
 import com.truej.sql.v3.fetch.ResultSetMapper;
@@ -18,13 +18,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Fixture {
     public static Statement queryStmt(String text) {
         return new Statement() {
-            @Override public RuntimeException mapException(SQLException e) {
+            @Override protected RuntimeException mapException(SQLException e) {
                 return new ExceptionMapper() { }.map(e);
             }
-            @Override public String query() {
+            @Override protected String query() {
                 return text;
             }
-            @Override public void bindArgs(PreparedStatement stmt) { }
+            @Override protected void bindArgs(PreparedStatement stmt) { }
         };
     }
 
@@ -177,7 +177,7 @@ public class Fixture {
     public enum Enum2 {
         A, B
     }
-    public static class PgEnumBinding implements TypeRW {
+    public static class PgEnumBinding implements TypeReadWrite {
         @Override public String generateRead(
             String sqlType, String javaClass, String source, int columnNumber
         ) {

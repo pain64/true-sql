@@ -18,12 +18,6 @@ public class ComposeTest {
                 .queryStmt("insert into t1 values(42, 'x')")
                 .withGeneratedKeys("id");
 
-            query.mapException()
-
-            var result0 = query.fetchStream(
-                connection, Fixture.longMapper(null)
-            );
-
             try (
                 var result = query.fetchUpdateCount(
                     connection, new FetcherGeneratedKeys<>(
