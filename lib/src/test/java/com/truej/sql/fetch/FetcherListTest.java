@@ -9,18 +9,19 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class FetcherListTest {
+    // Statement+, Call-, BatchStatement+, BatchCall-
     @Test void fetchList() throws SQLException {
-        Fixture.withConnection(connection -> {
+        Fixture.withDataSource(ds -> {
             var query = Fixture.queryStmt("select id from t1");
             var expected = List.of(1L, 2L);
 
             Assertions.assertEquals(
-                query.fetchList(connection, Fixture.longMapper(null)), expected
+                query.fetchList(ds, Fixture.longMapper(null)), expected
             );
 
             Assertions.assertEquals(
                 query.fetchList(
-                    connection,
+                    ds,
                     Fixture.longMapper(new FetcherList.Hints().expectedSize(2))
                 ),
                 expected
@@ -28,12 +29,12 @@ public class FetcherListTest {
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchList(connection, Fixture.longMapper(null))
+                    Fixture.BAD_QUERY.fetchList(ds, Fixture.longMapper(null))
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    query.fetchList(connection, Fixture.badMapper(null))
+                    query.fetchList(ds, Fixture.badMapper(null))
             );
         });
     }

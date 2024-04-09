@@ -11,8 +11,5 @@ public @interface Configuration {
     CompileTimeChecks checks()
         default @CompileTimeChecks(databaseUrl = "");
 
-    Class<? extends ExceptionMapper> exceptionMapper()
-        default ExceptionMapper.class;
-
     TypeBinding[] typeBindings() default {};
 }

@@ -1,6 +1,7 @@
 package com.truej.sql.v3.source;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public non-sealed interface ConnectionW extends Source {
     Connection w();
@@ -9,10 +10,25 @@ public non-sealed interface ConnectionW extends Source {
         T run() throws E;
     }
 
-    default  <T, E extends Exception> T inTransaction(
+    @SuppressWarnings("resource") default <T, E extends Exception> T inTransaction(
         InTransactionAction<T, E> action
     ) throws E {
-        // TODO
-        return action.run();
+        try {
+            var oldAutoCommit = w().getAutoCommit();
+
+            try {
+                w().setAutoCommit(false);
+                var result = action.run();
+                w().commit();
+                return result;
+            } catch (Throwable e) {
+                w().rollback();
+                throw e;
+            } finally {
+                w().setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            throw mapException(e);
+        }
     }
 }

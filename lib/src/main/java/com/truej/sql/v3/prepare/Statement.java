@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 public abstract class Statement
     extends Base.Single<Statement, PreparedStatement>
-    implements With.GeneratedKeysConstructors<Statement> {
+    implements With.GeneratedKeysConstructors<Statement>, Batchable {
 
     @Override PreparedStatement defaultConstructor(
         Connection connection, String sql

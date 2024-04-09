@@ -2,6 +2,7 @@ package com.truej.sql.v3.prepare;
 
 import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.source.DataSourceW;
+import com.truej.sql.v3.source.RuntimeConfig;
 import com.truej.sql.v3.source.Source;
 import com.truej.sql.v3.fetch.*;
 import org.jetbrains.annotations.Nullable;
@@ -16,13 +17,12 @@ import java.util.stream.Stream;
 abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> {
 
     // Generated code API
-    protected abstract RuntimeException mapException(SQLException e);
     protected abstract String query();
     protected abstract void bindArgs(P stmt) throws SQLException;
     // End
 
-    public interface StatementConfigurator<S extends PreparedStatement> {
-        void configure(S statement) throws SQLException;
+    public interface StatementConfigurator<P extends PreparedStatement> {
+        void configure(P statement) throws SQLException;
     }
 
     StatementConfigurator<P> afterPrepare = __ -> { };
@@ -43,19 +43,19 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return self();
     }
 
-    private <T> T managed(Connection connection, ManagedAction.Full<P, R, T> action) {
+    private <T> T managed(ConnectionW connection, ManagedAction.Full<P, R, T> action) {
         try {
             var triedToClose = false;
             var stmt = constructor != null
-                ? constructor.construct(connection, query())
-                : defaultConstructor(connection, query());
+                ? constructor.construct(connection.w(), query())
+                : defaultConstructor(connection.w(), query());
 
             try {
                 bindArgs(stmt);
                 afterPrepare.configure(stmt);
                 var execResult = execute(stmt);
 
-                return action.apply(execResult, stmt);
+                return action.apply(connection, execResult, stmt);
             } catch (Exception e) {
                 triedToClose = true;
                 try {
@@ -66,18 +66,18 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
 
                 throw e;
             } finally {
-                if (!action.willPreparedStatementBeMoved() && !triedToClose)
+                if (!action.willStatementBeMoved() && !triedToClose)
                     stmt.close();
             }
         } catch (SQLException e) {
-            throw mapException(e);
+            throw connection.mapException(e);
         }
     }
 
     private <T> T managed(Source source, ManagedAction.Full<P, R, T> action) {
         return switch (source) {
-            case ConnectionW cn -> managed(cn.w(), action);
-            case DataSourceW ds -> ds.withConnection(cn -> managed(cn.w(), action));
+            case ConnectionW cn -> managed(cn, action);
+            case DataSourceW ds -> ds.withConnection(cn -> managed(cn, action));
         };
     }
 
@@ -91,19 +91,15 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return managedS(source, new FetcherNone());
     }
 
-    public <T> T fetchOne(Source source, ResultSetMapper<T, FetcherOne.Hints> mapper) {
+    public <T> T fetchOne(Source source, ResultSetMapper<T, Void> mapper) {
         return managedS(source, new FetcherOne<>(mapper));
     }
 
-    public <T> Optional<T> fetchOneOptional(
-        Source source, ResultSetMapper<T, FetcherOneOptional.Hints> mapper
-    ) {
+    public <T> Optional<T> fetchOneOptional(Source source, ResultSetMapper<T, Void> mapper) {
         return managedS(source, new FetcherOneOptional<>(mapper));
     }
 
-    public <T> @Nullable T fetchOneOrNull(
-        Source source, ResultSetMapper<T, FetcherOneOrNull.Hints> mapper
-    ) {
+    public <T> @Nullable T fetchOneOrNull(Source source, ResultSetMapper<T, Void> mapper) {
         return managedS(source, new FetcherOneOrNull<>(mapper));
     }
 
@@ -111,9 +107,7 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return managedS(source, new FetcherList<>(mapper));
     }
 
-    public <T> Stream<T> fetchStream(
-        Source source, ResultSetMapper<T, FetcherStream.Hints> mapper
-    ) {
+    public <T> Stream<T> fetchStream(Source source, ResultSetMapper<T, Void> mapper) {
         return managedS(source, new FetcherStream<>(mapper));
     }
 
@@ -121,14 +115,14 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return managedS(source, new FetcherGeneratedKeys<>(next));
     }
 
-    public <T> T fetchManual(Source source, ManagedAction.Full<P, R, T> next) {
+    public <T> T fetch(Source source, ManagedAction.Full<P, R, T> next) {
         return managed(source, next);
     }
 
     public U fetchUpdateCount(Source source) {
         return fetchUpdateCount(source, new ManagedAction.Simple<>() {
-            @Override public R apply(P stmt) { return null; }
-            @Override public boolean willPreparedStatementBeMoved() { return false; }
+            @Override public R apply(RuntimeConfig conf, P stmt) { return null; }
+            @Override public boolean willStatementBeMoved() { return false; }
         }).updateCount;
     }
 
@@ -136,14 +130,16 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         Source source, ManagedAction.Simple<P, T> next
     ) {
         return managed(source, new ManagedAction.Full<>() {
-            @Override public boolean willPreparedStatementBeMoved() {
-                return next.willPreparedStatementBeMoved();
+            @Override public boolean willStatementBeMoved() {
+                return next.willStatementBeMoved();
             }
             @Override
-            public UpdateResult<U, T> apply(R executionResult, P stmt) throws SQLException {
+            public UpdateResult<U, T> apply(
+                RuntimeConfig conf, R executionResult, P stmt
+            ) throws SQLException {
                 return new UpdateResult<>(
                     getUpdateCount(executionResult, stmt),
-                    next.apply(stmt)
+                    next.apply(conf, stmt)
                 );
             }
         });

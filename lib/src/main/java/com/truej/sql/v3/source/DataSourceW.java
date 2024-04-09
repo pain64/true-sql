@@ -1,8 +1,7 @@
 package com.truej.sql.v3.source;
 
-import com.truej.sql.v3.SqlExceptionR;
-
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public non-sealed interface DataSourceW extends Source {
@@ -15,10 +14,20 @@ public non-sealed interface DataSourceW extends Source {
     default <T, E extends Exception> T withConnection(
         WithConnectionAction<T, E> action
     ) throws E {
+        var self = this;
         try (var cn = w().getConnection()) {
-            return action.run(() -> cn);
+            return action.run(
+                new ConnectionW() {
+                    @Override public RuntimeException mapException(SQLException ex) {
+                        return self.mapException(ex);
+                    }
+                    @Override public Connection w() {
+                        return cn;
+                    }
+                }
+            );
         } catch (SQLException e) {
-            throw new SqlExceptionR(e);
+            throw mapException(e);
         }
     }
 

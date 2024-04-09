@@ -1,6 +1,7 @@
 package com.truej.sql.v3.fetch;
 
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.source.RuntimeConfig;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,7 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class FetcherList<T> implements
-    ManagedAction.Simple<PreparedStatement, List<T>>, FetcherGeneratedKeys.Next<List<T>> {
+    ManagedAction.Simple<PreparedStatement, List<T>>,
+    FetcherGeneratedKeys.Next<List<T>> {
 
     public static class Hints {
         private int expectedSize = 0;
@@ -21,7 +23,7 @@ public final class FetcherList<T> implements
     }
 
     public static <T> List<T> apply(
-        ResultSet rs, ResultSetMapper<T, Hints> mapper
+        RuntimeConfig conf, ResultSet rs, ResultSetMapper<T, Hints> mapper
     ) throws SQLException {
         var hints = mapper.hints();
         var iterator = mapper.map(rs);
@@ -41,13 +43,19 @@ public final class FetcherList<T> implements
         this.mapper = mapper;
     }
 
-    @Override public boolean willPreparedStatementBeMoved() {
+    @Override public boolean willStatementBeMoved() {
         return false;
     }
-    @Override public List<T> apply(PreparedStatement stmt) throws SQLException {
-        return apply(new Concrete(stmt, stmt.getResultSet()));
+
+    @Override public List<T> apply(
+        RuntimeConfig conf, PreparedStatement stmt
+    ) throws SQLException {
+        return apply(conf, stmt, stmt.getResultSet());
     }
-    @Override public List<T> apply(Concrete source) throws SQLException {
-        return apply(source.rs(), this.mapper);
+
+    @Override public List<T> apply(
+        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
+    ) throws SQLException {
+        return apply(conf, rs, this.mapper);
     }
 }

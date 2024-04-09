@@ -1,11 +1,7 @@
 package com.truej.sql.v3;
 
 import com.truej.sql.v3.fetch.ResultSetMapper;
-import com.truej.sql.v3.fetch.UpdateResult;
-import com.truej.sql.v3.prepare.BatchCall;
-import com.truej.sql.v3.prepare.BatchStatement;
-import com.truej.sql.v3.prepare.Call;
-import com.truej.sql.v3.prepare.Statement;
+import com.truej.sql.v3.prepare.*;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -19,14 +15,9 @@ public class TrueSql {
     @Target(ElementType.TYPE)
     public @interface Process {}
 
-    @FunctionalInterface
-    public interface StatementSupplier<T> {
-        Statement supply(T element);
-    }
-
-    @FunctionalInterface
-    public interface CallSupplier<T> {
-        Call supply(T element);
+    // FIXME: remove???
+    public interface BatchSupplier<T, B extends Batchable> {
+        B supply(T element);
     }
 
     public static class CallParameters {
@@ -39,19 +30,11 @@ public class TrueSql {
         }
     }
 
-    public static <T> BatchStatement batchStmt(List<T> data, StatementSupplier<T> query) {
+    public static <T, B extends Batchable> B batch(List<T> data, BatchSupplier<T, B> query) {
         return null;
     }
 
-    public static <T> BatchStatement batchStmt(Stream<T> data, StatementSupplier<T> query) {
-        return null;
-    }
-
-    public static <T> BatchCall batchCall(List<T> data, CallSupplier<T> query) {
-        return null;
-    }
-
-    public static <T> BatchCall batchCall(Stream<T> data, CallSupplier<T> query) {
+    public static <T, B extends Batchable> B batch(Stream<T> data, BatchSupplier<T, B> query) {
         return null;
     }
 

@@ -9,7 +9,17 @@ public class ConstraintViolationException extends RuntimeException {
         this.constraintName = constraintName;
     }
 
-    @SafeVarargs public final <T, E extends Exception> T when(Constraint<T, E>... constraints) {
+    @SafeVarargs public final <T, E extends Exception> T when(
+        Constraint<T, E>... constraints
+    ) throws E {
+        for (var constraint : constraints) {
+            if (
+                constraint.tableName().equalsIgnoreCase(tableName) &&
+                constraint.constraintName().equalsIgnoreCase(constraintName)
+            )
+                return constraint.handler().handle();
+        }
+
         throw this;
     }
 }

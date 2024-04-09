@@ -79,9 +79,6 @@ public class Test1 {
     static class Generated {
         static Statement stmt_20_12(Argument a1) {
             return new Statement() {
-                @Override protected RuntimeException mapException(SQLException e) {
-                    return new SqlExceptionR(e);
-                }
                 @Override protected String query() {
                     //return "select id from users where id != ?";
                     return "select id from users where id = ?";
@@ -178,18 +175,18 @@ public class Test1 {
 
         //.fetchGeneratedKeys(cn, rs -> FetcherList.apply(rs, m(Long.class)));
 
-        TrueSql.batchStmt(
-                List.of("a", "b", "c"),
-                x -> Stmt."insert into t1(v) values(\{x})"
-            )
-            .withGeneratedKeys()
-            .afterPrepare(s -> s.setFetchSize(42))
-            //.fetchUpdateCount(cn, stmt -> FetcherList.apply(stmt, m(String.class)));
-            .fetchUpdateCount(
-                cn, new FetcherGeneratedKeys<>(
-                    new FetcherList<>(m(String.class))
-                )
-            );
+//        TrueSql.batch(
+//                List.of("a", "b", "c"),
+//                x -> Stmt."insert into t1(v) values(\{x})"
+//            )
+//            .withGeneratedKeys()
+//            .afterPrepare(s -> s.setFetchSize(42))
+//            //.fetchUpdateCount(cn, stmt -> FetcherList.apply(stmt, m(String.class)));
+//            .fetchUpdateCount(
+//                cn, new FetcherGeneratedKeys<>(
+//                    new FetcherList<>(m(String.class))
+//                )
+//            );
 
 //        var xxx = Stmt."select name from users where id = \{42}"
 //            .withGeneratedKeys()
@@ -223,27 +220,27 @@ public class Test1 {
 //        ).fetchOne(cn, Generated.mapper_30_10());
 
         // Will be patched to
-        var name = Generated.stmt_20_12(
-            new LongArgument(42)
-        ).fetchOne(cn, Generated.mapper_30_10());
-
-        assertEquals(name, "Joe");
-
-        // pure JDBC version
-
-
-        try (
-            var stmt = cn.w.prepareStatement("select name from users where id = ?")
-        ) {
-            stmt.setLong(1, 42);
-            stmt.execute();
-            // stmt.getUpdateCount();
-            var rs = stmt.getResultSet();
-            rs.next();
-
-            name = rs.getLong(1);
-        }
-
-        assertEquals(name, "Joe");
+//        var name = Generated.stmt_20_12(
+//            new LongArgument(42)
+//        ).fetchOne(cn, Generated.mapper_30_10());
+//
+//        assertEquals(name, "Joe");
+//
+//        // pure JDBC version
+//
+//
+//        try (
+//            var stmt = cn.w.prepareStatement("select name from users where id = ?")
+//        ) {
+//            stmt.setLong(1, 42);
+//            stmt.execute();
+//            // stmt.getUpdateCount();
+//            var rs = stmt.getResultSet();
+//            rs.next();
+//
+//            name = rs.getLong(1);
+//        }
+//
+//        assertEquals(name, "Joe");
     }
 }

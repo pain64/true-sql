@@ -19,9 +19,9 @@ interface With<S, P extends PreparedStatement> {
             );
         }
 
-        default S withGeneratedKeys(int... columnIndexes) {
+        default S withGeneratedKeys(int... columnNumbers) {
             return with((connection, sql) ->
-                connection.prepareStatement(sql, columnIndexes)
+                connection.prepareStatement(sql, columnNumbers)
             );
         }
 

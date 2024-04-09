@@ -2,25 +2,23 @@ package com.truej.sql.fetch;
 
 import com.truej.sql.v3.fetch.FetcherGeneratedKeys;
 import com.truej.sql.v3.fetch.FetcherList;
-import com.truej.sql.v3.fetch.FetcherOne;
 import com.truej.sql.v3.fetch.FetcherStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class ComposeTest {
 
     @Test void updateCountAndGeneratedKeys() throws Exception {
-        Fixture.withConnection(connection -> {
-            var query = Fixture
-                .queryStmt("insert into t1 values(42, 'x')")
-                .withGeneratedKeys("id");
+        var query = Fixture
+            .queryStmt("insert into t1 values(42, 'x')")
+            .withGeneratedKeys("id");
+        Fixture.withDataSource(ds -> {
 
             try (
                 var result = query.fetchUpdateCount(
-                    connection, new FetcherGeneratedKeys<>(
+                    ds, new FetcherGeneratedKeys<>(
                         new FetcherStream<>(Fixture.longMapper(null))
                     )
                 ).autoClosable()
@@ -29,8 +27,11 @@ public class ComposeTest {
                 Assertions.assertEquals(result.value.toList(), List.of(42L));
             }
 
+        });
+
+        Fixture.withDataSource(ds -> {
             var result2 = query.fetchUpdateCount(
-                connection, new FetcherGeneratedKeys<>(
+                ds, new FetcherGeneratedKeys<>(
                     new FetcherList<>(Fixture.longMapper(null))
                 )
             );

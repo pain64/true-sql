@@ -1,6 +1,7 @@
 package com.truej.sql.v3.fetch;
 
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.source.RuntimeConfig;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
@@ -8,12 +9,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public final class FetcherOneOrNull<T> implements
-    ManagedAction.Simple<PreparedStatement, @Nullable T>, FetcherGeneratedKeys.Next<@Nullable T> {
-
-    public static class Hints { }
+    ManagedAction.Simple<PreparedStatement, @Nullable T>,
+    FetcherGeneratedKeys.Next<@Nullable T> {
 
     public static <T> @Nullable T apply(
-        ResultSet rs, ResultSetMapper<T, Hints> mapper
+        ResultSet rs, ResultSetMapper<T, Void> mapper
     ) throws SQLException {
         var iterator = mapper.map(rs);
 
@@ -27,24 +27,30 @@ public final class FetcherOneOrNull<T> implements
         return null;
     }
 
-    private final ResultSetMapper<T, Hints> mapper;
-    public FetcherOneOrNull(ResultSetMapper<T, Hints> mapper) {
+    private final ResultSetMapper<T, Void> mapper;
+    public FetcherOneOrNull(ResultSetMapper<T, Void> mapper) {
         this.mapper = mapper;
     }
 
-    @Override public boolean willPreparedStatementBeMoved() {
+    @Override public boolean willStatementBeMoved() {
         return false;
     }
-    @Override public @Nullable T apply(PreparedStatement stmt) throws SQLException {
-        return apply(new Concrete(stmt, stmt.getResultSet()));
+
+    @Override public @Nullable T apply(
+        RuntimeConfig conf, PreparedStatement stmt
+    ) throws SQLException {
+        return apply(conf, stmt, stmt.getResultSet());
     }
-    @Override public @Nullable T apply(Concrete source) throws SQLException {
-        return apply(source.rs(), mapper);
+
+    @Override public @Nullable T apply(
+        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
+    ) throws SQLException {
+        return apply(conf, rs, mapper);
     }
 
     public static <T> @Nullable T apply(
-        Concrete source, ResultSetMapper<T, Hints> mapper
+        RuntimeConfig conf, ResultSet rs, ResultSetMapper<T, Void> mapper
     ) throws SQLException {
-        return apply(source.rs(), mapper);
+        return apply(rs, mapper);
     }
 }

@@ -2,8 +2,10 @@ package com.truej.sql.v3.fetch;
 
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.source.RuntimeConfig;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -12,34 +14,45 @@ import java.util.stream.StreamSupport;
 import java.util.Iterator;
 
 public final class FetcherStream<T> implements
-    ManagedAction.Simple<PreparedStatement, Stream<T>>, FetcherGeneratedKeys.Next<Stream<T>> {
+    ManagedAction.Simple<PreparedStatement, Stream<T>>,
+    FetcherGeneratedKeys.Next<Stream<T>> {
 
-    private final ResultSetMapper<T, Hints> mapper;
+    private final ResultSetMapper<T, Void> mapper;
+    public FetcherStream(ResultSetMapper<T, Void> mapper) {
+        this.mapper = mapper;
+    }
 
-    @Override public boolean willPreparedStatementBeMoved() {
+    @Override public boolean willStatementBeMoved() {
         return true;
     }
-    @Override public Stream<T> apply(PreparedStatement stmt) throws SQLException {
-        return apply(new Concrete(stmt, stmt.getResultSet()));
-    }
-    @Override public Stream<T> apply(Concrete source) throws SQLException {
+
+    public static <T> Stream<T> apply(
+        RuntimeConfig conf, PreparedStatement stmt,
+        ResultSet rs, ResultSetMapper<T, Void> mapper
+    ) throws SQLException {
         final Iterator<T> iterator;
-        iterator = mapper.map(source.rs());
+        iterator = mapper.map(rs);
 
         return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
         ).onClose(() -> {
             try {
-                source.stmt().close();
+                stmt.close();
             } catch (SQLException e) {
-                throw new SqlExceptionR(e);
+                throw conf.mapException(e);
             }
         });
     }
 
-    public FetcherStream(ResultSetMapper<T, Hints> mapper) {
-        this.mapper = mapper;
+    @Override public Stream<T> apply(
+        RuntimeConfig conf, PreparedStatement stmt
+    ) throws SQLException {
+        return apply(conf, stmt, stmt.getResultSet());
     }
 
-    public static class Hints { }
+    @Override public Stream<T> apply(
+        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
+    ) throws SQLException {
+        return apply(conf, stmt, rs, mapper);
+    }
 }

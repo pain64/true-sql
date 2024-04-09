@@ -1,3 +1,4 @@
 package com.truej.sql.v3.source;
 
-public sealed interface Source permits DataSourceW, ConnectionW { }
+public sealed interface Source extends RuntimeConfig permits DataSourceW, ConnectionW {
+}

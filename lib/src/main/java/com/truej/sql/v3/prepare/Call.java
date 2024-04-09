@@ -4,7 +4,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public abstract class Call extends Base.Single<Call, CallableStatement> {
+public abstract class Call extends Base.Single<Call, CallableStatement> implements Batchable {
 
     @Override CallableStatement defaultConstructor(
         Connection connection, String sql
