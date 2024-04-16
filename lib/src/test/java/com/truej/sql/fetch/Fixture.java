@@ -98,7 +98,6 @@ public class Fixture {
             )
         }
     )
-
     public record MainDataSource(DataSource w) implements DataSourceW {
         @Override public RuntimeException mapException(SQLException ex) {
 

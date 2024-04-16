@@ -53,14 +53,8 @@ public class __01__Fetch {
 
         assertEquals(
             Stmt."select name from users".fetchList(
-                ds, m(String.class, new FetcherList.Hints(10))
+                ds, m(String.class, new FetcherList.Hints().expectedSize(10))
             )
-            , List.of("Ivan", "Joe")
-        );
-
-        assertEquals(
-            Stmt."select name from users".fetchList(
-                ds, m(String.class, new FetcherList.Hints().expectedSize(10)))
             , List.of("Ivan", "Joe")
         );
     }
