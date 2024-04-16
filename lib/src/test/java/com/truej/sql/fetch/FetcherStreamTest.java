@@ -26,7 +26,7 @@ public class FetcherStreamTest {
             );
         });
 
-        Fixture.withDataSource(new Fixture.Options(true), ds ->
+        Fixture.withDataSource(new Fixture.Options(false, true), ds ->
             Assertions.assertThrows(
                 SqlExceptionR.class, () -> {
                     var stream = query.fetchStream(ds, Fixture.longMapper(null));

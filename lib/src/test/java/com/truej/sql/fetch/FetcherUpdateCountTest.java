@@ -99,7 +99,7 @@ public class FetcherUpdateCountTest {
 
     @Test void closeThrowsException() throws SQLException {
         Fixture.withDataSource(
-            new Fixture.Options(true), ds -> {
+            new Fixture.Options(false, true), ds -> {
                 var query = Fixture.queryStmt("update t1 set v = 'xxx'");
 
                 var ex = Assertions.assertThrows(

@@ -123,26 +123,56 @@ public class Fixture {
 
     public static final AtomicInteger dbIndex = new AtomicInteger(0);
 
-    public record Options(boolean stmtCloseException) { }
+    public record Options(boolean getConnectionException, boolean stmtCloseException) { }
 
     public static <E extends Exception> void withDataSource(TestCode<E> code) throws SQLException, E {
-        withDataSource(new Options(false), code);
+        withDataSource(new Options(false, false), code);
     }
 
     public static <E extends Exception> void withDataSource(
         Options options, TestCode<E> code
     ) throws SQLException, E {
-        var opened = new ArrayList<PreparedStatement>();
+
+        var openedConnections = new ArrayList<Connection>();
+        var openedStmt = new ArrayList<PreparedStatement>();
         var ds = new JDBCDataSource() {
+            boolean isInit = true;
+
             {
                 // "jdbc:postgresql://localhost:5432/uikit_sample", "uikit", "1234"
                 setURL("jdbc:hsqldb:mem:db" + dbIndex.incrementAndGet());
                 setUser("SA");
                 setPassword("");
+
+                try (var initConn = this.getConnection()) {
+                    // TODO: create test fixture: t1, p1, f1
+                    initConn.createStatement().execute("""
+                create table t1(id bigint, v varchar(64));
+                """);
+                    initConn.createStatement().execute("""  
+                alter table t1 add constraint t1_pk primary key (id);
+                """);
+                    initConn.createStatement().execute("""
+                insert into t1(id, v) values(1, 'a');
+                insert into t1(id, v) values(2, 'b');
+                """);
+                    initConn.createStatement().execute("""
+                create procedure p1(in x int, inout r int)
+                  begin atomic
+                     set r = x * 2;
+                  end
+                """);
+                }
+
+                isInit = false;
             }
 
             @Override public Connection getConnection() throws SQLException {
+                if (!isInit && options.getConnectionException)
+                    throw new SQLException("emulation of get connection exception");
+
                 var jdbcConnection = super.getConnection();
+                openedConnections.add(jdbcConnection);
 
                 return (Connection) Proxy.newProxyInstance(
                     Fixture.class.getClassLoader(),
@@ -156,7 +186,7 @@ public class Fixture {
                             ) {
                                 var targetClass = method.getName().equals("prepareStatement")
                                     ? PreparedStatement.class : CallableStatement.class;
-                                opened.add((PreparedStatement) result);
+                                openedStmt.add((PreparedStatement) result);
 
                                 return Proxy.newProxyInstance(
                                     Fixture.class.getClassLoader(),
@@ -189,29 +219,12 @@ public class Fixture {
             }
         };
 
-        try (var initConn = ds.getConnection()) {
-            // TODO: create test fixture: t1, p1, f1
-            initConn.createStatement().execute("""
-                create table t1(id bigint, v varchar(64));
-                """);
-            initConn.createStatement().execute("""  
-                alter table t1 add constraint t1_pk primary key (id);
-                """);
-            initConn.createStatement().execute("""
-                insert into t1(id, v) values(1, 'a');
-                insert into t1(id, v) values(2, 'b');
-                """);
-            initConn.createStatement().execute("""
-                create procedure p1(in x int, inout r int)
-                  begin atomic
-                     set r = x * 2;
-                  end
-                """);
-        }
-
         code.run(new MainDataSource(ds));
 
-        for (var stmt : opened)
+        for (var connection : openedConnections)
+            Assertions.assertTrue(connection.isClosed());
+
+        for (var stmt : openedStmt)
             Assertions.assertTrue(stmt.isClosed());
     }
 
