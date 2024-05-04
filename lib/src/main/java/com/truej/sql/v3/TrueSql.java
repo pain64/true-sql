@@ -15,10 +15,7 @@ public class TrueSql {
     @Target(ElementType.TYPE)
     public @interface Process {}
 
-    // FIXME: remove???
-    public interface BatchSupplier<T, B extends Batchable> {
-        B supply(T element);
-    }
+
 
     public static class CallParameters {
         public static Void out(String parameterName) {
@@ -28,6 +25,11 @@ public class TrueSql {
         public static <T> T inout(String parameterName, T value) {
             return value;
         }
+    }
+
+    // FIXME: remove???
+    public interface BatchSupplier<T, B extends Batchable> {
+        B supply(T element);
     }
 
     public static <T, B extends Batchable> B batch(List<T> data, BatchSupplier<T, B> query) {

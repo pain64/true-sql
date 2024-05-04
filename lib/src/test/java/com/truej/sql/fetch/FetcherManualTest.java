@@ -21,12 +21,12 @@ public class FetcherManualTest {
             var query = Fixture.queryStmt("select id from t1");
 
             // ok query, no acquire, ok execution
-            var r1 = query.fetch(ds, new ManagedAction.Full<>() {
+            var r1 = query.fetch(ds, new ManagedAction<>() {
                 @Override public boolean willStatementBeMoved() {
                     return false;
                 }
                 @Override public List<Long> apply(
-                    RuntimeConfig conf, Void executionResult, PreparedStatement stmt
+                    RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                 ) throws SQLException {
                     return FetcherList.apply(conf, stmt.getResultSet(), Fixture.longMapper(null));
                 }
@@ -36,12 +36,12 @@ public class FetcherManualTest {
 
             // ok query, no acquire, bad execution
             Assertions.assertThrows(
-                Fail.class, () -> query.fetch(ds, new ManagedAction.Full<>() {
+                Fail.class, () -> query.fetch(ds, new ManagedAction<>() {
                         @Override public boolean willStatementBeMoved() {
                             return false;
                         }
                         @Override public Void apply(
-                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt
+                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                         ) {
                             throw new Fail();
                         }
@@ -51,12 +51,12 @@ public class FetcherManualTest {
             // ok query, do acquire, ok execution
             try (
                 var r2 = query.fetch(
-                    ds, new ManagedAction.Full<PreparedStatement, Void, Stream<Long>>() {
+                    ds, new ManagedAction<PreparedStatement, Void, Stream<Long>>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
                         @Override public Stream<Long> apply(
-                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt
+                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                         ) throws SQLException {
                             return FetcherStream.apply(
                                 conf, stmt, stmt.getResultSet(), Fixture.longMapper(null)
@@ -72,12 +72,12 @@ public class FetcherManualTest {
             // ok query, do acquire, bad execution
             Assertions.assertThrows(
                 Fail.class, () -> query.fetch(
-                    ds, new ManagedAction.Full<PreparedStatement, Void, Long>() {
+                    ds, new ManagedAction<PreparedStatement, Void, Long>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
                         @Override public Long apply(
-                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt
+                            RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                         ) {
                             throw new Fail();
                         }
@@ -89,12 +89,12 @@ public class FetcherManualTest {
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
                     Fixture.BAD_QUERY.fetchUpdateCount(
-                        ds, new ManagedAction.Simple<PreparedStatement, Long>() {
+                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 throw new IllegalStateException("not excepted to call");
                             }
                             @Override
-                            public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                            public Long apply(RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                                 throw new IllegalStateException("not excepted to call");
                             }
                         }

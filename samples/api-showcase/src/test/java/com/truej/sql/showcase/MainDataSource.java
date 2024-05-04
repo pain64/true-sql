@@ -8,5 +8,5 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 
 @Configuration public record MainDataSource(DataSource w) implements DataSourceW {
-    public record MainConnection(Connection w) implements ConnectionW {}
+    // public record MainConnection(Connection w) implements ConnectionW {}
 }

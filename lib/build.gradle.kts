@@ -19,7 +19,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.openjdk.jmh:jmh-core:1.37")
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
-        // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
+    // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 
 
@@ -29,6 +29,7 @@ tasks.withType<JavaCompile> {
     options.compilerArgs.add("--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
     options.compilerArgs.add("--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
     options.compilerArgs.add("--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
+    options.compilerArgs.add("--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED")
     options.compilerArgs.add("--enable-preview")
 }
 
@@ -40,13 +41,16 @@ java {
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
-    jvmArgs = listOf("--enable-preview",
+    jvmArgs = listOf(
+        "--enable-preview",
         "--add-opens", "java.base/java.lang=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-opens", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
+        "--add-opens", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-opens", "jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED"
+    )
 }
 
 tasks.test {

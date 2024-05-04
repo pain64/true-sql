@@ -18,11 +18,11 @@ public class FetcherUpdateCountTest {
             var query = Fixture.queryStmt("update t1 set v = 'xxx'");
 
             // ok query, no acquire, ok execution
-            var r1 = query.fetchUpdateCount(ds, new ManagedAction.Simple<>() {
+            var r1 = query.fetchUpdateCount(ds, new ManagedAction<>() {
                 @Override public boolean willStatementBeMoved() {
                     return false;
                 }
-                @Override public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                @Override public Long apply(RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                     return 42L;
                 }
             });
@@ -33,11 +33,11 @@ public class FetcherUpdateCountTest {
             // ok query, no acquire, bad execution
             Assertions.assertThrows(
                 Fail.class, () ->
-                    query.fetchUpdateCount(ds, new ManagedAction.Simple<>() {
+                    query.fetchUpdateCount(ds, new ManagedAction<>() {
                         @Override public boolean willStatementBeMoved() {
                             return false;
                         }
-                        @Override public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                        @Override public Long apply(RuntimeConfig conf,  Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                             throw new Fail();
                         }
                     })
@@ -45,12 +45,12 @@ public class FetcherUpdateCountTest {
 
             // ok query, do acquire, ok execution
             var r2 = query.fetchUpdateCount(
-                ds, new ManagedAction.Simple<PreparedStatement, PreparedStatement>() {
+                ds, new ManagedAction<PreparedStatement, Void, PreparedStatement>() {
                     @Override public boolean willStatementBeMoved() {
                         return true;
                     }
                     @Override
-                    public PreparedStatement apply(RuntimeConfig conf, PreparedStatement stmt) {
+                    public PreparedStatement apply(RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                         return stmt;
                     }
                 }
@@ -64,12 +64,12 @@ public class FetcherUpdateCountTest {
             Assertions.assertThrows(
                 Fail.class, () ->
                     query.fetchUpdateCount(
-                        ds, new ManagedAction.Simple<PreparedStatement, Long>() {
+                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 return true;
                             }
                             @Override
-                            public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                            public Long apply(RuntimeConfig conf,  Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                                 throw new Fail();
                             }
                         }
@@ -80,12 +80,12 @@ public class FetcherUpdateCountTest {
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
                     Fixture.BAD_QUERY.fetchUpdateCount(
-                        ds, new ManagedAction.Simple<PreparedStatement, Long>() {
+                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 throw new IllegalStateException("not excepted to call");
                             }
                             @Override
-                            public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                            public Long apply(RuntimeConfig conf,  Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                                 throw new IllegalStateException("not excepted to call");
                             }
                         }
@@ -105,12 +105,12 @@ public class FetcherUpdateCountTest {
                 var ex = Assertions.assertThrows(
                     Fail.class, () ->
                         query.fetchUpdateCount(
-                            ds, new ManagedAction.Simple<PreparedStatement, Long>() {
+                            ds, new ManagedAction<PreparedStatement, Void, Long>() {
                                 @Override public boolean willStatementBeMoved() {
                                     return false;
                                 }
                                 @Override
-                                public Long apply(RuntimeConfig conf, PreparedStatement stmt) {
+                                public Long apply(RuntimeConfig conf,  Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys) {
                                     throw new Fail();
                                 }
                             })

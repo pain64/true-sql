@@ -8,9 +8,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class FetcherOneOrNull<T> implements
-    ManagedAction.Simple<PreparedStatement, @Nullable T>,
-    FetcherGeneratedKeys.Next<@Nullable T> {
+public final class FetcherOneOrNull<T, R> implements
+    ManagedAction<PreparedStatement, R, @Nullable T> {
 
     public static <T> @Nullable T apply(
         ResultSet rs, ResultSetMapper<T, Void> mapper
@@ -37,15 +36,9 @@ public final class FetcherOneOrNull<T> implements
     }
 
     @Override public @Nullable T apply(
-        RuntimeConfig conf, PreparedStatement stmt
+        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
     ) throws SQLException {
-        return apply(conf, stmt, stmt.getResultSet());
-    }
-
-    @Override public @Nullable T apply(
-        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
-    ) throws SQLException {
-        return apply(conf, rs, mapper);
+        return apply(conf, SomeLogic.getResultSet(stmt, hasGeneratedKeys), mapper);
     }
 
     public static <T> @Nullable T apply(

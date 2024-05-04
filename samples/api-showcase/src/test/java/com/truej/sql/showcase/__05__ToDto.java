@@ -16,8 +16,8 @@ public class __05__ToDto {
 
     @Test void simple(MainDataSource ds) {
         assertEquals(
-            Stmt. "select id, name, email from users where id = \{ 42 }"
-                .fetchOne(ds, m(User.class))
+            ds. "select id, name, email from users where id = \{ 42 }"
+                .fetchOne(User.class)
             , new User(42, "Joe", "example@email.com")
         );
     }
@@ -36,7 +36,7 @@ public class __05__ToDto {
 
     @Test void grouped(MainDataSource ds) {
         assertEquals(
-            Stmt."""
+            ds."""
                     select
                         c.id        as "id                    ",
                         c.name      as "name                  ",
@@ -50,7 +50,7 @@ public class __05__ToDto {
                     inner join doctors d on d.clinic_id = c.id
                     inner join users   u on u.clinic_id = c.id
                     inner join banks   b on b.user_id   = u.id
-                """.fetchOne(ds, m(Clinic.class)),
+                """.fetchOne(Clinic.class),
             new Clinic(
                 1L, "Pet clinic",
                 List.of(

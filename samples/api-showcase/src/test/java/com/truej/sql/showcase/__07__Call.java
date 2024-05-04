@@ -11,12 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class __07__Call {
     @Test
     void simple(MainDataSource ds) {
+//        ds."{ call \{out("result")} = some_procedure(\{42}, \{inout("a", 42)}) }"
+//            .asCall().fetchOne(String.class);
+
         // Stored procedure get parameter Name
         // Check metadata
         // Check with cursor
         assertEquals(
-            Call."call \{out("result")} = some_procedure(\{42}, \{inout("a", 42)}})"
-                .fetchOne(ds, m(String.class))
+            ds."{ call \{out("result")} = some_procedure(\{42}, \{inout("a", 42)}) }"
+                .asCall().fetchOne(String.class)
             , "xxx"
         );
     }

@@ -13,13 +13,13 @@ public class __10__InTransaction {
     @Test void onDataSource(MainDataSource ds) {
         try {
             ds.inTransaction(cn -> {
-                Stmt."""
-                        insert into users values (1, 'Joe', 'example@email.com')
-                    """.fetchNone(cn);
+                cn."""
+                    insert into users values (1, 'Joe', 'example@email.com')
+                    """.fetchNone();
 
                 assertEquals(
-                    Stmt."select name from users where id = 1"
-                        .fetchOne(cn, m(String.class))
+                    cn."select name from users where id = 1"
+                        .fetchOne(String.class)
                     , "Joe"
                 );
 
@@ -27,8 +27,8 @@ public class __10__InTransaction {
             });
         } catch (ForceRollback ex) {
             assertNull(
-                Stmt."select name from users where id = 1"
-                    .fetchOneOrNull(ds, m(String.class))
+                ds."select name from users where id = 1"
+                    .fetchOneOrNull(String.class)
             );
         }
     }
@@ -37,13 +37,13 @@ public class __10__InTransaction {
         try {
             ds.withConnection(cn ->
                 cn.inTransaction(() -> {
-                    Stmt."""
+                    cn."""
                             insert into users values (1, 'Joe', 'example@email.com')
-                        """.fetchNone(cn);
+                        """.fetchNone();
 
                     assertEquals(
-                        Stmt."select name from users where id = 1"
-                            .fetchOne(cn, m(String.class))
+                        cn."select name from users where id = 1"
+                            .fetchOne(String.class)
                         , "Joe"
                     );
                     throw new ForceRollback();
@@ -51,8 +51,8 @@ public class __10__InTransaction {
             );
         } catch (ForceRollback ex) {
             assertNull(
-                Stmt."select name from users where id = 1"
-                    .fetchOneOrNull(ds, m(String.class))
+                ds."select name from users where id = 1"
+                    .fetchOneOrNull(String.class)
             );
         }
     }

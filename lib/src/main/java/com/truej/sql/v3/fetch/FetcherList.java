@@ -9,9 +9,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class FetcherList<T> implements
-    ManagedAction.Simple<PreparedStatement, List<T>>,
-    FetcherGeneratedKeys.Next<List<T>> {
+public final class FetcherList<T, R> implements
+    ManagedAction<PreparedStatement, R, List<T>> {
 
     public static class Hints {
         private int expectedSize = 0;
@@ -23,6 +22,7 @@ public final class FetcherList<T> implements
     }
 
     public static <T> List<T> apply(
+        // TODO: remove RuntimeConfig as arg???
         RuntimeConfig conf, ResultSet rs, ResultSetMapper<T, Hints> mapper
     ) throws SQLException {
         var hints = mapper.hints();
@@ -43,19 +43,11 @@ public final class FetcherList<T> implements
         this.mapper = mapper;
     }
 
-    @Override public boolean willStatementBeMoved() {
-        return false;
-    }
+    @Override public boolean willStatementBeMoved() { return false; }
 
     @Override public List<T> apply(
-        RuntimeConfig conf, PreparedStatement stmt
+        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
     ) throws SQLException {
-        return apply(conf, stmt, stmt.getResultSet());
-    }
-
-    @Override public List<T> apply(
-        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
-    ) throws SQLException {
-        return apply(conf, rs, this.mapper);
+        return apply(conf, SomeLogic.getResultSet(stmt, hasGeneratedKeys), mapper);
     }
 }

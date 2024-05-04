@@ -7,9 +7,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class FetcherOne<T> implements
-    ManagedAction.Simple<PreparedStatement, T>,
-    FetcherGeneratedKeys.Next<T> {
+public final class FetcherOne<T, R> implements
+    ManagedAction<PreparedStatement, R, T> {
 
     public static <T> T apply(
         RuntimeConfig conf, ResultSet rs, ResultSetMapper<T, Void> mapper
@@ -27,23 +26,13 @@ public final class FetcherOne<T> implements
     }
 
     private final ResultSetMapper<T, Void> mapper;
-    public FetcherOne(ResultSetMapper<T, Void> mapper) {
-        this.mapper = mapper;
-    }
+    public FetcherOne(ResultSetMapper<T, Void> mapper) { this.mapper = mapper; }
 
-    @Override public boolean willStatementBeMoved() {
-        return false;
-    }
+    @Override public boolean willStatementBeMoved() { return false; }
 
     @Override public T apply(
-        RuntimeConfig conf, PreparedStatement stmt
+        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
     ) throws SQLException {
-        return apply(conf, stmt, stmt.getResultSet());
-    }
-
-    @Override public T apply(
-        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
-    ) throws SQLException {
-        return apply(conf, rs, this.mapper);
+        return apply(conf, SomeLogic.getResultSet(stmt, hasGeneratedKeys), this.mapper);
     }
 }

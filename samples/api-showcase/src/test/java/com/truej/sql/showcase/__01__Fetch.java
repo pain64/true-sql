@@ -1,16 +1,23 @@
 package com.truej.sql.showcase;
 
 import com.truej.sql.v3.fetch.FetcherList;
+import com.truej.sql.v3.fetch.ResultSetMapper;
 import com.truej.sql.v3.prepare.ManagedAction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import static com.truej.sql.v3.TrueSql.Stmt;
-import static com.truej.sql.v3.TrueSql.m;
+import static com.truej.sql.v3.TrueSql.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -18,42 +25,41 @@ public class __01__Fetch {
 
     @Test void one(MainDataSource ds) {
         assertEquals(
-            Stmt."select name from users where id = \{42}"
-                .fetchOne(ds, m(String.class))
+            ds."select name from users where id = \{42}"
+                .fetchOne(String.class)
             , "Joe"
         );
     }
 
     @Test void oneOrNull(MainDataSource ds) {
         assertNull(
-            Stmt."select name from users where id = \{1}"
-                .fetchOneOrNull(ds, m(String.class))
+            ds."select name from users where id = \{1}"
+                .fetchOneOrNull(String.class)
         );
     }
 
     @Test void oneOptional(MainDataSource ds) {
         assertEquals(
-            Stmt."select name from users where id = \{1}"
-                .fetchOneOptional(ds, m(String.class))
+            ds."select name from users where id = \{1}"
+                .fetchOneOptional(String.class)
             , Optional.empty()
         );
     }
 
     @Test void none(MainDataSource ds) {
-        Stmt."insert into users values(1, 'John', 'xxx@email.com')"
-            .fetchNone(ds);
+        ds."insert into users values(1, 'John', 'xxx@email.com')"
+            .fetchNone();
     }
 
     @Test void list(MainDataSource ds) {
         assertEquals(
-            Stmt."select name from users"
-                .fetchList(ds, m(String.class))
+            ds."select name from users".fetchList(String.class)
             , List.of("Ivan", "Joe")
         );
 
         assertEquals(
-            Stmt."select name from users".fetchList(
-                ds, m(String.class, new FetcherList.Hints().expectedSize(10))
+            ds."select name from users".fetchList(
+                String.class, new FetcherList.Hints().expectedSize(10)
             )
             , List.of("Ivan", "Joe")
         );
@@ -62,8 +68,8 @@ public class __01__Fetch {
     @Test void stream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
-            var stream = Stmt."select name from users"
-                .fetchStream(ds, m(String.class))
+            var stream = ds."select name from users"
+                .fetchStream(String.class)
         ) {
             // stream is lazy, we can iterate over
             // stream.forEach(System.out::println);
@@ -76,8 +82,8 @@ public class __01__Fetch {
     @Test void updateCount(MainDataSource ds) {
         // NB: stream must be closed!
         try (
-            var stream = Stmt."upda"
-                .fetchStream(ds, m(String.class))
+            var stream = ds."upda"
+                .fetchStream(String.class)
         ) {
             // stream is lazy, we can iterate over
             // stream.forEach(System.out::println);
@@ -90,8 +96,8 @@ public class __01__Fetch {
     @Test void updateCountAndNone(MainDataSource ds) {
         // NB: stream must be closed!
         try (
-            var stream = Stmt."select name from users"
-                .fetchStream(ds, m(String.class))
+            var stream = ds."select name from users"
+                .fetchStream(String.class)
         ) {
             // stream is lazy, we can iterate over
             // stream.forEach(System.out::println);
@@ -104,8 +110,8 @@ public class __01__Fetch {
     @Test void updateCountAndStream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
-            var stream = Stmt."select name from users"
-                .fetchStream(ds, m(String.class))
+            var stream = ds."select name from users"
+                .fetchStream(String.class)
         ) {
             // stream is lazy, we can iterate over
             // stream.forEach(System.out::println);
@@ -117,8 +123,8 @@ public class __01__Fetch {
 
     @Test void manual(MainDataSource ds) {
         assertEquals(
-            Stmt."select name from users".fetch(
-                ds, new ManagedAction.Full<>() {
+            ds."select name from users".fetch(
+                new ManagedAction<>() {
                     @Override public boolean willStatementBeMoved() {
                         return false;
                     }

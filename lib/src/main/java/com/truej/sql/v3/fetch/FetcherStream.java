@@ -1,6 +1,5 @@
 package com.truej.sql.v3.fetch;
 
-import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.source.RuntimeConfig;
 
@@ -13,9 +12,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.Iterator;
 
-public final class FetcherStream<T> implements
-    ManagedAction.Simple<PreparedStatement, Stream<T>>,
-    FetcherGeneratedKeys.Next<Stream<T>> {
+public final class FetcherStream<T, R> implements
+    ManagedAction<PreparedStatement, R, Stream<T>> {
 
     private final ResultSetMapper<T, Void> mapper;
     public FetcherStream(ResultSetMapper<T, Void> mapper) {
@@ -45,14 +43,8 @@ public final class FetcherStream<T> implements
     }
 
     @Override public Stream<T> apply(
-        RuntimeConfig conf, PreparedStatement stmt
+        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
     ) throws SQLException {
-        return apply(conf, stmt, stmt.getResultSet());
-    }
-
-    @Override public Stream<T> apply(
-        RuntimeConfig conf, PreparedStatement stmt, ResultSet rs
-    ) throws SQLException {
-        return apply(conf, stmt, rs, mapper);
+        return apply(conf, stmt, SomeLogic.getResultSet(stmt, hasGeneratedKeys), mapper);
     }
 }

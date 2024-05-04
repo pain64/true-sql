@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -43,19 +44,22 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return self();
     }
 
-    private <T> T managed(ConnectionW connection, ManagedAction.Full<P, R, T> action) {
+    private <T> T managed(ConnectionW connection, ManagedAction<P, R, T> action) {
         try {
             var triedToClose = false;
+
             var stmt = constructor != null
                 ? constructor.construct(connection.w(), query())
                 : defaultConstructor(connection.w(), query());
+
+            var hasGeneratedKeys = constructor != null && constructor.hasGeneratedKeys();
 
             try {
                 bindArgs(stmt);
                 afterPrepare.configure(stmt);
                 var execResult = execute(stmt);
 
-                return action.apply(connection, execResult, stmt);
+                return action.apply(connection, execResult, stmt, hasGeneratedKeys);
             } catch (Exception e) {
                 triedToClose = true;
                 try {
@@ -74,21 +78,21 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         }
     }
 
-    private <T> T managed(Source source, ManagedAction.Full<P, R, T> action) {
+    private <T> T managed(Source source, ManagedAction<P, R, T> action) {
         return switch (source) {
             case ConnectionW cn -> managed(cn, action);
             case DataSourceW ds -> ds.withConnection(cn -> managed(cn, action));
         };
     }
 
-    private <T> T managedS(Source source, ManagedAction.Simple<PreparedStatement, T> action) {
+    private <T> T managedS(Source source, ManagedAction<PreparedStatement, R, T> action) {
         // Java has no declaration-site variance support (.)(.)
         // noinspection unchecked
-        return managed(source, (ManagedAction.Full<P, R, T>) action);
+        return managed(source, (ManagedAction<P, R, T>) action);
     }
 
     public Void fetchNone(Source source) {
-        return managedS(source, new FetcherNone());
+        return managedS(source, new FetcherNone<>());
     }
 
     public <T> T fetchOne(Source source, ResultSetMapper<T, Void> mapper) {
@@ -111,35 +115,35 @@ abstract class Base<S, P extends PreparedStatement, R, U> implements With<S, P> 
         return managedS(source, new FetcherStream<>(mapper));
     }
 
-    public <T> T fetchGeneratedKeys(Source source, FetcherGeneratedKeys.Next<T> next) {
-        return managedS(source, new FetcherGeneratedKeys<>(next));
-    }
-
-    public <T> T fetch(Source source, ManagedAction.Full<P, R, T> next) {
+    public <T> T fetch(Source source, ManagedAction<P, R, T> next) {
         return managed(source, next);
     }
 
     public U fetchUpdateCount(Source source) {
-        return fetchUpdateCount(source, new ManagedAction.Simple<>() {
-            @Override public R apply(RuntimeConfig conf, P stmt) { return null; }
+        return fetchUpdateCount(source, new ManagedAction<>() {
             @Override public boolean willStatementBeMoved() { return false; }
+            @Override public Object apply(
+                RuntimeConfig conf, R executionResult, P stmt, boolean hasGeneratedKeys
+            ) {
+                return null;
+            }
         }).updateCount;
     }
 
     public <T> UpdateResult<U, T> fetchUpdateCount(
-        Source source, ManagedAction.Simple<P, T> next
+        Source source, ManagedAction<P, R, T> next
     ) {
-        return managed(source, new ManagedAction.Full<>() {
+        return managed(source, new ManagedAction<>() {
             @Override public boolean willStatementBeMoved() {
                 return next.willStatementBeMoved();
             }
             @Override
             public UpdateResult<U, T> apply(
-                RuntimeConfig conf, R executionResult, P stmt
+                RuntimeConfig conf, R executionResult, P stmt, boolean hasGeneratedKeys
             ) throws SQLException {
                 return new UpdateResult<>(
                     getUpdateCount(executionResult, stmt),
-                    next.apply(conf, stmt)
+                    next.apply(conf, executionResult, stmt, hasGeneratedKeys)
                 );
             }
         });
