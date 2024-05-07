@@ -22,7 +22,6 @@ import com.sun.tools.javac.model.JavacElements;
 import org.jetbrains.annotations.Nullable;
 
 import static com.sun.tools.javac.tree.JCTree.*;
-import static com.truej.sql.v3.TrueSql.m;
 
 @SupportedAnnotationTypes("com.truej.sql.v3.TrueSql.Process")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)

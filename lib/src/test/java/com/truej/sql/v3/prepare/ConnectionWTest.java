@@ -22,16 +22,16 @@ public class ConnectionWTest {
                 Assertions.assertTrue(before);
 
                 var v = cn.inTransaction(() ->
-                    Fixture.queryStmt("insert into t1 values(100, 'xxy')")
-                        .fetchNone(cn)
+                    Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')")
+                        .fetchNone()
                 );
 
                 Assertions.assertTrue(cn.w().getAutoCommit());
                 return v;
             });
 
-            var result = Fixture.queryStmt("select id from t1 where id = 100")
-                .fetchOne(ds, Fixture.longMapper(null));
+            var result = Fixture.queryStmt(ds, "select id from t1 where id = 100")
+                .fetchOne(Fixture.longMapper());
 
             Assertions.assertEquals(100L, result);
         });
@@ -46,8 +46,8 @@ public class ConnectionWTest {
 
                 Assertions.assertThrows(
                     Fail.class, () -> cn.inTransaction(() -> {
-                        Fixture.queryStmt("insert into t1 values(100, 'xxy')")
-                            .fetchNone(cn);
+                        Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')")
+                            .fetchNone();
                         throw new Fail();
                     })
                 );
@@ -56,8 +56,8 @@ public class ConnectionWTest {
                 return null;
             });
 
-            var result = Fixture.queryStmt("select id from t1 where id = 100")
-                .fetchOneOrNull(ds, Fixture.longMapper(null));
+            var result = Fixture.queryStmt(ds, "select id from t1 where id = 100")
+                .fetchOneOrNull(Fixture.longMapper());
 
             Assertions.assertNull(result);
         });

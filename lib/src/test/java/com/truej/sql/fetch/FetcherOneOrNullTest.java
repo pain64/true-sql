@@ -12,31 +12,31 @@ public class FetcherOneOrNullTest {
         Fixture.withDataSource(ds -> {
 
             Assertions.assertEquals(
-                Fixture.queryStmt("select id from t1 where id = 1")
-                    .fetchOneOrNull(ds, Fixture.longMapper(null)),
+                Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                    .fetchOneOrNull(Fixture.longMapper()),
                 1L
             );
 
             Assertions.assertNull(
-                Fixture.queryStmt("select id from t1 where id = 777")
-                    .fetchOneOrNull(ds, Fixture.longMapper(null))
+                Fixture.queryStmt(ds, "select id from t1 where id = 777")
+                    .fetchOneOrNull(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 TooMuchRowsException.class, () ->
-                    Fixture.queryStmt("select id from t1")
-                        .fetchOneOrNull(ds, Fixture.longMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1")
+                        .fetchOneOrNull(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchOneOrNull(ds, Fixture.longMapper(null))
+                    Fixture.badQuery(ds).fetchOneOrNull(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.queryStmt("select id from t1 where id = 1")
-                        .fetchOneOrNull(ds, Fixture.badMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                        .fetchOneOrNull(Fixture.badMapper())
             );
         });
     }

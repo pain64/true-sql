@@ -9,12 +9,12 @@ import java.sql.SQLException;
 public class FetcherNoneTest {
     @Test void fetchNone() throws SQLException {
         Fixture.withDataSource(ds -> {
-            var query = Fixture.queryStmt("insert into t1 values(43, 'a')");
+            var query = Fixture.queryStmt(ds, "insert into t1 values(43, 'a')");
 
-            Assertions.assertNull(query.fetchNone(ds));
+            Assertions.assertNull(query.fetchNone());
 
             Assertions.assertThrows(
-                SqlExceptionR.class, () -> Fixture.BAD_QUERY.fetchNone(ds)
+                SqlExceptionR.class, () -> Fixture.badQuery(ds).fetchNone()
             );
         });
     }

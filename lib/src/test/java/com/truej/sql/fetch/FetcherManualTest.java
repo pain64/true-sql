@@ -18,17 +18,18 @@ public class FetcherManualTest {
 
     @Test void fetchManual() throws SQLException {
         Fixture.withDataSource(ds -> {
-            var query = Fixture.queryStmt("select id from t1");
+            var query = Fixture.queryStmt(ds, "select id from t1");
 
             // ok query, no acquire, ok execution
-            var r1 = query.fetch(ds, new ManagedAction<>() {
+            var r1 = query.fetch(new ManagedAction<>() {
                 @Override public boolean willStatementBeMoved() {
                     return false;
                 }
                 @Override public List<Long> apply(
                     RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                 ) throws SQLException {
-                    return FetcherList.apply(conf, stmt.getResultSet(), Fixture.longMapper(null));
+                    // FIXME: remove
+                    return new FetcherList<>(Fixture.longMapper()).apply(conf, null, stmt, false);
                 }
             });
 
@@ -36,7 +37,7 @@ public class FetcherManualTest {
 
             // ok query, no acquire, bad execution
             Assertions.assertThrows(
-                Fail.class, () -> query.fetch(ds, new ManagedAction<>() {
+                Fail.class, () -> query.fetch(new ManagedAction<>() {
                         @Override public boolean willStatementBeMoved() {
                             return false;
                         }
@@ -51,15 +52,16 @@ public class FetcherManualTest {
             // ok query, do acquire, ok execution
             try (
                 var r2 = query.fetch(
-                    ds, new ManagedAction<PreparedStatement, Void, Stream<Long>>() {
+                    new ManagedAction<PreparedStatement, Void, Stream<Long>>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
                         @Override public Stream<Long> apply(
                             RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                         ) throws SQLException {
+                            // FIXME: remove
                             return FetcherStream.apply(
-                                conf, stmt, stmt.getResultSet(), Fixture.longMapper(null)
+                                conf, stmt, stmt.getResultSet(), Fixture.longMapper()
                             );
                         }
                     }
@@ -72,7 +74,7 @@ public class FetcherManualTest {
             // ok query, do acquire, bad execution
             Assertions.assertThrows(
                 Fail.class, () -> query.fetch(
-                    ds, new ManagedAction<PreparedStatement, Void, Long>() {
+                    new ManagedAction<PreparedStatement, Void, Long>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
@@ -88,8 +90,8 @@ public class FetcherManualTest {
             // bad query
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchUpdateCount(
-                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
+                    Fixture.badQuery(ds).fetchUpdateCount(
+                        new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 throw new IllegalStateException("not excepted to call");
                             }

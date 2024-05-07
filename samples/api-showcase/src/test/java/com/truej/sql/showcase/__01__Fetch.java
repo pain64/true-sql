@@ -3,6 +3,7 @@ package com.truej.sql.showcase;
 import com.truej.sql.v3.fetch.FetcherList;
 import com.truej.sql.v3.fetch.ResultSetMapper;
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.source.RuntimeConfig;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +60,7 @@ public class __01__Fetch {
 
         assertEquals(
             ds."select name from users".fetchList(
-                String.class, new FetcherList.Hints().expectedSize(10)
+                String.class, 10
             )
             , List.of("Ivan", "Joe")
         );
@@ -129,7 +130,8 @@ public class __01__Fetch {
                         return false;
                     }
                     @Override public Object apply(
-                        Void executionResult, PreparedStatement stmt
+                        RuntimeConfig conf, Void executionResult,
+                        PreparedStatement stmt, boolean hasGeneratedKeys
                     ) throws SQLException {
                         var rs = stmt.getResultSet();
                         rs.next();

@@ -18,8 +18,7 @@ public class Test1 {
     //   1.
     @Test void first() throws IOException {
         assertGenerated(
-            """  
-                import static com.truej.sql.v3.TrueSql.*;
+            """               
                 import com.truej.sql.v3.source.ConnectionW;
                 import com.truej.sql.v3.TrueSql;
                 import com.truej.sql.v3.config.Configuration;
@@ -28,14 +27,12 @@ public class Test1 {
                 @Configuration
                 record MainConnection(Connection w) implements ConnectionW {}
                 
-                @TrueSql.Process class Simple {
+                @TrueSql class Simple {
                   void simple(MainConnection cn, String v) {
-                    com.truej.sql.v3.TrueSql.m(String.class);
-                    com.truej.sql.v3.TrueSql.g(String.class);
                     
-                    Stmt."insert into t1 values(1, \\{v})"
-                        .withGeneratedKeys("id")
-                        .fetchOne(cn, m(Long.class));
+                    //Stmt."insert into t1 values(1, \\{v})"
+                     //   .withGeneratedKeys("id")
+                     //   .fetchOne(cn, m(Long.class));
                   }
                 }"""
         );

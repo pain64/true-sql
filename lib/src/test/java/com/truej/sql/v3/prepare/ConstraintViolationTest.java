@@ -18,7 +18,7 @@ public class ConstraintViolationTest {
     @Test void unhandled() throws SQLException {
         Fixture.withDataSource(ds ->
             assertThrows(ConstraintViolationException.class, () ->
-                Fixture.queryStmt("insert into t1 values(1, 'x')").fetchNone(ds)
+                Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone()
             )
         );
     }
@@ -28,7 +28,7 @@ public class ConstraintViolationTest {
             assertThrows(
                 ConstraintViolationException.class, () -> {
                     try {
-                        Fixture.queryStmt("insert into t1 values(1, 'x')").fetchNone(ds);
+                        Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
                     } catch (ConstraintViolationException ex) {
                         ex.when(new Constraint<>("t1", "t1_unknown", () -> {
                             throw new Handled();
@@ -43,7 +43,7 @@ public class ConstraintViolationTest {
         Fixture.withDataSource(
             ds -> assertThrows(Handled.class, () -> {
                 try {
-                    Fixture.queryStmt("insert into t1 values(1, 'x')").fetchNone(ds);
+                    Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
                 } catch (ConstraintViolationException ex) {
                     ex.when(
                         new Constraint<>("t1", "t1_pk", () -> {
@@ -60,7 +60,7 @@ public class ConstraintViolationTest {
             ds -> assertEquals(
                 ((Supplier<Boolean>) () -> {
                     try {
-                        Fixture.queryStmt("insert into t1 values(1, 'x')").fetchNone(ds);
+                        Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
                         return true;
                     } catch (ConstraintViolationException ex) {
                         return ex.when(

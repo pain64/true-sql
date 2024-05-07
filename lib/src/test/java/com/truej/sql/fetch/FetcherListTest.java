@@ -12,29 +12,25 @@ public class FetcherListTest {
     // Statement+, Call-, BatchStatement+, BatchCall-
     @Test void fetchList() throws SQLException {
         Fixture.withDataSource(ds -> {
-            var query = Fixture.queryStmt("select id from t1");
+            var query = Fixture.queryStmt(ds, "select id from t1");
             var expected = List.of(1L, 2L);
 
             Assertions.assertEquals(
-                query.fetchList(ds, Fixture.longMapper(null)), expected
+                query.fetchList(Fixture.longMapper()), expected
             );
 
             Assertions.assertEquals(
-                query.fetchList(
-                    ds,
-                    Fixture.longMapper(new FetcherList.Hints().expectedSize(2))
-                ),
-                expected
+                query.fetchList(Fixture.longMapper(), 2), expected
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchList(ds, Fixture.longMapper(null))
+                    Fixture.badQuery(ds).fetchList(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    query.fetchList(ds, Fixture.badMapper(null))
+                    query.fetchList(Fixture.badMapper())
             );
         });
     }

@@ -13,8 +13,8 @@ public class DataSourceWTest {
         Fixture.withDataSource(ds ->
             Assertions.assertEquals(
                 ds.withConnection(cn ->
-                    Fixture.queryStmt("values(1)")
-                        .fetchList(cn, Fixture.longMapper(null))
+                    Fixture.queryStmt(cn, "values(1)")
+                        .fetchList(Fixture.longMapper())
                 ), List.of(1L)
             )
         );
@@ -43,8 +43,8 @@ public class DataSourceWTest {
         Fixture.withDataSource(ds ->
             Assertions.assertEquals(
                 ds.inTransaction(cn ->
-                    Fixture.queryStmt("values(1)")
-                        .fetchList(cn, Fixture.longMapper(null))
+                    Fixture.queryStmt(cn, "values(1)")
+                        .fetchList(Fixture.longMapper())
                 ), List.of(1L)
             )
         );

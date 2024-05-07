@@ -169,8 +169,8 @@ public class Bench {
 
     @Benchmark public long trueSql(S state) {
         return Test1.Generated.stmt_20_12(
-            new Test1.LongArgument(42)
-        ).fetchOne(state.connection, Test1.Generated.mapper_30_10());
+            state.connection, new Test1.LongArgument(42)
+        ).fetchOne(Test1.Generated.mapper_30_10());
 
 //        try (
 //            var s = Test1.Generated.stmt_20_12(

@@ -7,9 +7,9 @@ import com.truej.sql.v3.config.*;
 import com.truej.sql.v3.fetch.ResultSetMapper;
 import com.truej.sql.v3.prepare.Statement;
 import com.truej.sql.v3.source.DataSourceW;
+import com.truej.sql.v3.source.Source;
 import org.hsqldb.HsqlException;
 import org.hsqldb.jdbc.JDBCDataSource;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 
 import javax.sql.DataSource;
@@ -21,8 +21,9 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fixture {
-    public static Statement queryStmt(String text) {
+    public static Statement queryStmt(Source source, String text) {
         return new Statement() {
+            @Override protected Source source() { return source; }
             @Override protected String query() {
                 return text;
             }
@@ -30,8 +31,9 @@ public class Fixture {
         };
     }
 
-    public static BatchStatement queryBatchStmt(String text) {
+    public static BatchStatement queryBatchStmt(Source source, String text) {
         return new BatchStatement() {
+            @Override protected Source source() { return source; }
             @Override protected String query() {
                 return text;
             }
@@ -39,44 +41,34 @@ public class Fixture {
         };
     }
 
-    public static <H> ResultSetMapper<Long, H> longMapper(H hints) {
-        return new ResultSetMapper<>() {
-            @Override public @Nullable H hints() {
-                return hints;
+    public static ResultSetMapper<Long> longMapper() {
+        return rs -> new Iterator<>() {
+            @Override public boolean hasNext() {
+                try {
+                    return rs.next();
+                } catch (SQLException e) {
+                    throw new SqlExceptionR(e);
+                }
             }
-            @Override public Iterator<Long> map(ResultSet rs) {
-                return new Iterator<>() {
-                    @Override public boolean hasNext() {
-                        try {
-                            return rs.next();
-                        } catch (SQLException e) {
-                            throw new SqlExceptionR(e);
-                        }
-                    }
-                    @Override public Long next() {
-                        try {
-                            return rs.getLong(1);
-                        } catch (SQLException e) {
-                            throw new SqlExceptionR(e);
-                        }
-                    }
-                };
+            @Override public Long next() {
+                try {
+                    return rs.getLong(1);
+                } catch (SQLException e) {
+                    throw new SqlExceptionR(e);
+                }
             }
         };
     }
 
-    public static <H> ResultSetMapper<Long, H> badMapper(H hints) {
-        return new ResultSetMapper<>() {
-            @Override public @Nullable H hints() {
-                return hints;
-            }
-            @Override public Iterator<Long> map(ResultSet rs) {
-                throw new SqlExceptionR(new SQLException("oops"));
-            }
+    public static ResultSetMapper<Long> badMapper() {
+        return _ -> {
+            throw new SqlExceptionR(new SQLException("oops"));
         };
     }
 
-    public static final Statement BAD_QUERY = queryStmt("absurd");
+    public static Statement badQuery(Source source) {
+        return queryStmt(source, "absurd");
+    }
 
     @Configuration(
         checks = @CompileTimeChecks(

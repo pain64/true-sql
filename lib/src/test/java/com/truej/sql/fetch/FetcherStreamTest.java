@@ -9,29 +9,31 @@ import java.util.List;
 
 public class FetcherStreamTest {
     @Test void fetchStream() throws SQLException {
-        var query = Fixture.queryStmt("select id from t1");
         Fixture.withDataSource(ds -> {
-            try (var stream = query.fetchStream(ds, Fixture.longMapper(null))) {
+            var query = Fixture.queryStmt(ds, "select id from t1");
+            try (var stream = query.fetchStream(Fixture.longMapper())) {
                 Assertions.assertEquals(stream.toList(), List.of(1L, 2L));
             }
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchStream(ds, Fixture.longMapper(null))
+                    Fixture.badQuery(ds).fetchStream(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    query.fetchStream(ds, Fixture.badMapper(null))
+                    query.fetchStream(Fixture.badMapper())
             );
         });
 
-        Fixture.withDataSource(new Fixture.Options(false, true), ds ->
+        Fixture.withDataSource(new Fixture.Options(false, true), ds -> {
+            var query = Fixture.queryStmt(ds, "select id from t1");
             Assertions.assertThrows(
                 SqlExceptionR.class, () -> {
-                    var stream = query.fetchStream(ds, Fixture.longMapper(null));
+                    var stream = query.fetchStream(Fixture.longMapper());
                     stream.close(); // will throw
                 }
-            ));
+            );
+        });
     }
 }

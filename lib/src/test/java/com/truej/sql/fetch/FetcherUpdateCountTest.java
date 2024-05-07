@@ -4,6 +4,7 @@ import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.prepare.BatchStatement;
 import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.source.RuntimeConfig;
+import com.truej.sql.v3.source.Source;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,10 +16,10 @@ public class FetcherUpdateCountTest {
 
     @Test void fetchUpdateCount() throws SQLException {
         Fixture.withDataSource(ds -> {
-            var query = Fixture.queryStmt("update t1 set v = 'xxx'");
+            var query = Fixture.queryStmt(ds, "update t1 set v = 'xxx'");
 
             // ok query, no acquire, ok execution
-            var r1 = query.fetchUpdateCount(ds, new ManagedAction<>() {
+            var r1 = query.fetchUpdateCount(new ManagedAction<>() {
                 @Override public boolean willStatementBeMoved() {
                     return false;
                 }
@@ -33,7 +34,7 @@ public class FetcherUpdateCountTest {
             // ok query, no acquire, bad execution
             Assertions.assertThrows(
                 Fail.class, () ->
-                    query.fetchUpdateCount(ds, new ManagedAction<>() {
+                    query.fetchUpdateCount(new ManagedAction<>() {
                         @Override public boolean willStatementBeMoved() {
                             return false;
                         }
@@ -45,7 +46,7 @@ public class FetcherUpdateCountTest {
 
             // ok query, do acquire, ok execution
             var r2 = query.fetchUpdateCount(
-                ds, new ManagedAction<PreparedStatement, Void, PreparedStatement>() {
+                new ManagedAction<PreparedStatement, Void, PreparedStatement>() {
                     @Override public boolean willStatementBeMoved() {
                         return true;
                     }
@@ -64,7 +65,7 @@ public class FetcherUpdateCountTest {
             Assertions.assertThrows(
                 Fail.class, () ->
                     query.fetchUpdateCount(
-                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
+                        new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 return true;
                             }
@@ -79,8 +80,8 @@ public class FetcherUpdateCountTest {
             // bad query
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchUpdateCount(
-                        ds, new ManagedAction<PreparedStatement, Void, Long>() {
+                    Fixture.badQuery(ds).fetchUpdateCount(
+                        new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 throw new IllegalStateException("not excepted to call");
                             }
@@ -93,19 +94,19 @@ public class FetcherUpdateCountTest {
             );
 
             // overload
-            Assertions.assertEquals(query.fetchUpdateCount(ds), 2);
+            Assertions.assertEquals(query.fetchUpdateCount(), 2);
         });
     }
 
     @Test void closeThrowsException() throws SQLException {
         Fixture.withDataSource(
             new Fixture.Options(false, true), ds -> {
-                var query = Fixture.queryStmt("update t1 set v = 'xxx'");
+                var query = Fixture.queryStmt(ds, "update t1 set v = 'xxx'");
 
                 var ex = Assertions.assertThrows(
                     Fail.class, () ->
                         query.fetchUpdateCount(
-                            ds, new ManagedAction<PreparedStatement, Void, Long>() {
+                            new ManagedAction<PreparedStatement, Void, Long>() {
                                 @Override public boolean willStatementBeMoved() {
                                     return false;
                                 }
@@ -125,6 +126,7 @@ public class FetcherUpdateCountTest {
         Fixture.withDataSource(ds ->
             Assertions.assertArrayEquals(
                 new BatchStatement() {
+                    @Override protected Source source() { return ds; }
                     @Override protected String query() {
                         return "update t1 set v = 'x' where id = ?";
                     }
@@ -135,7 +137,7 @@ public class FetcherUpdateCountTest {
                         stmt.setLong(1, 2);
                         stmt.addBatch();
                     }
-                }.fetchUpdateCount(ds),
+                }.fetchUpdateCount(),
                 new long[]{1L, 1L}
             )
         );

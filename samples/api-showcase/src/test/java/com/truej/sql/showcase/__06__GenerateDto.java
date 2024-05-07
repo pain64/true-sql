@@ -4,8 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 
-import static com.truej.sql.v3.TrueSql.Stmt;
-import static com.truej.sql.v3.TrueSql.g;
+import com.truej.sql.showcase.__06__GenerateDtoG.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 //
 //import com.truej.sql.showcase.__06__GenerateDto.Dto.*;

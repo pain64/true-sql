@@ -2,9 +2,10 @@ package com.truej.sql.v3.prepare;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public abstract class Call extends Base.Single<Call, CallableStatement> implements Batchable {
+public abstract class StatementAsCall extends Base.Single<StatementAsCall, CallableStatement> {
 
     @Override CallableStatement defaultConstructor(
         Connection connection, String sql
@@ -12,7 +13,7 @@ public abstract class Call extends Base.Single<Call, CallableStatement> implemen
         return connection.prepareCall(sql);
     }
 
-    @Override Call self() { return this; }
+    @Override StatementAsCall self() { return this; }
 
     @Override Void execute(CallableStatement stmt) throws SQLException {
         stmt.execute();

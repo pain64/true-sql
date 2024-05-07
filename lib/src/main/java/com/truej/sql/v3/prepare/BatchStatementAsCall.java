@@ -4,7 +4,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public abstract class BatchCall extends Base.Batch<BatchCall, CallableStatement> {
+abstract public class BatchStatementAsCall extends Base.Batch<BatchStatementAsCall, CallableStatement> {
 
     @Override CallableStatement defaultConstructor(
         Connection connection, String sql
@@ -12,7 +12,7 @@ public abstract class BatchCall extends Base.Batch<BatchCall, CallableStatement>
         return connection.prepareCall(sql);
     }
 
-    @Override BatchCall self() { return this; }
+    @Override BatchStatementAsCall self() { return this; }
 
     @Override long[] execute(CallableStatement stmt) throws SQLException {
         return stmt.executeLargeBatch();

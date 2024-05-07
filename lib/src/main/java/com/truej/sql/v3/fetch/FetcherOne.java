@@ -1,6 +1,7 @@
 package com.truej.sql.v3.fetch;
 
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.prepare.Runtime;
 import com.truej.sql.v3.source.RuntimeConfig;
 
 import java.sql.PreparedStatement;
@@ -11,7 +12,7 @@ public final class FetcherOne<T, R> implements
     ManagedAction<PreparedStatement, R, T> {
 
     public static <T> T apply(
-        RuntimeConfig conf, ResultSet rs, ResultSetMapper<T, Void> mapper
+        RuntimeConfig conf, ResultSet rs, ResultSetMapper<T> mapper
     ) throws SQLException {
         var iterator = mapper.map(rs);
 
@@ -25,14 +26,14 @@ public final class FetcherOne<T, R> implements
         throw new TooFewRowsException();
     }
 
-    private final ResultSetMapper<T, Void> mapper;
-    public FetcherOne(ResultSetMapper<T, Void> mapper) { this.mapper = mapper; }
+    private final ResultSetMapper<T> mapper;
+    public FetcherOne(ResultSetMapper<T> mapper) { this.mapper = mapper; }
 
     @Override public boolean willStatementBeMoved() { return false; }
 
     @Override public T apply(
         RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
     ) throws SQLException {
-        return apply(conf, SomeLogic.getResultSet(stmt, hasGeneratedKeys), this.mapper);
+        return apply(conf, Runtime.getResultSet(stmt, hasGeneratedKeys), this.mapper);
     }
 }

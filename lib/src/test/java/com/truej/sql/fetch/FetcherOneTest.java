@@ -13,32 +13,32 @@ public class FetcherOneTest {
         Fixture.withDataSource(ds -> {
 
             Assertions.assertEquals(
-                Fixture.queryStmt("select id from t1 where id = 1")
-                    .fetchOne(ds, Fixture.longMapper(null)),
+                Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                    .fetchOne(Fixture.longMapper()),
                 1L
             );
 
             Assertions.assertThrows(
                 TooFewRowsException.class, () ->
-                    Fixture.queryStmt("select id from t1 where id = 777")
-                        .fetchOne(ds, Fixture.longMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1 where id = 777")
+                        .fetchOne(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 TooMuchRowsException.class, () ->
-                    Fixture.queryStmt("select id from t1")
-                        .fetchOne(ds, Fixture.longMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1")
+                        .fetchOne(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchOne(ds, Fixture.longMapper(null))
+                    Fixture.badQuery(ds).fetchOne(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.queryStmt("select id from t1 where id = 1")
-                        .fetchOne(ds, Fixture.badMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                        .fetchOne(Fixture.badMapper())
             );
         });
     }

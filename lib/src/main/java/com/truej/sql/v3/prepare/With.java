@@ -19,13 +19,13 @@ interface With<S, P extends PreparedStatement> {
 
     interface GeneratedKeysConstructors<S> extends With<S, PreparedStatement> {
 
-        default S withGeneratedKeys(int... columnNumbers) {
+        default S asGeneratedKeys(int... columnNumbers) {
             return with((GeneratedKeysConstructor)(connection, sql) ->
                 connection.prepareStatement(sql, columnNumbers)
             );
         }
 
-        default S withGeneratedKeys(String... columnNames) {
+        default S asGeneratedKeys(String... columnNames) {
             return with((GeneratedKeysConstructor)(connection, sql) ->
                 connection.prepareStatement(sql, columnNames)
             );

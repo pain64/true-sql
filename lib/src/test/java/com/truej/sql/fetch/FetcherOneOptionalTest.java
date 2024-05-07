@@ -13,32 +13,32 @@ public class FetcherOneOptionalTest {
         Fixture.withDataSource(ds -> {
 
             Assertions.assertEquals(
-                Fixture.queryStmt("select id from t1 where id = 1")
-                    .fetchOneOptional(ds, Fixture.longMapper(null)),
+                Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                    .fetchOneOptional(Fixture.longMapper()),
                 Optional.of(1L)
             );
 
             Assertions.assertEquals(
-                Fixture.queryStmt("select id from t1 where id = 777")
-                    .fetchOneOptional(ds, Fixture.longMapper(null)),
+                Fixture.queryStmt(ds, "select id from t1 where id = 777")
+                    .fetchOneOptional(Fixture.longMapper()),
                 Optional.empty()
             );
 
             Assertions.assertThrows(
                 TooMuchRowsException.class, () ->
-                    Fixture.queryStmt("select id from t1")
-                        .fetchOneOptional(ds, Fixture.longMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1")
+                        .fetchOneOptional(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.BAD_QUERY.fetchOneOptional(ds, Fixture.longMapper(null))
+                    Fixture.badQuery(ds).fetchOneOptional(Fixture.longMapper())
             );
 
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.queryStmt("select id from t1 where id = 1")
-                        .fetchOneOptional(ds, Fixture.badMapper(null))
+                    Fixture.queryStmt(ds, "select id from t1 where id = 1")
+                        .fetchOneOptional(Fixture.badMapper())
             );
         });
     }

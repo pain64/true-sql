@@ -7,6 +7,7 @@ import com.truej.sql.v3.fetch.*;
 import com.truej.sql.v3.prepare.Statement;
 import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.source.DataSourceW;
+import com.truej.sql.v3.source.Source;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -77,8 +78,9 @@ public class Test1 {
 
     // Generated code
     static class Generated {
-        static Statement stmt_20_12(Argument a1) {
+        static Statement stmt_20_12(Source source, Argument a1) {
             return new Statement() {
+                @Override protected Source source() { return source; }
                 @Override protected String query() {
                     //return "select id from users where id != ?";
                     return "select id from users where id = ?";
@@ -89,29 +91,21 @@ public class Test1 {
             };
         }
 
-        static <H> ResultSetMapper<Long, H> mapper_30_10() {
-            return new ResultSetMapper<>() {
-                @Override @Nullable public H hints() {
-                    return null;
+        static <H> ResultSetMapper<Long> mapper_30_10() {
+            return rs -> new Iterator<>() {
+                @Override public boolean hasNext() {
+                    try {
+                        return rs.next();
+                    } catch (SQLException e) {
+                        throw new SqlExceptionR(e);
+                    }
                 }
-
-                @Override public Iterator<Long> map(ResultSet rs) {
-                    return new Iterator<>() {
-                        @Override public boolean hasNext() {
-                            try {
-                                return rs.next();
-                            } catch (SQLException e) {
-                                throw new SqlExceptionR(e);
-                            }
-                        }
-                        @Override public Long next() {
-                            try {
-                                return rs.getLong(1);
-                            } catch (SQLException e) {
-                                throw new SqlExceptionR(e);
-                            }
-                        }
-                    };
+                @Override public Long next() {
+                    try {
+                        return rs.getLong(1);
+                    } catch (SQLException e) {
+                        throw new SqlExceptionR(e);
+                    }
                 }
             };
         }
