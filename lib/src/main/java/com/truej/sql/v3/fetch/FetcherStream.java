@@ -1,52 +1,45 @@
 package com.truej.sql.v3.fetch;
 
+import com.truej.sql.v3.prepare.Base;
 import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.prepare.Runtime;
+import com.truej.sql.v3.prepare.Transform;
 import com.truej.sql.v3.source.RuntimeConfig;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import java.util.Iterator;
 
-public final class FetcherStream<T, R> implements
-    ManagedAction<PreparedStatement, R, Stream<T>> {
+import static com.truej.sql.v3.prepare.Runtime.managed;
 
-    private final ResultSetMapper<T> mapper;
-    public FetcherStream(ResultSetMapper<T> mapper) {
-        this.mapper = mapper;
-    }
+public final class FetcherStream {
+    public static <P extends PreparedStatement, R, U, T, V> V fetch(
+        Transform<P, R, U, Stream<T>, V> t, Base<?, P, R, U> base, ResultSetMapper<T> mapper
+    ) {
+        return managed(base, new ManagedAction<>() {
+            @Override public boolean willStatementBeMoved() { return true; }
+            @Override public V apply(
+                RuntimeConfig conf, R executionResult,
+                P stmt, boolean hasGeneratedKeys
+            ) throws SQLException {
+                var iterator = mapper.map(
+                    Runtime.getResultSet(stmt, hasGeneratedKeys)
+                );
 
-    @Override public boolean willStatementBeMoved() {
-        return true;
-    }
-
-    // TODO: remove ???
-    public static <T> Stream<T> apply(
-        RuntimeConfig conf, PreparedStatement stmt,
-        ResultSet rs, ResultSetMapper<T> mapper
-    ) throws SQLException {
-        final Iterator<T> iterator;
-        iterator = mapper.map(rs);
-
-        return StreamSupport.stream(
-            Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
-        ).onClose(() -> {
-            try {
-                stmt.close();
-            } catch (SQLException e) {
-                throw conf.mapException(e);
+                return t.transform(
+                    base, executionResult, stmt, StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false
+                    ).onClose(() -> {
+                        try {
+                            stmt.close();
+                        } catch (SQLException e) {
+                            throw conf.mapException(e);
+                        }
+                    })
+                );
             }
         });
-    }
-
-    @Override public Stream<T> apply(
-        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
-    ) throws SQLException {
-        return apply(conf, stmt, Runtime.getResultSet(stmt, hasGeneratedKeys), mapper);
     }
 }

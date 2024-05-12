@@ -2,6 +2,7 @@ package com.truej.sql.v3.prepare;
 
 import com.truej.sql.fetch.Fixture;
 import com.truej.sql.v3.SqlExceptionR;
+import com.truej.sql.v3.fetch.FetcherList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -13,8 +14,9 @@ public class DataSourceWTest {
         Fixture.withDataSource(ds ->
             Assertions.assertEquals(
                 ds.withConnection(cn ->
-                    Fixture.queryStmt(cn, "values(1)")
-                        .fetchList(Fixture.longMapper())
+                    FetcherList.fetch(
+                        Transform.value(), Fixture.queryStmt(cn, "values(1)"), Fixture.longMapper(), 0
+                    )
                 ), List.of(1L)
             )
         );
@@ -43,8 +45,7 @@ public class DataSourceWTest {
         Fixture.withDataSource(ds ->
             Assertions.assertEquals(
                 ds.inTransaction(cn ->
-                    Fixture.queryStmt(cn, "values(1)")
-                        .fetchList(Fixture.longMapper())
+                    FetcherList.fetch(Transform.value(), Fixture.queryStmt(cn, "values(1)"), Fixture.longMapper(), 0)
                 ), List.of(1L)
             )
         );

@@ -21,21 +21,32 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fixture {
-    public static Statement queryStmt(Source source, String text) {
-        return new Statement() {
+    public static Statement<PreparedStatement> queryStmt(Source source, String text) {
+        return new Statement<>() {
             @Override protected Source source() { return source; }
-            @Override protected String query() {
-                return text;
+            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+                return connection.prepareStatement(text);
             }
             @Override protected void bindArgs(PreparedStatement stmt) { }
         };
     }
 
-    public static BatchStatement queryBatchStmt(Source source, String text) {
-        return new BatchStatement() {
+    public static Statement<PreparedStatement> queryStmtGeneratedKeys(Source source, String text, String... columnNames) {
+        return new Statement<>() {
             @Override protected Source source() { return source; }
-            @Override protected String query() {
-                return text;
+            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+                return connection.prepareStatement(text, columnNames);
+            }
+            @Override protected boolean isAsGeneratedKeys() { return true; }
+            @Override protected void bindArgs(PreparedStatement stmt) { }
+        };
+    }
+
+    public static BatchStatement<PreparedStatement> queryBatchStmt(Source source, String text) {
+        return new BatchStatement<>() {
+            @Override protected Source source() { return source; }
+            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+                return connection.prepareStatement(text);
             }
             @Override protected void bindArgs(PreparedStatement stmt) { }
         };
@@ -66,7 +77,7 @@ public class Fixture {
         };
     }
 
-    public static Statement badQuery(Source source) {
+    public static Statement<PreparedStatement> badQuery(Source source) {
         return queryStmt(source, "absurd");
     }
 

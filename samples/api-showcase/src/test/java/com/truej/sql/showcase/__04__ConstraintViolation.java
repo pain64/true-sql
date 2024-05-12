@@ -4,11 +4,8 @@ import com.truej.sql.v3.Constraint;
 import com.truej.sql.v3.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 
-import javax.sql.DataSource;
-
 import java.util.function.Supplier;
 
-import static com.truej.sql.v3.TrueSql.Stmt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

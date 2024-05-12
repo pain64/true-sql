@@ -3,6 +3,7 @@ package com.truej.sql.v3.prepare;
 import com.truej.sql.fetch.Fixture;
 import com.truej.sql.v3.Constraint;
 import com.truej.sql.v3.ConstraintViolationException;
+import com.truej.sql.v3.fetch.FetcherNone;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -18,7 +19,7 @@ public class ConstraintViolationTest {
     @Test void unhandled() throws SQLException {
         Fixture.withDataSource(ds ->
             assertThrows(ConstraintViolationException.class, () ->
-                Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone()
+                FetcherNone.fetch(Transform.value(), Fixture.queryStmt(ds, "insert into t1 values(1, 'x')"))
             )
         );
     }
@@ -28,7 +29,7 @@ public class ConstraintViolationTest {
             assertThrows(
                 ConstraintViolationException.class, () -> {
                     try {
-                        Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
+                        FetcherNone.fetch(Transform.value(), Fixture.queryStmt(ds, "insert into t1 values(1, 'x')"));
                     } catch (ConstraintViolationException ex) {
                         ex.when(new Constraint<>("t1", "t1_unknown", () -> {
                             throw new Handled();
@@ -43,7 +44,7 @@ public class ConstraintViolationTest {
         Fixture.withDataSource(
             ds -> assertThrows(Handled.class, () -> {
                 try {
-                    Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
+                    FetcherNone.fetch(Transform.value(), Fixture.queryStmt(ds, "insert into t1 values(1, 'x')"));
                 } catch (ConstraintViolationException ex) {
                     ex.when(
                         new Constraint<>("t1", "t1_pk", () -> {
@@ -60,7 +61,7 @@ public class ConstraintViolationTest {
             ds -> assertEquals(
                 ((Supplier<Boolean>) () -> {
                     try {
-                        Fixture.queryStmt(ds, "insert into t1 values(1, 'x')").fetchNone();
+                        FetcherNone.fetch(Transform.value(), Fixture.queryStmt(ds, "insert into t1 values(1, 'x')"));
                         return true;
                     } catch (ConstraintViolationException ex) {
                         return ex.when(

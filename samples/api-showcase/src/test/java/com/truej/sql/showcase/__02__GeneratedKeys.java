@@ -1,26 +1,30 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.TrueSql;
 import com.truej.sql.v3.fetch.*;
 import org.junit.jupiter.api.Test;
 
-import javax.sql.DataSource;
-
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import static com.truej.sql.v3.TrueSql.*;
+import static com.truej.sql.showcase.__02__GeneratedKeys.Transform.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __02__GeneratedKeys {
+    interface A<T> {}
+    public enum Transform implements A {
+
+    }
 
     @Test void test(MainDataSource ds) {
+        // T -> T, T -> UpdateCount<U, T>
+        // FetcherStream.fetch(
+        //    base, mapper, transform, extra parameters
+        // )
         assertEquals(
             ds."insert into users(name, email) values('John', 'xxx@email.com')"
                 .asGeneratedKeys("id")
-                .fetchUpdateCount(new FetcherStream<>(Long.class))
+                //.g.withUpdateCount().g.fetchStream(Long.class)
+                .withUpdateCount.g.fetchStream(Long.class)
+                //.withUpdateCount.g.fetchStream(Long.class)
+                //.updateCount.g.fetchStream(Long.class)
+                //.fetchUpdateCount(new FetcherStream<>(Long.class))
             , 1L
         );
     }

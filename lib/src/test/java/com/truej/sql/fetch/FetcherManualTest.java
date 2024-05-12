@@ -1,9 +1,9 @@
 package com.truej.sql.fetch;
 
 import com.truej.sql.v3.SqlExceptionR;
-import com.truej.sql.v3.fetch.FetcherList;
-import com.truej.sql.v3.fetch.FetcherStream;
+import com.truej.sql.v3.fetch.FetcherManual;
 import com.truej.sql.v3.prepare.ManagedAction;
+import com.truej.sql.v3.prepare.Transform;
 import com.truej.sql.v3.source.RuntimeConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,15 +21,16 @@ public class FetcherManualTest {
             var query = Fixture.queryStmt(ds, "select id from t1");
 
             // ok query, no acquire, ok execution
-            var r1 = query.fetch(new ManagedAction<>() {
+            var r1 = FetcherManual.fetch(Transform.value(), query, new ManagedAction<>() {
                 @Override public boolean willStatementBeMoved() {
                     return false;
                 }
                 @Override public List<Long> apply(
                     RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                 ) throws SQLException {
-                    // FIXME: remove
-                    return new FetcherList<>(Fixture.longMapper()).apply(conf, null, stmt, false);
+                    return List.of(1L, 2L);
+//                    // FIXME: remove
+//                    return new FetcherList<>(Fixture.longMapper()).apply(conf, null, stmt, false);
                 }
             });
 
@@ -37,7 +38,7 @@ public class FetcherManualTest {
 
             // ok query, no acquire, bad execution
             Assertions.assertThrows(
-                Fail.class, () -> query.fetch(new ManagedAction<>() {
+                Fail.class, () -> FetcherManual.fetch(Transform.value(), query, new ManagedAction<>() {
                         @Override public boolean willStatementBeMoved() {
                             return false;
                         }
@@ -51,30 +52,29 @@ public class FetcherManualTest {
 
             // ok query, do acquire, ok execution
             try (
-                var r2 = query.fetch(
-                    new ManagedAction<PreparedStatement, Void, Stream<Long>>() {
+                var r2 = FetcherManual.fetch(Transform.value(), query, new ManagedAction<PreparedStatement, Void, PreparedStatement>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
-                        @Override public Stream<Long> apply(
+                        @Override public PreparedStatement apply(
                             RuntimeConfig conf, Void executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
                         ) throws SQLException {
-                            // FIXME: remove
-                            return FetcherStream.apply(
-                                conf, stmt, stmt.getResultSet(), Fixture.longMapper()
-                            );
+                            return stmt;
+//                            // FIXME: remove
+//                            return FetcherStream.apply(
+//                                conf, stmt, stmt.getResultSet(), Fixture.longMapper()
+//                            );
                         }
                     }
                 )
             ) {
-                Assertions.assertEquals(r2.toList(), List.of(1L, 2L));
+                Assertions.assertFalse(r2.isClosed());
             }
 
 
             // ok query, do acquire, bad execution
             Assertions.assertThrows(
-                Fail.class, () -> query.fetch(
-                    new ManagedAction<PreparedStatement, Void, Long>() {
+                Fail.class, () -> FetcherManual.fetch(Transform.value(), query, new ManagedAction<PreparedStatement, Void, Long>() {
                         @Override public boolean willStatementBeMoved() {
                             return true;
                         }
@@ -90,8 +90,7 @@ public class FetcherManualTest {
             // bad query
             Assertions.assertThrows(
                 SqlExceptionR.class, () ->
-                    Fixture.badQuery(ds).fetchUpdateCount(
-                        new ManagedAction<PreparedStatement, Void, Long>() {
+                    FetcherManual.fetch(Transform.value(), Fixture.badQuery(ds), new ManagedAction<PreparedStatement, Void, Long>() {
                             @Override public boolean willStatementBeMoved() {
                                 throw new IllegalStateException("not excepted to call");
                             }

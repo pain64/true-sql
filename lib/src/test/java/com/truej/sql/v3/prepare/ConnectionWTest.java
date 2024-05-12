@@ -2,6 +2,9 @@ package com.truej.sql.v3.prepare;
 
 import com.truej.sql.fetch.Fixture;
 import com.truej.sql.v3.SqlExceptionR;
+import com.truej.sql.v3.fetch.FetcherNone;
+import com.truej.sql.v3.fetch.FetcherOne;
+import com.truej.sql.v3.fetch.FetcherOneOrNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -22,16 +25,18 @@ public class ConnectionWTest {
                 Assertions.assertTrue(before);
 
                 var v = cn.inTransaction(() ->
-                    Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')")
-                        .fetchNone()
+                    FetcherNone.fetch(Transform.value(), Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')"))
                 );
 
                 Assertions.assertTrue(cn.w().getAutoCommit());
                 return v;
             });
 
-            var result = Fixture.queryStmt(ds, "select id from t1 where id = 100")
-                .fetchOne(Fixture.longMapper());
+            var result = FetcherOne.fetch(
+                Transform.value(),
+                Fixture.queryStmt(ds, "select id from t1 where id = 100"),
+                Fixture.longMapper()
+            );
 
             Assertions.assertEquals(100L, result);
         });
@@ -46,8 +51,7 @@ public class ConnectionWTest {
 
                 Assertions.assertThrows(
                     Fail.class, () -> cn.inTransaction(() -> {
-                        Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')")
-                            .fetchNone();
+                        FetcherNone.fetch(Transform.value(), Fixture.queryStmt(cn, "insert into t1 values(100, 'xxy')"));
                         throw new Fail();
                     })
                 );
@@ -56,8 +60,11 @@ public class ConnectionWTest {
                 return null;
             });
 
-            var result = Fixture.queryStmt(ds, "select id from t1 where id = 100")
-                .fetchOneOrNull(Fixture.longMapper());
+            var result = FetcherOneOrNull.fetch(
+                Transform.value(),
+                Fixture.queryStmt(ds, "select id from t1 where id = 100"),
+                Fixture.longMapper()
+            );
 
             Assertions.assertNull(result);
         });

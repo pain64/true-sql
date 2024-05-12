@@ -28,8 +28,6 @@ public class __07__Call {
             // { call
             // call
 
-            ds."call some_procedure(42, 42)".fetchOne(Integer.class)
-
             ds."{ call some_procedure(\{42}, \{inout("a", 42)}) }"
                 .asCall().fetchOutParameters(String.class)
 //                .fetch(new ManagedAction<CallableStatement, Void, String>() {

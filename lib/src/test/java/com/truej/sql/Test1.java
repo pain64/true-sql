@@ -78,12 +78,11 @@ public class Test1 {
 
     // Generated code
     static class Generated {
-        static Statement stmt_20_12(Source source, Argument a1) {
-            return new Statement() {
+        static Statement<PreparedStatement> stmt_20_12(Source source, Argument a1) {
+            return new Statement<>() {
                 @Override protected Source source() { return source; }
-                @Override protected String query() {
-                    //return "select id from users where id != ?";
-                    return "select id from users where id = ?";
+                @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+                    return connection.prepareStatement("select id from users where id = ?");
                 }
                 @Override protected void bindArgs(PreparedStatement stmt) throws SQLException {
                     a1.set(1, stmt);
@@ -91,7 +90,7 @@ public class Test1 {
             };
         }
 
-        static <H> ResultSetMapper<Long> mapper_30_10() {
+        static ResultSetMapper<Long> mapper_30_10() {
             return rs -> new Iterator<>() {
                 @Override public boolean hasNext() {
                     try {

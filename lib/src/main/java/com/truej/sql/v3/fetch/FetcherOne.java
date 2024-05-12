@@ -1,39 +1,39 @@
 package com.truej.sql.v3.fetch;
 
+import com.truej.sql.v3.prepare.Base;
 import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.prepare.Runtime;
+import com.truej.sql.v3.prepare.Transform;
 import com.truej.sql.v3.source.RuntimeConfig;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class FetcherOne<T, R> implements
-    ManagedAction<PreparedStatement, R, T> {
+import static com.truej.sql.v3.prepare.Runtime.managed;
 
-    public static <T> T apply(
-        RuntimeConfig conf, ResultSet rs, ResultSetMapper<T> mapper
-    ) throws SQLException {
-        var iterator = mapper.map(rs);
+public final class FetcherOne {
 
-        if (iterator.hasNext()) {
-            var result = iterator.next();
-            if (iterator.hasNext())
-                throw new TooMuchRowsException();
-            return result;
-        }
+    public static <P extends PreparedStatement, R, U, T, V> V fetch(
+        Transform<P, R, U, T, V> t, Base<?, P, R, U> base, ResultSetMapper<T> mapper
+    ) {
+        return managed(base, new ManagedAction<>() {
+            @Override public boolean willStatementBeMoved() { return false; }
+            @Override public V apply(
+                RuntimeConfig conf, R executionResult,
+                P stmt, boolean hasGeneratedKeys
+            ) throws SQLException {
+                var iterator = mapper.map(
+                    Runtime.getResultSet(stmt, hasGeneratedKeys)
+                );
 
-        throw new TooFewRowsException();
-    }
+                if (iterator.hasNext()) {
+                    var result = iterator.next();
+                    if (iterator.hasNext())
+                        throw new TooMuchRowsException();
 
-    private final ResultSetMapper<T> mapper;
-    public FetcherOne(ResultSetMapper<T> mapper) { this.mapper = mapper; }
-
-    @Override public boolean willStatementBeMoved() { return false; }
-
-    @Override public T apply(
-        RuntimeConfig conf, R executionResult, PreparedStatement stmt, boolean hasGeneratedKeys
-    ) throws SQLException {
-        return apply(conf, Runtime.getResultSet(stmt, hasGeneratedKeys), this.mapper);
+                    return t.transform(base, executionResult, stmt, result);
+                } else throw new TooFewRowsException();
+            }
+        });
     }
 }

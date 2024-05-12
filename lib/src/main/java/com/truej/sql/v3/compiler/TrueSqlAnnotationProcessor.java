@@ -11,10 +11,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.sun.tools.javac.code.Scope;
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
 
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.util.Names;
+import com.sun.tools.javac.code.Types;
+// import com.sun.tools.javac.comp.TypeEnter;
 
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -23,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static com.sun.tools.javac.tree.JCTree.*;
 
-@SupportedAnnotationTypes("com.truej.sql.v3.TrueSql.Process")
+@SupportedAnnotationTypes("com.truej.sql.v3.TrueSql")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
@@ -270,6 +275,10 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         var env = (JavacProcessingEnvironment) processingEnv;
         var context = env.getContext();
+        var types = Types.instance(context);
+        //var typeEnter = TypeEnter.instance(context);
+
+        var symtab = Symtab.instance(context);
         var trees = Trees.instance(env);
         var names = Names.instance(context);
         var elements = JavacElements.instance(context);
@@ -287,6 +296,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             var found = elements.getTreeAndTopLevel(element, null, null);
             var tree = found.fst;
             var cu = found.snd;
+
+
 
             System.out.println(findMapperInvocations(names, cu, tree));
             System.out.println(findForPrepareInvocations(names, cu, tree));

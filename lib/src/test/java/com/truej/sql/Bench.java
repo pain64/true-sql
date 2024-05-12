@@ -1,5 +1,7 @@
 package com.truej.sql;
 
+import com.truej.sql.v3.fetch.FetcherOne;
+import com.truej.sql.v3.prepare.Transform;
 import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.fetch.TooFewRowsException;
@@ -168,9 +170,11 @@ public class Bench {
     }
 
     @Benchmark public long trueSql(S state) {
-        return Test1.Generated.stmt_20_12(
-            state.connection, new Test1.LongArgument(42)
-        ).fetchOne(Test1.Generated.mapper_30_10());
+        return FetcherOne.fetch(
+            Transform.value(),
+            Test1.Generated.stmt_20_12(state.connection, new Test1.LongArgument(42)),
+            Test1.Generated.mapper_30_10()
+        );
 
 //        try (
 //            var s = Test1.Generated.stmt_20_12(

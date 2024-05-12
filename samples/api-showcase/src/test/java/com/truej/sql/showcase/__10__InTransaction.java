@@ -2,8 +2,6 @@ package com.truej.sql.showcase;
 
 import org.junit.jupiter.api.Test;
 
-import static com.truej.sql.v3.TrueSql.Stmt;
-import static com.truej.sql.v3.TrueSql.m;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
