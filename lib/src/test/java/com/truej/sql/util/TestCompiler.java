@@ -21,6 +21,7 @@ public class TestCompiler {
         var arguments = asList(
             "--enable-preview", "--source", "21",
             "-classpath", System.getProperty("java.class.path"),
+            "-Atruesql.printConfig=true",
             "-Xplugin:" + TrueSqlPlugin.NAME
         );
 

@@ -1,16 +1,8 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.prepare.Base;
-import com.truej.sql.v3.prepare.ManagedAction;
-import com.truej.sql.v3.prepare.Statement;
-import com.truej.sql.v3.source.RuntimeConfig;
 import org.junit.jupiter.api.Test;
 
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import static com.truej.sql.v3.prepare.CallParameters.*;
+import static com.truej.sql.v3.prepare.Parameters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __07__Call {

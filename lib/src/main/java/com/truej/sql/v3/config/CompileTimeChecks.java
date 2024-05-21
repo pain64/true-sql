@@ -1,8 +1,9 @@
 package com.truej.sql.v3.config;
 
+import static com.truej.sql.v3.config.Configuration.NOT_DEFINED;
+
 public @interface CompileTimeChecks {
-    String databaseUrl();
-    Property[] connectionProperties() default {};
-    String username() default "__MAGIC__TRUE_SQL_EMPTY_USERNAME"; // is null
-    String password() default "__MAGIC__TRUE_SQL_EMPTY_PASSWORD"; // is null
+    String url();
+    String username() default NOT_DEFINED; // is null
+    String password() default NOT_DEFINED; // is null
 }

@@ -83,14 +83,10 @@ public class Fixture {
 
     @Configuration(
         checks = @CompileTimeChecks(
-            databaseUrl = "jdbc:hsqldb:file:db1",
+            url = "jdbc:hsqldb:file:db1"
             // TrueSql.MainConnection.databaseUrl=xxx
             // TrueSql.MainConnection.username=aaaa
             // TrueSql.MainConnection.password=bbb
-            // TrueSql.MainConnection.connectionInfo.шакал_видновс_настройка=FALSE
-            connectionProperties = {
-                @Property(key = "шакал_виндовс_настройка", value = "ТРУ")
-            }
         ),
         typeBindings = {
             @TypeBinding(

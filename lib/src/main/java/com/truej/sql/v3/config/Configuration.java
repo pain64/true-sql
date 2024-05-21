@@ -8,8 +8,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.TYPE})
 public @interface Configuration {
+    String NOT_DEFINED = "__MAGIC__TRUE_SQL_PROPERTY_NOT_DEFINED";
+
     CompileTimeChecks checks()
-        default @CompileTimeChecks(databaseUrl = "");
+        default @CompileTimeChecks(url = NOT_DEFINED); // is null
 
     TypeBinding[] typeBindings() default {};
 }

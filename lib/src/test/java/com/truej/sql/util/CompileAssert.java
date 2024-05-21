@@ -32,6 +32,11 @@ public class CompileAssert {
 //            .map(t -> new StringSourceFile(t.fullQualified, t.javaSrc))
 //            .collect(Collectors.toList());
         var compilationUnits = List.of(
+            new StringSourceFile("true.A", """
+                package xxx;
+                class A {}
+                """
+            ),
             new StringSourceFile("true.Test", source)
         );
 

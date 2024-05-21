@@ -1,6 +1,5 @@
 package com.truej.sql.v3.prepare;
 
-import com.truej.sql.v3.fetch.UpdateResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
@@ -26,10 +25,6 @@ public abstract class FetchApi0<P extends PreparedStatement, R, U> {
     public <T> Stream<T> fetchStream(Class<T> elementClass) { return delegated(); }
 
     public <T, PP extends PreparedStatement> T fetch(ManagedAction<PP, R, T> next) { return delegated(); }
-
-    public U fetchUpdateCount() { return delegated(); }
-
-    public <T> UpdateResult<U, T> fetchUpdateCount(ManagedAction<P, R, T> next) { return delegated(); }
 
     public <T> T fetchOutParameters(Class<T> toClass) { return delegated(); }
 }
