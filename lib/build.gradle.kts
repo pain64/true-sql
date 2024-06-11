@@ -19,6 +19,8 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.openjdk.jmh:jmh-core:1.37")
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
+    implementation("org.projectlombok:lombok:1.18.32")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

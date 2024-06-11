@@ -8,9 +8,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public abstract class FetchApi0<P extends PreparedStatement, R, U> {
-    private <T> T delegated() { throw new RuntimeException("delegated"); }
-
-    public Void fetchNone() { return delegated(); }
+    <T> T delegated() { throw new RuntimeException("delegated"); }
 
     public <T> T fetchOne(Class<T> toClass) { return delegated(); }
 
@@ -23,8 +21,6 @@ public abstract class FetchApi0<P extends PreparedStatement, R, U> {
     public <T> List<T> fetchList(Class<T> elementClass, int expectedSize) { return delegated(); }
 
     public <T> Stream<T> fetchStream(Class<T> elementClass) { return delegated(); }
-
-    public <T, PP extends PreparedStatement> T fetch(ManagedAction<PP, R, T> next) { return delegated(); }
 
     public <T> T fetchOutParameters(Class<T> toClass) { return delegated(); }
 }

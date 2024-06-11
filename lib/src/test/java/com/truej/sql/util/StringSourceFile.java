@@ -8,7 +8,7 @@ public class StringSourceFile extends SimpleJavaFileObject {
 
     public StringSourceFile(String qualifiedClassName, String testSource) {
         super(URI.create(String.format(
-            "file://%s%s", qualifiedClassName.replaceAll("\\.", "/"),
+            "file://%t%t", qualifiedClassName.replaceAll("\\.", "/"),
             Kind.SOURCE.extension)), Kind.SOURCE);
         content = testSource;
     }

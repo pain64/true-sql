@@ -67,7 +67,7 @@ public class TestExample {
             // TODO: check that setString works for any column type in JDBC, otherwise do concat and escape '
             new Delete("users", "AAAA-FFFF", "2024-01-24 00:22:28.477117", "John", "xxx"),
             new Delete("users", "'AAAA-FFFF', '2024-01-24 00:22:28.477117'," +
-                " 'John\\'s Doe', 'xxx'"
+                " 'John\\'t Doe', 'xxx'"
             ),
             // Custom column converter ???
             // if we see that database type is XXX -> "123" -> my_super_type_init(123)

@@ -5,16 +5,17 @@ import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.prepare.Runtime;
 import com.truej.sql.v3.prepare.Transform;
 import com.truej.sql.v3.source.RuntimeConfig;
+import lombok.Data;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.truej.sql.v3.prepare.Runtime.managed;
 
 public final class FetcherList {
-
     public static <P extends PreparedStatement, R, U, T, V> V fetch(
         Transform<P, R, U, List<T>, V> t, Base<?, P, R, U> base,
         ResultSetMapper<T> mapper, int expectedSize

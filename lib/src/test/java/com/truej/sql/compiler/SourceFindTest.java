@@ -23,8 +23,7 @@ public class SourceFindTest {
                 @Configuration
                 record C1(Connection w) implements ConnectionW {}
                 @Configuration
-                record C2(Connection w) implements ConnectionW {}
-                @Configuration(checks = @CompileTimeChecks(url = "xxx"))
+                record C2(Connection w) implements ConnectionW {}                
                 record C3(Connection w) implements ConnectionW {}
                 record C4(Connection w) implements ConnectionW {}
                 @Configuration

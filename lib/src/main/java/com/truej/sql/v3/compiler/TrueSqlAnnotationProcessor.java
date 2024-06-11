@@ -6,11 +6,17 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.comp.Resolve;
@@ -35,6 +41,8 @@ import static com.sun.tools.javac.tree.JCTree.*;
 @SupportedAnnotationTypes({"com.truej.sql.v3.TrueSql", "com.truej.sql.v3.config.Configuration"})
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
+
+    // TODO: support for batches
 
     record ForPrepareInvocation(JCTree tree, List<QueryPart> queryParts) { }
     record SafeFetchInvocation(
@@ -288,12 +296,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                 throw new RuntimeException("bad pattern");
                         }
 
-                        final ForPrepareInvocation stmt;
+                        final ForPrepareInvocation forPrepare;
                         final Symbol.ClassSymbol sourceType;
                         final ParsedConfiguration parsedConfig;
 
                         if (f.selected instanceof JCStringTemplate template) {
-                            stmt = new ForPrepareInvocation(tree, parseQuery(symtab, cu, names, template));
+                            forPrepare = new ForPrepareInvocation(tree, parseQuery(symtab, cu, names, template));
 
                             if (template.processor instanceof JCIdent processorId) {
                                 var clConnectionW = symtab.enterClass(
@@ -335,8 +343,55 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                         System.out.println("hasWithUpdateCount = " + hasWithUpdateCount);
                         System.out.println("destMode = " + destMode);
                         System.out.println("afterPrepare = " + afterPrepare);
-                        System.out.println("statement = " + stmt);
+                        System.out.println("statement = " + forPrepare);
                         System.out.println("#############");
+
+                        if (parsedConfig.url != null) {
+                            try {
+                                var connection = DriverManager.getConnection(
+                                    parsedConfig.url, parsedConfig.username, parsedConfig.password
+                                );
+
+                                var query = forPrepare.queryParts.stream()
+                                    .map(p -> switch (p) {
+                                        case InoutParameter _,
+                                            OutParameter _,
+                                            SimpleParameter _ -> "?";
+                                        case TextPart tp -> tp.text;
+                                        case UnfoldParameter u -> IntStream.range(0, u.n)
+                                            .mapToObj(_ -> "?")
+                                            .collect(Collectors.joining(
+                                                ", ", u.n == 1 ? "" : "(", u.n == 1 ? "" : ")"
+                                            ));
+                                    })
+                                    .collect(Collectors.joining());
+
+                                // TODO: normalize error message from postgres ???
+                                //       attach error to ast node
+                                // TODO: parse GeneratedKeys
+
+
+                                var stmt = switch (destMode) {
+                                    case DEFAULT -> connection.prepareStatement(query);
+                                    case CALL -> connection.prepareCall(query);
+                                    case GENERATED_KEYS ->
+                                        connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+                                };
+
+                                // TODO:
+                                // 1. check parameters - проверка должна быть отложена на уровень plugin ??? как передать эти данные на уровень плагина???
+                                // 2. check resultSet against fetcher & Dto ???
+                                //    find constructor with needed parameter count ???
+                                //    check that arg types match ???
+                                var rsMetadata = stmt.getMetaData();
+                                var paramMetadata = stmt.getParameterMetaData();
+
+                                var x = 1;
+
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     }
                 }
 

@@ -173,7 +173,7 @@ public class Test1 {
 //                x -> Stmt."insert into t1(v) values(\{x})"
 //            )
 //            .withGeneratedKeys()
-//            .afterPrepare(s -> s.setFetchSize(42))
+//            .afterPrepare(t -> t.setFetchSize(42))
 //            //.fetchUpdateCount(cn, stmt -> FetcherList.apply(stmt, m(String.class)));
 //            .fetchUpdateCount(
 //                cn, new FetcherGeneratedKeys<>(

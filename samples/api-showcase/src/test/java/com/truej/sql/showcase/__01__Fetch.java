@@ -25,6 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class __01__Fetch {
 
     @Test void one(MainDataSource ds) {
+//  TODO: cool stuff
+//      var x = ds."select name from users where id = \{42}"
+//          .fetchOne(long.class);
+
         assertEquals(
             ds."select name from users where id = \{42}"
                 .fetchOne(String.class)

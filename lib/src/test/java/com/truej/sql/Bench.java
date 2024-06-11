@@ -177,11 +177,11 @@ public class Bench {
         );
 
 //        try (
-//            var s = Test1.Generated.stmt_20_12(
+//            var t = Test1.Generated.stmt_20_12(
 //                new Test1.LongArgument(42)
 //            ).fetchStream(state.connection, Test1.Generated.mapper_30_10())
 //        ) {
-//            return s.mapToLong(v -> v).toArray();
+//            return t.mapToLong(v -> v).toArray();
 //        }
     }
 
