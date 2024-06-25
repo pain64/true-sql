@@ -23,7 +23,13 @@ True-SQL is an ultimate sql database connector for Java.<br>
 //why better choice? <br>
 
 ## ResultSet to DTO mapping. Grouped object-tree fetching. 
-// folded: schema.sql – flyway <br>
+<details>
+  <summary>schema.sql - flyway</summary>
+  ...
+</details>
+<details>
+  <summary>build.gradle.kts</summary>
+</details>
 // folded: build.gradle.kts <br>
 // main.java <br>
 <br>
@@ -40,13 +46,13 @@ void main() { // pg
     var user = ds.“select id, name from users where id = \{userId}”
         .fetchOne(User.class);
 
-     var clinics = ds.”
+     var clinics = ds."""
          select
             c.id, c.name, u.id, u.name
          from clinics c
          left join clinic_users cu on cu.clinic_id = c.id
          left join user u on u.id = cu.user_id
-     “ .fetchList(Clinic.class);
+     """.fetchList(Clinic.class);
 }
 ```
 NB<br>
@@ -55,13 +61,13 @@ NB<br>
 
 During compilation, we send the queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
 ```java
-ds.“select * frm user”.fetchNone();
+ds."select * frm user".fetchNone();
 //raise compiletime error… syntax error
 
-ds.“select * from yser”.fetchNone();
+ds."select * from yser".fetchNone();
 //raise compiletime error… table doesnt exist
 
-ds.“select * from user where id = \{“oops”}”.fetchNone();
+ds."select * from user where id = \{"oops"}".fetchNone();
 //raise compiletime error… ……
 
 ```
