@@ -1,9 +1,11 @@
 # True-SQL
-###### 100% coverage calculated here 
-True-SQL is an ultimate sql database connector for Java.<br>
-//some about philosophy <br>
-//why better choice? <br>
+#### 100% coverage calculated here 
+True-SQL is an ultimate sql database connector for Java.
 
+Its development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL. 
+Here you can learn more about the arguments and comparison with other DB connectors:
+
+Translated with www.DeepL.com/Translator (free version)
 **FEATURES:**
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
 - [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
@@ -98,7 +100,7 @@ ds."select * from user where id = \{123}".fetchNone();
 ```
 
 Moreover, by communicating directly with the database, we can generate DTO in compile-time.
-##### Simple row-wise select
+#### Simple row-wise select
 ```java
 var user = ds."select id, name from user".g.fetchList(User.class);
 ```
@@ -110,7 +112,7 @@ record User(long id, String name) {};
 ```
 </details>
 
-##### List grouping
+#### List grouping
 
 ```java
 var clinicAddresses = ds."""
@@ -129,7 +131,7 @@ record ClinicAddresses(String name, List<String> addresses) {};
 ```
 </details>
 
-##### Nested DTO
+#### Nested DTO
 
 ```java
 var clinics = ds."""
@@ -155,7 +157,7 @@ record Clinic(long id, String name, List<User> users) {
 </details>
 
 
-##### RAMPAGE!
+#### RAMPAGE!
 
 ```java
 var clinics = ds."""
@@ -203,7 +205,7 @@ you can force Nullability of the field with …
 ## Full featured
 some about full featured!
 
-##### GeneratedKeys
+#### GeneratedKeys
 NB: both Automapping and Generate DTO works with.
 
 ```java
@@ -212,7 +214,7 @@ var user = ds."insert into user values (\{"Pavel"})"
 .g.fetchOne(Long.class);
 ```
 
-##### UpdateCount
+#### UpdateCount
 NB: update count will always be long.
 
 ```java
@@ -221,7 +223,7 @@ update user set name = \{"Paul"} where id % 2 == 0
 ".withUpdateCount.g.fetchNone();
 ```
 
-##### Batching
+#### Batching
 NB:
 
 ```java
@@ -245,7 +247,7 @@ var keys = ds.batch(
     ).fetchNone()
 ```
 
-##### Transactions and connection pinning
+#### Transactions and connection pinning
 NB
 
 ```java
@@ -267,7 +269,7 @@ cn.inTransaction(() -> {
 })
 ```
 
-##### Streaming fetching
+#### Streaming fetching
 NB:
 
 ```java
@@ -281,10 +283,10 @@ ds.withConnection(cn -> {
 })
 ```
 
-##### Stored procedure call
+#### Stored procedure call
 NB:
 
-##### Extra type bindings
+#### Extra type bindings
 
 ## Multiple database schemas in one module
 NB:
