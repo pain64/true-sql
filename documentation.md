@@ -5,7 +5,6 @@ True-SQL is an ultimate sql database connector for Java.
 Its development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL. 
 Here you can learn more about the arguments and comparison with other DB connectors:
 
-Translated with www.DeepL.com/Translator (free version)
 **FEATURES:**
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
 - [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
