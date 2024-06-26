@@ -186,14 +186,14 @@ record Clinic(long id, String name, List<User> users) {
 ```java
 var clinics = ds."""
     select
-        c.id   as		“id”,
-        ca.address as 	“addresses.”,
-        c.name as 		“name”,
-        u.id   as 		“User users.id”,
-        u.name as 		“     users.name”,
-        b.id   as 		“     users.Bill bills.id”,
-        b.date as 		“     users.     bills.date”,
-        b.amount as 	“     users.     bills.amount”
+        c.id   as       “id”,
+        ca.address as   “addresses.”,
+        c.name as       “name”,
+        u.id   as       “User users.id”,
+        u.name as       “     users.name”,
+        b.id   as       “     users.Bill bills.id”,
+        b.date as       “     users.     bills.date”,
+        b.amount as     “     users.     bills.amount”
     from clinic c
         join clinic_addresses ca on ca.id = c.id
         left join clinic_users cu on cu.clinic_id = c.id
@@ -233,28 +233,25 @@ drivers can make mistakes.
 you can force Nullability of the field with …
 
 ## Full featured
-some about full featured!
+We save and ***improve*** all necessary JDBC possibilities.<br>
+**All features above remain in force!**
 
 #### GeneratedKeys
-NB: both Automapping and Generate DTO works with.
 
 ```java
 var user = ds."insert into user values (\{"Pavel"})"
-.asGeneratedKeys(“id”)
-.g.fetchOne(Long.class);
+    .asGeneratedKeys("id").g.fetchOne(Long.class);
 ```
 
 #### UpdateCount
-NB: update count will always be long.
 
 ```java
-var updateCount = ds."
-update user set name = \{"Paul"} where id % 2 == 0
-".withUpdateCount.g.fetchNone();
+var updateCount = ds."update user set name = \{"Paul"} where id % 2 == 0"
+    .withUpdateCount.g.fetchNone();
 ```
+###### NB: update count will always be long.
 
 #### Batching
-NB:
 
 ```java
 //List<Long>
@@ -264,12 +261,13 @@ var keys = ds.batch(
     ).asGeneratedKeys("id").fetchList(Long.class)
 ```
 
+<br>
+
 ```java
 record Discount(Date date, BigDecimal discount) {}
 
 List<Discount> discounts = ...
 
-//long[]???
 var keys = ds.batch(
     discounts,
         date, discount_perc -> 
@@ -278,7 +276,7 @@ var keys = ds.batch(
 ```
 
 #### Transactions and connection pinning
-NB
+In case you want pin connection
 
 ```java
 ds.withConnection(cn -> {
@@ -291,22 +289,22 @@ ds.withConnection(cn -> {
 })
 ```
 
+In case you need transaction mode
 ```java
 cn.inTransaction(() -> {
-    cn."insert into users values (1, ‘Joe’, ‘some@email.com’)".fetchNone;
+    cn."insert into users values (1, ‘Joe’, ‘some@email.com’)".fetchNone();
 
     return cn."select name from users where id = 1".fetchOne(String.class);
 })
 ```
 
 #### Streaming fetching
-NB:
-
+If you don't want to materialize all ResultSet rows, you could use fetchStream()
 ```java
 ds.withConnection(cn -> {
         try (
-            var stream = cn."select name from users"
-            .fetchStream(String.class)
+            var stream = cn."select id, name from users".g
+                .fetchStream(User.class)
         ) {
         //stream.toList();
         }
@@ -314,21 +312,21 @@ ds.withConnection(cn -> {
 ```
 
 #### Stored procedure call
-NB:
+lalala
 
 #### Extra type bindings
+lalala
 
 ## Multiple database schemas in one module
-NB:
 
 ```java
 record PgDb(DataSource w) implements DataSourceW {};
 record MSDb(DataSource w) implements DataSourceW {};
-//...
 ```
+###### NB:
 
 ## DB constraint violation checks
-NB:
+The way you can catch DB constraint violations.
 
 ```java
 try {
@@ -336,16 +334,20 @@ try {
 } catch (ConstraintViolationException ex) {
 	ex.when(
 		new Constraint<>("users", "users_pk", () -> {
-			throw new Handled();
+			throw new Handled("User with id=1 already exists.");
         })
     );
 }
 ```
 
 ## 100% sql-injection safety guarantee
-??? all queries text are static. all parameters passes as PreparedStatement parameters.
+1. All queries text are static.
+2. All parameters passes as PreparedStatement parameters.
+
+For these reasons, sql-injection can't happen.
 
 ## Exceptional performance. Equal to JDBC
-because we generate equal jdbc code
-??? here table with comparsion
+TrueSql translates to pure JDBC. This means that no others can be any faster.
+
+??? here table with comparsion with other frameworks
 
