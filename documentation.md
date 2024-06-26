@@ -68,8 +68,8 @@ void main() {
     //create db instance
     var ds = new PgDb(new JdbcDataSource(connection string));
     var userId = 42;
-    var user = ds."select id, name from users where id = \{userId}"
-        .fetchOne(User.class);
+    var user = ds."select name from users where id = \{userId}"
+        .fetchOne(String.class);
 }
 ```
 In all tests above we using schema:<br>
