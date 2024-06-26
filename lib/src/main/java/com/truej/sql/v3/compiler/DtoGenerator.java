@@ -1,38 +1,51 @@
 package com.truej.sql.v3.compiler;
 
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.truej.sql.v3.compiler.GLangParser.*;
+import static com.truej.sql.v3.compiler.StatementGenerator.*;
+import static com.truej.sql.v3.compiler.StatementGenerator.Out.each;
+import static java.lang.StringTemplate.RAW;
 
 public class DtoGenerator {
     // FIXME: recursive case for Non-scalar version ???
     // FIXME: remove .type().javaClassName()
+
+    // FIXME: generate nested
+//    record BBB(Bill b) {
+//        record Bill() {}
+//    }
+//
+//    record AAA(Bill b) {
+//        record Bill() {}
+//    }
     public static String generateDto(String javaClassName, List<Field> fields) {
+        var out = new Out(new StringBuilder());
 
-        var fieldDefinitions = fields.stream()
-            .map(f -> STR."public final \{f.type().javaClassName()} \{f.name()};")
-            .collect(Collectors.joining("\n    "));
+        var fieldDefinitions = each(fields, "", (o, _, f) ->
+            o."public final \{f.type().javaClassName()} \{f.name()};"
+        );
 
-        var constructorParameters = fields.stream()
-            .map(f -> STR."\{f.type().javaClassName()} \{f.name()}")
-            .collect(Collectors.joining(",\n        "));
+        var constructorParameters = each(fields, ",", (o, _, f) ->
+            o."\{f.type().javaClassName()} \{f.name()}"
+        );
 
-        var constructorFieldAssignments = fields.stream()
-            .map(f -> STR."this.\{f.name()} = \{f.name()};")
-            .collect(Collectors.joining("\n        "));
+        var constructorFieldAssignments = each(fields, "", (o, _, f) ->
+            o."this.\{f.name()} = \{f.name()};"
+        );
 
-        var equalsFieldComparisons = fields.stream()
-            .map(f -> STR."java.util.Objects.equals(this.\{f.name()}, o.\{f.name()})")
-            .collect(Collectors.joining(" &&\n            "));
+        var equalsFieldComparisons = each(fields, " &&", (o, _, f) ->
+            o."java.util.Objects.equals(this.\{f.name()}, o.\{f.name()})"
+        );
 
-        var hashCodeCalculations = fields.stream()
-            .map(f ->
-                STR."h = h * 59 + java.util.Objects.hashCode(this.\{f.name()});"
-            )
-            .collect(Collectors.joining("\n        "));
+        var hashCodeCalculations = each(fields, "", (o, _, f) ->
+            o."h = h * 59 + java.util.Objects.hashCode(this.\{f.name()});"
+        );
 
-        return STR."""
+        var _ = out."""
             class \{javaClassName} {
                 \{fieldDefinitions}
 
@@ -56,5 +69,7 @@ public class DtoGenerator {
                 }
             }
             """;
+
+        return out.buffer.toString();
     }
 }

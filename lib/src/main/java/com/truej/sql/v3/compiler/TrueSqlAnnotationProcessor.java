@@ -54,11 +54,14 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     record GeneratedKeysColumnNumbers(int[] columnNumbers) implements GeneratedKeys { }
 
     sealed interface QueryPart { }
-    record TextPart(String text) implements QueryPart { }
-    record SimpleParameter(JCExpression expression) implements QueryPart { }
-    record InoutParameter(JCExpression expression) implements QueryPart { }
-    record OutParameter() implements QueryPart { }
-    record UnfoldParameter(int n, JCExpression expression) implements QueryPart { }
+    sealed interface BatchedQueryPart extends QueryPart { }
+    sealed interface SingleQueryPart extends QueryPart { }
+
+    public record TextPart(String text) implements SingleQueryPart, BatchedQueryPart { }
+    public record SimpleParameter(JCExpression expression) implements SingleQueryPart, BatchedQueryPart { }
+    public record InoutParameter(JCExpression expression) implements SingleQueryPart { }
+    public record OutParameter() implements SingleQueryPart { }
+    public record UnfoldParameter(int n, JCExpression expression) implements SingleQueryPart { }
 
     static List<QueryPart> parseQuery(
         Symtab symtab, JCCompilationUnit cu,

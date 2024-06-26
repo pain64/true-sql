@@ -3,6 +3,8 @@ package com.truej.sql.compiler;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static com.truej.sql.util.CompileAssert.*;
 
@@ -16,6 +18,7 @@ public class DtoTypesTest {
     // 3. найти таргет для маппера (m | g)
     // 4. safe unsafe (g недоступен, требуется аннотация на метод)
     //   1.
+
     @Test void first() throws IOException {
         assertGenerated(
             """ 

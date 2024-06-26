@@ -14,4 +14,7 @@ public @interface Configuration {
         default @CompileTimeChecks(url = NOT_DEFINED); // is null
 
     TypeBinding[] typeBindings() default {};
+    // TODO ???
+    // nullableAnnotation = Class<?>
+    // notNullAnnotation  = Class<?>
 }

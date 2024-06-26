@@ -5,25 +5,10 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static com.truej.sql.v3.compiler.GLangParser.*;
+import static com.truej.sql.v3.compiler.StatementGenerator.*;
+import static com.truej.sql.v3.compiler.StatementGenerator.Out.each;
 
 public class MapperGenerator {
-
-    private static <T> String lc(List<T> list, int i) {
-        return i != list.size() - 1 ? "," : "";
-    }
-
-    private static <T> String la(List<T> list, int i) {
-        return i != list.size() - 1 ? "&&" : "";
-    }
-
-    private static void w(StringBuilder out, int deep, String... tokens) {
-        out.repeat(" ", deep);
-        for (var token : tokens) out.append(token);
-    }
-
-    private static void wl(StringBuilder out, int deep, String... tokens) {
-        w(out, deep, tokens); out.append('\n');
-    }
 
     private static List<ScalarType> flattenStartRow(List<Field> fields) {
         return fields.stream().flatMap(f ->
@@ -34,9 +19,42 @@ public class MapperGenerator {
         ).toList();
     }
 
-    private static void nextOperations(
-        int level, int offset, int deep,
-        StringBuilder extraDto, StringBuilder out,
+    private static Void dtoForGroupKeys(
+        Out out, int level, int offset, List<Field> fields
+    ) {
+        var next = fields.stream()
+            .filter(f -> f.type() instanceof AggregatedType).toList();
+
+        if (!next.isEmpty()) {
+            var locals = fields.stream()
+                .filter(f -> f.type() instanceof ScalarType).toList();
+
+            var groupKeys = each(locals, ",\n", (o, i, field) ->
+                o."\{field.type().javaClassName()} c\{offset + i + 1}"
+            );
+            var _ = out."""
+                record G\{level}(
+                    \{groupKeys}
+                ) {}
+                """;
+
+            // FIXME: use each ???
+            var baseOffset = offset + locals.size();
+            for (Field n : next) {
+                dtoForGroupKeys(
+                    out, level + 1, baseOffset,
+                    ((AggregatedType) n.type()).fields()
+                );
+
+                baseOffset += ((AggregatedType) n.type()).fields().size();
+            }
+        }
+
+        return null;
+    }
+
+    private static Void nextOperations(
+        Out out, int level, int offset,
         String dtoJavaClassName, List<Field> fields
     ) {
 
@@ -47,153 +65,150 @@ public class MapperGenerator {
             .filter(f -> f.type() instanceof AggregatedType).toList();
 
         if (next.isEmpty()) {
-            wl(out, 0, ".filter(r ->");
+            var dtoFilter = each(locals, " &&\n", (o, i, _) ->
+                o."java.util.Objects.nonNull(r.c\{offset + i + 1})"
+            );
 
-            for (var i = 0; i < locals.size(); i++)
-                wl(
-                    out, deep + 4, "java.util.Objects.nonNull(r.c",
-                    String.valueOf(offset + i + 1), ") ", la(locals, i)
-                );
+            var dtoFieldsMapper = each(locals, ",\n", (o, i, _) ->
+                o."r.c\{offset + i + 1}"
+            );
 
-            wl(out, deep, ").map(r ->");
-            if (dtoJavaClassName != null)
-                wl(out, deep, "    new ", dtoJavaClassName, "(");
+            var dtoMapper = dtoJavaClassName == null
+                ? dtoFieldsMapper : (WriteNext) o -> o."""
+                    new \{dtoJavaClassName}(
+                        \{dtoFieldsMapper}
+                    )""";
 
-            for (var i = 0; i < locals.size(); i++)
-                wl(out, deep + 8, "r.c", String.valueOf(offset + i + 1), lc(locals, i));
-
-            if (dtoJavaClassName != null)
-                wl(out, deep, "    )");
-
-            w(out, deep, ")");
-            w(out, 0, ".distinct()");
+            var _ = out."""
+                .filter(r ->
+                    \{dtoFilter}
+                ).map(r ->
+                    \{dtoMapper}
+                ).distinct()""";
         } else {
+            var keysFilter = each(locals, " &&\n", (o, i, _) ->
+                o."java.util.Objects.nonNull(g\{level}.getKey().c\{offset + i + 1})"
+            );
 
-            wl(extraDto, 4, "record G", String.valueOf(level), "(");
-            for (var i = 0; i < locals.size(); i++)
-                wl(
-                    extraDto, 8,
-                    locals.get(i).type().javaClassName(), " c", String.valueOf(offset + i + 1),
-                    lc(locals, i)
-                );
-            wl(extraDto, 4, ") {}");
+            var keysMapper = each(locals, ",\n", (o, i, _) ->
+                o."r.c\{offset + i + 1}"
+            );
 
-            wl(out, 0, ".collect(");
-            wl(out, deep, "    java.util.stream.Collectors.groupingBy(");
-            wl(out, deep, "        r -> new G", String.valueOf(level), "(");
+            var dtoMapper = each(locals, ",\n", (o, i, _) ->
+                o."g\{level}.getKey().c\{offset + i + 1}"
+            );
 
-            for (var i = 0; i < locals.size(); i++)
-                wl(out, deep + 12, "r.c", String.valueOf(offset + i + 1), lc(locals, i));
+            var nextTransform = (WriteNext) o -> {
+                var baseOffset = offset + locals.size();
 
-            wl(out, deep, "        ), java.util.LinkedHashMap::new, Collectors.toList()");
-            wl(out, deep, "    )");
-            wl(out, deep, ").entrySet().stream()");
-            wl(out, deep, ".filter(g", String.valueOf(level), " ->");
+//                var line = each(next, ",", (o2, i, n) ->
+//                    o."g\{level}.getValue().stream()\{1}.toList()"
+//                );
 
-            for (var i = 0; i < locals.size(); i++)
-                wl(
-                    out, deep + 4, "java.util.Objects.nonNull(g",
-                    String.valueOf(level), ".getKey().c",
-                    String.valueOf(offset + i + 1), ") ", la(locals, i)
-                );
+                for (var i = 0; i < next.size(); i++) {
+                    var n = next.get(i);
 
-            wl(out, deep, ").map(g", String.valueOf(level), " ->");
-            wl(out, deep, "    new ", dtoJavaClassName, "(");
+                    var _ = o."g\{level}.getValue().stream()";
+                    nextOperations(
+                        out, level + 1, baseOffset,
+                        ((AggregatedType) n.type()).javaClassName(),
+                        ((AggregatedType) n.type()).fields()
+                    );
+                    var _ = o.".toList()";
 
-            for (var i = 0; i < locals.size(); i++) {
-                w(
-                    out, deep + 8, "g", String.valueOf(level),
-                    ".getKey().c", String.valueOf(offset + i + 1)
-                );
-                wl(out, 0, ",");
-            }
+                    if (i != next.size() - 1) {
+                        var _ = o.",\n";
+                    }
 
-            var baseOffset = offset + locals.size();
-            for (var i = 0; i < next.size(); i++) {
-                var n = next.get(i);
+                    baseOffset += ((AggregatedType) n.type()).fields().size();
+                }
 
-                w(out, deep + 8, "g", String.valueOf(level), ".getValue().stream()");
-                nextOperations(
-                    level + 1, baseOffset, deep + 8, extraDto, out,
-                    ((AggregatedType) n.type()).javaClassName(),
-                    ((AggregatedType) n.type()).fields()
-                );
-                wl(out, 0, ".toList()", lc(next, i));
+                return null;
+            };
 
-                baseOffset += ((AggregatedType) n.type()).fields().size();
-            }
-
-            wl(out, deep, "    )");
-            w(out, deep, ")");
+            var _ = out."""
+                .collect(
+                    java.util.stream.Collectors.groupingBy(
+                        r -> new G\{level}(
+                            \{keysMapper}
+                        ), java.util.LinkedHashMap::new, Collectors.toList()
+                    )
+                ).entrySet().stream()
+                .filter(g\{level} ->
+                    \{keysFilter}
+                ).map(g\{level} ->
+                    new \{dtoJavaClassName}(
+                        \{dtoMapper},
+                        \{nextTransform}
+                    )
+                )""";
         }
+
+        return null;
     }
 
-    public static String generate(
-        String dtoJavaClassName, List<Field> fields,
+    // TODO: support scalar types
+    // TODO: support for OutParameters
+    public static void generate(
+        Out out, String dtoJavaClassName, List<Field> fields,
         BiFunction<String, Integer, String> typeToGetField
     ) {
+        var flattened = flattenStartRow(fields);
         var hasGrouping = fields.stream()
             .anyMatch(f -> f.type() instanceof AggregatedType);
 
-        var out = new StringBuilder();
-        wl(
-            out, 0, "static java.util.stream.Stream<",
-            dtoJavaClassName, "> doTheMapping(java.sql.ResultSet rs) {"
+        var mapFields = each(flattened, ",\n", (o, i, field) ->
+            o."\{typeToGetField.apply(field.javaClassName(), i + 1)}"
         );
 
-        var flattened = flattenStartRow(fields);
-        var nextOut = new StringBuilder();
-        final String baseDto;
+        final WriteNext extraDto;
+        final String toDto;
+        final WriteNext groupTransform;
 
         if (hasGrouping) {
-            var extraDto = new StringBuilder();
-            nextOperations(1, 0, 4, extraDto, nextOut, dtoJavaClassName, fields);
-
-            wl(out, 4, "record Row(");
-
-            for (var i = 0; i < flattened.size(); i++)
-                wl(
-                    out, 8, flattened.get(i).javaClassName(),
-                    " c", String.valueOf(i + 1), lc(flattened, i)
-                );
-
-            wl(out, 4, ") {}");
-            out.append(extraDto);
-            wl(out, 0);
-
-            baseDto = "Row";
-        } else
-            baseDto = dtoJavaClassName;
-
-        wl(out, 4, "return java.util.stream.Stream.iterate(");
-        wl(out, 4, "    rs, t -> {");
-        wl(out, 4, "        try {");
-        wl(out, 4, "            return t.next();");
-        wl(out, 4, "        } catch (java.sql.SQLException e) {");
-        wl(out, 4, "            throw new RuntimeException(e);");
-        wl(out, 4, "        }");
-        wl(out, 4, "    }, t -> t");
-        wl(out, 4, ").map(t -> {");
-        wl(out, 4, "    try {");
-        wl(out, 4, "        return new ", baseDto, "(");
-
-        for (var i = 0; i < flattened.size(); i++)
-            wl(
-                out, 16,
-                typeToGetField.apply(flattened.get(i).javaClassName(), i + 1),
-                lc(flattened, i)
+            var rowFields = each(flattened, ",\n", (o, i, field) ->
+                o."\{field.javaClassName()} c\{i + 1}"
             );
 
-        wl(out, 4, "        );");
-        wl(out, 4, "    } catch(java.sql.SQLException ex) {");
-        wl(out, 4, "        throw new RuntimeException(ex);");
-        wl(out, 4, "    }");
+            var groupKeysDto = (WriteNext) o ->
+                dtoForGroupKeys(o, 1, 0, fields);
 
-        w(out, 4, "})");
-        out.append(nextOut);
-        w(out, 0, ";");
-        wl(out, 0, "\n}");
+            toDto = "Row";
+            extraDto = o -> o."""
+                record Row(
+                    \{rowFields}
+                ) {}
+                \{groupKeysDto}
+                """;
+            groupTransform = o ->
+                nextOperations(o, 1, 0, dtoJavaClassName, fields);
 
-        return out.toString();
+        } else {
+            toDto = dtoJavaClassName;
+            extraDto = _ -> null;
+            groupTransform = _ -> null;
+        }
+
+        var _ = out."""
+            \{extraDto}
+            var mapped = Stream.iterate(
+                rs, t -> {
+                    try {
+                        return t.next();
+                    } catch (SQLException e) {
+                        throw source.mapException(e);
+                    }
+                }, t -> t
+            ).map(t -> {
+                try {
+                    return new \{toDto}(
+                        \{mapFields}
+                    );
+                } catch (SQLException e) {
+                    throw source.mapException(e);
+                }
+            })
+            \{groupTransform};
+            """;
     }
 }

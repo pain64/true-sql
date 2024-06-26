@@ -32,7 +32,8 @@ public final class FetcherOne {
                         throw new TooMuchRowsException();
 
                     return t.transform(base, executionResult, stmt, result);
-                } else throw new TooFewRowsException();
+                } else
+                    throw new TooFewRowsException();
             }
         });
     }

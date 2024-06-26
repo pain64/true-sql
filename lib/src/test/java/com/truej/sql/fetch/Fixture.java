@@ -87,15 +87,15 @@ public class Fixture {
             // TrueSql.MainConnection.databaseUrl=xxx
             // TrueSql.MainConnection.username=aaaa
             // TrueSql.MainConnection.password=bbb
-        ),
-        typeBindings = {
-            @TypeBinding(
-                sqlType = "enum1", javaClass = Enum1.class, rw = PgEnumBinding.class
-            ),
-            @TypeBinding(
-                sqlType = "enum2", javaClass = Enum2.class, rw = PgEnumBinding.class
-            )
-        }
+        )
+//        typeBindings = {
+//            @TypeBinding(
+//                sqlType = "enum1", javaClass = Enum1.class, rw = PgEnumBinding.class
+//            ),
+//            @TypeBinding(
+//                sqlType = "enum2", javaClass = Enum2.class, rw = PgEnumBinding.class
+//            )
+//        }
     )
     public record MainDataSource(DataSource w) implements DataSourceW {
         @Override public RuntimeException mapException(SQLException ex) {
@@ -232,19 +232,19 @@ public class Fixture {
     public enum Enum2 {
         A, B
     }
-    public static class PgEnumBinding implements TypeReadWrite {
-        @Override public String generateRead(
-            String sqlType, String javaClass, String source, int columnNumber
-        ) {
-            return STR."\{javaClass}.valueOf(\{source}.getString(\{columnNumber}))";
-        }
-
-        // TODO: may cast: ResultSet -> PgResultSet
-        // TODO: enum: dest: PSTMT, CALL, RS
-        @Override public String generateWrite(
-            String sqlType, String javaClass, String destination, int columnNumber, String value
-        ) {
-            return STR."\{destination}.setObject(\{columnNumber}, \{value}, java.sql.SqlType.Other))";
-        }
-    }
+//    public static class PgEnumBinding implements TypeReadWrite {
+//        @Override public String generateRead(
+//            String sqlType, String javaClass, String source, int columnNumber
+//        ) {
+//            return STR."\{javaClass}.valueOf(\{source}.getString(\{columnNumber}))";
+//        }
+//
+//        // TODO: may cast: ResultSet -> PgResultSet
+//        // TODO: enum: dest: PSTMT, CALL, RS
+//        @Override public String generateWrite(
+//            String sqlType, String javaClass, String destination, int columnNumber, String value
+//        ) {
+//            return STR."\{destination}.setObject(\{columnNumber}, \{value}, java.sql.SqlType.Other))";
+//        }
+//    }
 }

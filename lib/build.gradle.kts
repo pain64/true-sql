@@ -13,8 +13,9 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains:annotations:24.0.0")
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation("org.apiguardian:apiguardian-api:1.1.2")
     testImplementation("org.hsqldb:hsqldb:2.7.2")
     implementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.openjdk.jmh:jmh-core:1.37")

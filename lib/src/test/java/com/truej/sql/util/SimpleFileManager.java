@@ -1,6 +1,7 @@
 package com.truej.sql.util;
 
 import javax.tools.*;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -21,7 +22,21 @@ public class SimpleFileManager
         }
     }
 
+    public static class ClassFileData extends SimpleJavaFileObject {
+        public final ByteArrayOutputStream data =
+            new ByteArrayOutputStream();
+
+        public ClassFileData(URI uri) {
+            super(uri, Kind.CLASS);
+        }
+
+        @Override public OutputStream openOutputStream() {
+            return data;
+        }
+    }
+
     private Map<String, StringJsFile> compiled = new HashMap<>();
+    public final Map<String, ClassFileData> compiled2 = new HashMap<>();
 
     public SimpleFileManager(StandardJavaFileManager fileManager) {
         super(fileManager);
@@ -31,7 +46,9 @@ public class SimpleFileManager
     @Override
     public JavaFileObject getJavaFileForOutput(Location location,
                                                String className, JavaFileObject.Kind kind, FileObject sibling) {
-        return new NopClassFile(URI.create("string://" + className));
+        var d = new ClassFileData(URI.create("string://" + className));
+        compiled2.put(className, d);
+        return d;
     }
 
     @Override

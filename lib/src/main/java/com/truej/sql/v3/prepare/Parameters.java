@@ -3,9 +3,9 @@ package com.truej.sql.v3.prepare;
 import java.util.List;
 
 public class Parameters {
-    public record Pair<A, B>(A a, B b) {}
-    public record Triple<A, B, C>(A a, B b, C c) {}
-    public record Quad<A, B, C, D>(A a, B b, C c, D d) {}
+    public record Pair<A1, A2>(A1 a1, A2 a2) {}
+    public record Triple<A1, A2, A3>(A1 a1, A2 a2, A3 a3) {}
+    public record Quad<A1, A2, A3, A4>(A1 a1, A2 a2, A3 a3, A4 a4) {}
 
     public static <T> Void unfold(List<T> many) { return null; }
     public static <A, B> Void unfold2(List<Pair<A, B>> many) { return null; }

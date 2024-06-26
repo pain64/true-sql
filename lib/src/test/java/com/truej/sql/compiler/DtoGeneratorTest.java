@@ -38,7 +38,7 @@ public class DtoGeneratorTest {
                 }
                 """,
             DtoGenerator.generateDto("A", List.of(
-                new Field(new ScalarType("java.lang.String"), "f1")
+                new Field(new ScalarType(false, "java.lang.String"), "f1")
             ))
         );
     }
@@ -75,8 +75,8 @@ public class DtoGeneratorTest {
                 }
                 """,
             DtoGenerator.generateDto("A", List.of(
-                new Field(new ScalarType("java.lang.String"), "f1"),
-                new Field(new ScalarType("float"), "f2")
+                new Field(new ScalarType(false, "java.lang.String"), "f1"),
+                new Field(new ScalarType(false, "float"), "f2")
             ))
         );
     }

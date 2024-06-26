@@ -131,7 +131,10 @@ public class GLangParser {
     public sealed interface FieldType {
         String javaClassName();
     }
-    public record ScalarType(String javaClassName) implements FieldType { }
+    public record ScalarType(
+        @Nullable Boolean typeIsNullable,
+        String javaClassName
+    ) implements FieldType { }
     public record AggregatedType(
         @Nullable String javaClassName, /* FIXME: remove???  */
         List<Field> fields
@@ -162,7 +165,7 @@ public class GLangParser {
                 throw new RuntimeException("Aggregated java class name not expected here");
 
             return new Field(
-                new ScalarType(sqlTypeToJava.apply(nl.line.sqlTypeName)),
+                new ScalarType(false, sqlTypeToJava.apply(nl.line.sqlTypeName)),
                 nl.line.chain.javaFieldName
             );
         });
