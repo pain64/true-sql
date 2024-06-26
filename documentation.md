@@ -9,7 +9,7 @@ It's development is motivated by the pain of thousands of developers. Therefore,
 tg: [Alex](), [Dmitry]()<br>
 email: [truesqlbest@email.com]()
 
-## FEATURES:
+## FEATURES
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
 - [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
 - [Null-safety](#null-safety)
@@ -67,6 +67,7 @@ record PgDb(DataSource w) implements DataSourceW {};
     // create db instance
     var ds = new PgDb(new JdbcDataSource("localhost:5432"));
     var userId = 42;
+    // chill
     var name = ds."select name from users where id = \{userId}"
         .fetchOne(String.class);
 }
@@ -82,48 +83,47 @@ record PgDb(DataSource w) implements DataSourceW {};
 </details>
 
 ## ResultSet to DTO mapping. Grouped object-tree fetching.
-
-// main.java <br>
-<br>
+TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (jdbc representation of query result) to DTO. TrueSql map fields according to the declare order. 
 
 ```java
-record PgDb(DataSource w) implements DataSourceW {}
-record User(long id, String name) {}
-record Clinic(long id, String name, List<User> users) {}
+record User(long id, String name) {};
+record Clinic(long id, String name, List<User> users) {};
 
-@TrueSQL
-void main() { // pg
-    var userId = 42;
-    var ds = new PgDb(new JdbcDataSource( connection string ));
-    var user = ds.“select id, name from users where id = \{userId}”
-        .fetchOne(User.class);
+var userId = 42;
+var user = ds."select id, name from users where id = \{userId}"
+    .fetchOne(User.class);
 
-     var clinics = ds."""
-         select
-            c.id, c.name, u.id, u.name
-         from clinics c
-         left join clinic_users cu on cu.clinic_id = c.id
-         left join user u on u.id = cu.user_id
-     """.fetchList(Clinic.class);
-}
+var clinics = ds."""
+    select
+        c.id, 
+        c.name, 
+        u.id, 
+        u.name
+    from clinics c
+        left join clinic_users cu on cu.clinic_id = c.id
+        left join user u on u.id = cu.user_id
+    """.fetchList(Clinic.class);
 ```
-NB<br>
+
+###### NB: fetchOne() expects exactly one, otherwise raise RuntimeError.
+All possibilities of grouped object-tree demonstrated below.
 
 ## Compile-time query validation and DTO generation
-
-During compilation, we send the queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
+During compilation, we send queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
 ```java
 ds."select * frm user".fetchNone();
-//raise compiletime error… syntax error
+//raise compiletime error... syntax error
 
 ds."select * from yser".fetchNone();
-//raise compiletime error… table doesnt exist
+//raise compiletime error... table doesnt exist
 
-ds."select * from user where id = \{123}".fetchNone();
-//raise compiletime error… ……
+ds."select name, id from user where id = \{123}".fetchOne(String.class);
+//raise compiletime error... wrong DTO
 ```
 
-Moreover, by communicating directly with the database, we can generate DTO in compile-time.
+Moreover, by communicating directly with the database, we can generate DTO in compile-time. <br>
+**Just add ".g".**
+
 #### Simple row-wise select
 ```java
 var user = ds."select id, name from user".g.fetchList(User.class);
