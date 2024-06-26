@@ -1,6 +1,7 @@
-https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat
+<a id="build-pass">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
+<a id="coverage">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
+
 # True-SQL
-###### 100% coverage calculated here 
 True-SQL is an ultimate sql database connector for Java.<br>
 It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL.
 
@@ -8,7 +9,7 @@ It's development is motivated by the pain of thousands of developers. Therefore,
 tg: [Alex](), [Dmitry]()<br>
 email: [truesqlbest@email.com]()
 
-### FEATURES:
+## FEATURES:
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
 - [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
 - [Null-safety](#null-safety)
@@ -33,7 +34,7 @@ email: [truesqlbest@email.com]()
 
 #### TESTED ON ALL MAJOR DATABASES
 
-[Coverage](#100-coverage-calculated-here) includes all databases tests with all true-sql functionality.
+[Coverage](#coverage) includes all databases tests with all true-sql functionality.
 <table>
     <tr>
         <th>PostgreSQL</th>
@@ -54,7 +55,6 @@ email: [truesqlbest@email.com]()
         <td>latest</td>
     </tr>
 </table>
-
 
 ## ResultSet to DTO mapping. Grouped object-tree fetching. 
 <details>
