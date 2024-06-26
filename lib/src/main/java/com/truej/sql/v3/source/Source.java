@@ -29,7 +29,7 @@ public sealed interface Source extends RuntimeConfig,
         return null;
     }
 
-    @Override default Statement process(StringTemplate stringTemplate) throws RuntimeException {
+    @Override default Statement<?> process(StringTemplate stringTemplate) throws RuntimeException {
         return null; // TODO: throw
     }
 }

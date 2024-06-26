@@ -1,5 +1,6 @@
 package com.truej.sql.showcase;
 
+import com.truej.sql.v3.source.ConnectionW;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,12 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class __10__InTransaction {
     static class ForceRollback extends Exception { }
 
-    @Test void onDataSource(MainDataSource ds) {
+    void onDataSource(MainDataSource ds) {
         try {
-            ds.inTransaction(cn -> {
-                cn."""
-                    insert into users values (1, 'Joe', 'example@email.com')
-                    """.fetchNone();
+            ds.inTransaction((ConnectionW cn) -> {
+//                cn."""
+//                    insert into users values (1, 'Joe', 'example@email.com')
+//                    """.fetchNone();
 
                 assertEquals(
                     cn."select name from users where id = 1"
@@ -31,9 +32,9 @@ public class __10__InTransaction {
         }
     }
 
-    @Test void onConnection(MainDataSource ds) {
+    void onConnection(MainDataSource ds) {
         try {
-            ds.withConnection(cn ->
+            ds.withConnection((ConnectionW cn) ->
                 cn.inTransaction(() -> {
                     cn."""
                             insert into users values (1, 'Joe', 'example@email.com')

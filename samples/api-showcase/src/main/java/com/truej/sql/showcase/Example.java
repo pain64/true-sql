@@ -95,9 +95,9 @@ public class Example {
             // Также, тут должна быть заложена схема проверки типов
             // всегда знаем javaClass
             @WriteJavaClass(javaClass = Blob.class, writer = BlobWriter.class),
-            @WriteJavaClass(javaClass = String[].class, writer = StringArrayWriter.class),
-            @WriteJavaClass(javaClass = Byte[].class, writer = StringArrayWriter.class),
-            @WriteJavaClass(javaClass = byte[].class, writer = StringArrayWriter.class),
+//            @WriteJavaClass(javaClass = String[].class, writer = StringArrayWriter.class),
+//            @WriteJavaClass(javaClass = Byte[].class, writer = StringArrayWriter.class),
+//            @WriteJavaClass(javaClass = byte[].class, writer = StringArrayWriter.class),
         },
         readSqlTypeMappings = {
             // varchar -> String
@@ -178,10 +178,10 @@ public class Example {
             // .x()
             // .x
 
-            var result = database.exec(
-                TrueSql.g(MyValue.class), TrueSql.SQL."""
-                insert into users(name, email) values (\{id}, \{name}, \{email}})"""
-            );
+//            var result = database.exec(
+//                TrueSql.g(MyValue.class), TrueSql.SQL."""
+//                insert into users(name, email) values (\{id}, \{name}, \{email}})"""
+//            );
             return new Ok();
         } catch (ConstraintViolationException e) {
             return e.when(
@@ -209,39 +209,39 @@ public class Example {
         );
     }
 
-    void testSelectGrouped(DataSource ds) {
-        var clinics = Stmt."""
-                select
-                    c.id        as "id                    ",
-                    c.name      as "name                  ",
-                    user.id     as ".id@patients          ",
-                    user.name   as ".name                 ",
-                    bank.id     as "..id@banks            ",
-                    bank.money  as "..money               ",
-                    doctor.id   as ".id@doctors           ",
-                    doctor.name as ".name                 "
-                from clinics c
-                inner join doctors d on d.clinic_id = c.id
-                inner join users   u on u.clinic_id = c.id
-                inner join banks   b on b.user_id   = u.id
-            """.fetchOne(ds, m(Clinics.class));
-
-        var clinics = Stmt."""
-                select
-                    c.id        as "id                    ",
-                    c.name      as "name                  ",
-                    user.id     as ".id@Patient<> patients",
-                    user.name   as ".name                 ",
-                    bank.id     as "..id@Bank<> banks     ",
-                    bank.money  as "..money               ",
-                    doctor.id   as ".id@Doctor<> doctors  ",
-                    doctor.name as ".name                 "
-                from clinics c
-                inner join doctors d on d.clinic_id = c.id
-                inner join users   u on u.clinic_id = c.id
-                inner join banks   b on b.user_id   = u.id
-            """.fetchOne(ds, g(Clinics.class));
-    }
+//    void testSelectGrouped(DataSource ds) {
+//        var clinics = Stmt."""
+//                select
+//                    c.id        as "id                    ",
+//                    c.name      as "name                  ",
+//                    user.id     as ".id@patients          ",
+//                    user.name   as ".name                 ",
+//                    bank.id     as "..id@banks            ",
+//                    bank.money  as "..money               ",
+//                    doctor.id   as ".id@doctors           ",
+//                    doctor.name as ".name                 "
+//                from clinics c
+//                inner join doctors d on d.clinic_id = c.id
+//                inner join users   u on u.clinic_id = c.id
+//                inner join banks   b on b.user_id   = u.id
+//            """.fetchOne(ds, m(Clinics.class));
+//
+//        var clinics = Stmt."""
+//                select
+//                    c.id        as "id                    ",
+//                    c.name      as "name                  ",
+//                    user.id     as ".id@Patient<> patients",
+//                    user.name   as ".name                 ",
+//                    bank.id     as "..id@Bank<> banks     ",
+//                    bank.money  as "..money               ",
+//                    doctor.id   as ".id@Doctor<> doctors  ",
+//                    doctor.name as ".name                 "
+//                from clinics c
+//                inner join doctors d on d.clinic_id = c.id
+//                inner join users   u on u.clinic_id = c.id
+//                inner join banks   b on b.user_id   = u.id
+//            """.fetchOne(ds, g(Clinics.class));
+//    }
 
     // truej.sql.DataSource<Database>
     // truej.sql.Connection<Database>

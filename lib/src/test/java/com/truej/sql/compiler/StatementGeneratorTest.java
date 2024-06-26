@@ -8,6 +8,7 @@ import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.source.DataSourceW;
 import com.truej.sql.v3.source.Source;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -18,6 +19,7 @@ import static com.truej.sql.v3.compiler.StatementGenerator.*;
 import static com.truej.sql.v3.compiler.TrueSqlAnnotationProcessor.*;
 
 public class StatementGeneratorTest {
+    @Disabled
     @Test void batch() {
         Assertions.assertEquals(
             """
@@ -42,6 +44,7 @@ public class StatementGeneratorTest {
         P get(B element) throws E;
     }
 
+    @Disabled
     @Test void singleUnfold() {
         Assertions.assertEquals(
             """

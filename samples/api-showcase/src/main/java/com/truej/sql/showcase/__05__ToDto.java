@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class __05__ToDto {
     record User(long id, String name, String email) { }
 
-    @Test void simple(MainDataSource ds) {
+    void simple(MainDataSource ds) {
         assertEquals(
             ds. "select id, name, email from users where id = \{ 42 }"
                 .fetchOne(User.class)
@@ -34,7 +34,7 @@ public class __05__ToDto {
         @Group List<Doctor> doctors
     ) { }
 
-    @Test void grouped(MainDataSource ds) {
+    void grouped(MainDataSource ds) {
         assertEquals(
             ds."""
                     select

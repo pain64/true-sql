@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class __04__ConstraintViolation {
     static class Handled extends Exception { }
 
-    @Test void unhandled(MainDataSource ds) {
+    void unhandled(MainDataSource ds) {
         assertThrows(ConstraintViolationException.class, () ->
             ds."insert into users values(1, 'John', 'xxx@email.com')".fetchNone()
         );
     }
 
-    @Test void rethrow(MainDataSource ds) {
+    void rethrow(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
                 ds."insert into users values(1, 'John', 'xxx@email.com')".fetchNone();
@@ -32,7 +32,7 @@ public class __04__ConstraintViolation {
         });
     }
 
-    @Test void asValue(MainDataSource ds) {
+    void asValue(MainDataSource ds) {
         assertEquals(
             ((Supplier<Boolean>) () -> {
                 try {

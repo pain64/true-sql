@@ -1,16 +1,16 @@
+package com.truej.sql.showcase;
+
 import com.truej.sql.TrueSql;
 import com.truej.sql.test.Diff;
 import com.truej.sql.test.TestApi;
-import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.util.Date;
 import java.util.UUID;
 
-import static com.truej.sql.TrueSql.SQL;
 import static com.truej.sql.test.Diff.*;
 
-public class TestExample {
+public class ApiExample {
     interface TimeProvider {
         Date now();
     }
@@ -30,6 +30,7 @@ public class TestExample {
     void f(TimeProvider ioTime, UuidGenerator ioUuid) {
 
     }
+    // TODO: Вынести в отдельный API
 
     void testF() {
         var now = new Date();
@@ -101,7 +102,6 @@ public class TestExample {
     //    select * from users except select * from users_ini
     //       pg_dump users_add, users_del
     //
-    @Test
     void test() {
         TestApi.assertWith(() -> {
             // test scenario

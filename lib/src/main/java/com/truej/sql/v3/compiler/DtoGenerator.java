@@ -25,23 +25,23 @@ public class DtoGenerator {
     public static String generateDto(String javaClassName, List<Field> fields) {
         var out = new Out(new StringBuilder());
 
-        var fieldDefinitions = each(fields, "", (o, _, f) ->
+        var fieldDefinitions = each(fields, "\n", (o, _, f) ->
             o."public final \{f.type().javaClassName()} \{f.name()};"
         );
 
-        var constructorParameters = each(fields, ",", (o, _, f) ->
+        var constructorParameters = each(fields, ",\n", (o, _, f) ->
             o."\{f.type().javaClassName()} \{f.name()}"
         );
 
-        var constructorFieldAssignments = each(fields, "", (o, _, f) ->
+        var constructorFieldAssignments = each(fields, "\n", (o, _, f) ->
             o."this.\{f.name()} = \{f.name()};"
         );
 
-        var equalsFieldComparisons = each(fields, " &&", (o, _, f) ->
+        var equalsFieldComparisons = each(fields, " &&\n", (o, _, f) ->
             o."java.util.Objects.equals(this.\{f.name()}, o.\{f.name()})"
         );
 
-        var hashCodeCalculations = each(fields, "", (o, _, f) ->
+        var hashCodeCalculations = each(fields, "\n", (o, _, f) ->
             o."h = h * 59 + java.util.Objects.hashCode(this.\{f.name()});"
         );
 

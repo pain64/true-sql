@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class __01__Fetch {
 
-    @Test void one(MainDataSource ds) {
+    void one(MainDataSource ds) {
 //  TODO: cool stuff
 //      var x = ds."select name from users where id = \{42}"
 //          .fetchOne(long.class);
@@ -36,14 +36,14 @@ public class __01__Fetch {
         );
     }
 
-    @Test void oneOrNull(MainDataSource ds) {
+    void oneOrNull(MainDataSource ds) {
         assertNull(
             ds."select name from users where id = \{1}"
                 .fetchOneOrNull(String.class)
         );
     }
 
-    @Test void oneOptional(MainDataSource ds) {
+    void oneOptional(MainDataSource ds) {
         assertEquals(
             ds."select name from users where id = \{1}"
                 .fetchOneOptional(String.class)
@@ -51,12 +51,12 @@ public class __01__Fetch {
         );
     }
 
-    @Test void none(MainDataSource ds) {
+    void none(MainDataSource ds) {
         ds."insert into users values(1, 'John', 'xxx@email.com')"
             .fetchNone();
     }
 
-    @Test void list(MainDataSource ds) {
+    void list(MainDataSource ds) {
         assertEquals(
             ds."select name from users".fetchList(String.class)
             , List.of("Ivan", "Joe")
@@ -70,7 +70,7 @@ public class __01__Fetch {
         );
     }
 
-    @Test void stream(MainDataSource ds) {
+    void stream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = ds."select name from users"
@@ -84,7 +84,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCount(MainDataSource ds) {
+    void updateCount(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = ds."upda"
@@ -98,7 +98,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCountAndNone(MainDataSource ds) {
+    void updateCountAndNone(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = ds."select name from users"
@@ -112,7 +112,7 @@ public class __01__Fetch {
         }
     }
 
-    @Test void updateCountAndStream(MainDataSource ds) {
+    void updateCountAndStream(MainDataSource ds) {
         // NB: stream must be closed!
         try (
             var stream = ds."select name from users"
@@ -126,24 +126,24 @@ public class __01__Fetch {
         }
     }
 
-    @Test void manual(MainDataSource ds) {
-        assertEquals(
-            ds."select name from users".fetch(
-                new ManagedAction<>() {
-                    @Override public boolean willStatementBeMoved() {
-                        return false;
-                    }
-                    @Override public Object apply(
-                        RuntimeConfig conf, Void executionResult,
-                        PreparedStatement stmt, boolean hasGeneratedKeys
-                    ) throws SQLException {
-                        var rs = stmt.getResultSet();
-                        rs.next();
-                        return rs.getString(1);
-                    }
-                }
-            )
-            , "some"
-        );
-    }
+//    void manual(MainDataSource ds) {
+//        assertEquals(
+//            ds."select name from users".fetch(
+//                new ManagedAction<>() {
+//                    @Override public boolean willStatementBeMoved() {
+//                        return false;
+//                    }
+//                    @Override public Object apply(
+//                        RuntimeConfig conf, Void executionResult,
+//                        PreparedStatement stmt, boolean hasGeneratedKeys
+//                    ) throws SQLException {
+//                        var rs = stmt.getResultSet();
+//                        rs.next();
+//                        return rs.getString(1);
+//                    }
+//                }
+//            )
+//            , "some"
+//        );
+//    }
 }

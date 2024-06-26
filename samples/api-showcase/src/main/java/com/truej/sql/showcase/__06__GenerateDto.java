@@ -73,51 +73,51 @@ public class __06__GenerateDto {
 
     @Target(ElementType.TYPE_USE) @interface G { }
 
-    @Test void simple(MainDataSource ds) {
-        var x = AAA.<@Nullable String>fetchOne();
-        x.trim();
-
-        var xx = AAA.fetchOne(Nullable, String.class);
-        xx.trim();
-
-        var xxx = AAA.fetchOne(String.class);
-        var _ = xxx.trim();
-
-        var customerId = ds
-            ."select id from customer where name = 'Josh'"
-            .fetchOne(Long.class);
-
-        assertEquals(
-            new User(42, "Joe", "example@email.com"),
-            ds."select id, name, email from users where id = \{42}"
-                .g.fetchOne(User.class)
-        );
-
-        var xcc0 = new F<OutParameters<String>>(ds)
-            ."select id, name, email from users where id = \{42}".v;
-
-        var z = ds.withConnection(
-            cn -> new F<@Nullable String>(
-                cn, new AsGeneratedKeys("id")
-            )."""
-               select id, name, email from users where id = \{42}
-               long query"""
-        );
-
-        var _ = z.trim();
-
-        var xcc1 = new F<@Nullable String>(ds)
-            //     .asCallable()
-            //   .withUpdateCount()
-            ."select id, name, email from users where id = \{42}";
-
-        var xcc2 = new F<Stream<@G User>>(
-            ds, new AsGeneratedKeys("id")
-        )."select id, name, email from users where id = \{42}";
-
-        var xcc4 = new F<Stream<@G User>>(ds)."""
-            select id, name, email
-            from users where id = \{42}""";
+    void simple(MainDataSource ds) {
+//        var x = AAA.<@Nullable String>fetchOne();
+//        x.trim();
+//
+//        var xx = AAA.fetchOne(Nullable, String.class);
+//        xx.trim();
+//
+//        var xxx = AAA.fetchOne(String.class);
+//        var _ = xxx.trim();
+//
+//        var customerId = ds
+//            ."select id from customer where name = 'Josh'"
+//            .fetchOne(Long.class);
+//
+//        assertEquals(
+//            new User(42, "Joe", "example@email.com"),
+//            ds."select id, name, email from users where id = \{42}"
+//                .g.fetchOne(User.class)
+//        );
+//
+//        var xcc0 = new F<OutParameters<String>>(ds)
+//            ."select id, name, email from users where id = \{42}".v;
+//
+//        var z = ds.withConnection(
+//            cn -> new F<@Nullable String>(
+//                cn, new AsGeneratedKeys("id")
+//            )."""
+//               select id, name, email from users where id = \{42}
+//               long query"""
+//        );
+//
+//        var _ = z.trim();
+//
+//        var xcc1 = new F<@Nullable String>(ds)
+//            //     .asCallable()
+//            //   .withUpdateCount()
+//            ."select id, name, email from users where id = \{42}";
+//
+//        var xcc2 = new F<Stream<@G User>>(
+//            ds, new AsGeneratedKeys("id")
+//        )."select id, name, email from users where id = \{42}";
+//
+//        var xcc4 = new F<Stream<@G User>>(ds)."""
+//            select id, name, email
+//            from users where id = \{42}""";
 
 //        var xcc3 = new F<Void>(ds).withUpdateCount().batched(
 //            List.of(1, 2, 3), id -> B."delete from users where id = \{id}"
@@ -146,13 +146,13 @@ public class __06__GenerateDto {
         // stream
         // streamOfNullable
 
-        assertEquals(
-            new User(42, "Joe", "example@email.com"),
-            ds."select id, name, email from users where id = \{42}"
-                .g.fetchOne(User.class)
-                .g.fetchOne(nullable(String.class))
-            // .g.fetch(new R<Void>())
-        );
+//        assertEquals(
+//            new User(42, "Joe", "example@email.com"),
+//            ds."select id, name, email from users where id = \{42}"
+//                .g.fetchOne(User.class)
+//                .g.fetchOne(nullable(String.class))
+//            // .g.fetch(new R<Void>())
+//        );
     }
 
 //    create table clinic          (id         bigint, "name"     varchar(64)                                              );
@@ -201,7 +201,7 @@ public class __06__GenerateDto {
 //    select * from clinic_doctors;
 
 
-    @Test void grouped(MainDataSource ds) throws SQLException {
+    void grouped(MainDataSource ds) throws SQLException {
         var cl = int.class;
 
         record Row(

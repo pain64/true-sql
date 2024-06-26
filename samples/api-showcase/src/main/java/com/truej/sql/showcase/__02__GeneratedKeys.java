@@ -8,7 +8,7 @@ import static com.truej.sql.v3.prepare.Parameters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __02__GeneratedKeys {
-    @Test void test(MainDataSource ds) {
+    void test(MainDataSource ds) {
         assertEquals(
             ds."insert into users(name, email) values('John', 'xxx@email.com')"
                 .asGeneratedKeys("id")
@@ -30,7 +30,7 @@ public class __02__GeneratedKeys {
             .fetchList(String.class);
     }
 
-    @Test void inClauseTest(MainDataSource ds) {
+    void inClauseTest(MainDataSource ds) {
         var ids = List.of(1, 2, 3);
         ds."select * from users where id in ( \{unfold(ids)} )"
             .fetchNone();

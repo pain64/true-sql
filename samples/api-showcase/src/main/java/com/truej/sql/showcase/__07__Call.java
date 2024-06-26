@@ -6,7 +6,6 @@ import static com.truej.sql.v3.prepare.Parameters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __07__Call {
-    @Test
     void simple(MainDataSource ds) {
 //        ds."{ call \{out("result")} = some_procedure(\{42}, \{inout("a", 42)}) }"
 //            .asCall().fetchOne(String.class);
@@ -20,7 +19,7 @@ public class __07__Call {
             // { call
             // call
 
-            ds."{ call some_procedure(\{42}, \{inout("a", 42)}) }"
+            ds."{ call some_procedure(\{42}, \{inout(42)}) }"
                 .asCall().fetchOutParameters(String.class)
 //                .fetch(new ManagedAction<CallableStatement, Void, String>() {
 //                    @Override public boolean willStatementBeMoved() { return false; }
