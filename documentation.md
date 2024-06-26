@@ -1,5 +1,4 @@
-<a id="build-pass">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
-<a id="coverage">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
+<a id="coverage">![Coverage](./github/badges/jacoco_coverage.svg)</a>
 
 # TrueSql
 TrueSql is an ultimate sql database connector for Java.<br>
