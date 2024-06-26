@@ -1,9 +1,9 @@
 <a id="build-pass">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
 <a id="coverage">https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat</a>
 
-# True-SQL
-True-SQL is an ultimate sql database connector for Java.<br>
-It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL.
+# TrueSql
+TrueSql is an ultimate sql database connector for Java.<br>
+It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make TrueSql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose TrueSql.
 
 ##### Contact us via
 tg: [Alex](), [Dmitry]()<br>
@@ -26,15 +26,15 @@ email: [truesqlbest@email.com]()
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
 - [Exceptional perfomance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
 
-#### More information about True-SQL
+#### More information about TrueSql
 [A review article about ORM issues.]()<br>
-[Article about True-SQL.]()<br>
-[Our youtube channel about True-SQL.]()<br>
-[In this telegram channel we answer questions about True-SQL.]()
+[Article about TrueSql.]()<br>
+[Our youtube channel about TrueSql.]()<br>
+[In this telegram channel we answer questions about TrueSql.]()
 
 #### TESTED ON ALL MAJOR DATABASES
 
-[Coverage](#coverage) includes all databases tests with all true-sql functionality.
+[Coverage](#coverage) includes all databases tests with all TrueSql functionality.
 <table>
     <tr>
         <th>PostgreSQL</th>
@@ -56,25 +56,28 @@ email: [truesqlbest@email.com]()
     </tr>
 </table>
 
-## Startup
-Get artifacts here: [Maven repository link]().<br>
-Have fun!
+## Get started
+1. Get artifacts here: [Maven repository link]().<br>
+2. Have fun!
 ```java
-//here declare DataSourceW or ConnectionW name of db
+// declare DataSourceW or ConnectionW as connection configuration
 record PgDb(DataSource w) implements DataSourceW {};
-//annotate your class or method with @TrueSQL
-@TrueSQL
-void main() {
-    //create db instance
-    var ds = new PgDb(new JdbcDataSource(connection string));
+// annotate your class or method with @TrueSQL
+@TrueSQL void main() {
+    // create db instance
+    var ds = new PgDb(new JdbcDataSource("localhost:5432"));
     var userId = 42;
     var name = ds."select name from users where id = \{userId}"
         .fetchOne(String.class);
 }
 ```
-In all tests above we using schema:<br>
 <details>
-  <summary>schema.sql - flyway</summary>
+  <summary>build.gradle.kts</summary>
+  ...
+</details>
+
+<details>
+  <summary>schema.sql (also used for all examples below)</summary>
   ...
 </details>
 
@@ -218,7 +221,7 @@ NB:
 
 ## Null-safety
 minimal overture about null-safety.
-True-SQL forces you to take care about nulls. You will have to annotate all nullable values with org.jetbrains.annotations.Nullable.
+TrueSql forces you to take care about nulls. You will have to annotate all nullable values with org.jetbrains.annotations.Nullable.
 db - columns - driver - columns (may be nullable?)
 drivers can make mistakes. 
 you can force Nullability of the field with …
