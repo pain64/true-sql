@@ -122,7 +122,7 @@ ds."select name, id from user where id = \{123}".fetchOne(String.class);
 ```
 
 Moreover, by communicating directly with the database, we can generate DTO in compile-time. <br>
-**Just add ".g".**
+**Just add ".g" and mark up your query.**
 
 #### Simple row-wise select
 ```java
@@ -216,8 +216,14 @@ record Clinic(long id, String name, List<String> addresses, List<User> users) {
 ```
 </details>
 
-\\HERE GENERATED MAPPING CODE
-NB:
+###### NB: Queries stay static. All grouping work happens in Java.
+<details>
+    <summary>The code we generated for you!</summary>
+
+```java
+//
+```
+</details>
 
 ## Null-safety
 minimal overture about null-safety.
