@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    jacoco
     // id("me.champeau.jmh") version "0.7.2"
 
 }
@@ -60,4 +61,10 @@ val test by tasks.getting(Test::class) {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.jacocoTestReport {
+    reports {
+        csv.required.set(true)
+    }
 }

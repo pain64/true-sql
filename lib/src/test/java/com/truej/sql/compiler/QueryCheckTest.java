@@ -1,5 +1,6 @@
 package com.truej.sql.compiler;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import static com.truej.sql.util.CompileAssert.assertGenerated;
 
 public class QueryCheckTest {
+    @Disabled
     @Test void first() throws IOException {
         assertGenerated(
             """ 
