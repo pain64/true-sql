@@ -56,15 +56,29 @@ email: [truesqlbest@email.com]()
     </tr>
 </table>
 
-## ResultSet to DTO mapping. Grouped object-tree fetching. 
+## Startup
+Get artifacts here: [Maven repository link]().<br>
+Have fun!
+```java
+//here declare DataSourceW or ConnectionW name of db
+record PgDb(DataSource w) implements DataSourceW {};
+//annotate your class or method with @TrueSQL
+@TrueSQL
+void main() {
+    //create db instance
+    var ds = new PgDb(new JdbcDataSource(connection string));
+    var userId = 42;
+    var user = ds."select id, name from users where id = \{userId}"
+        .fetchOne(User.class);
+}
+```
+In all tests above we using schema:<br>
 <details>
   <summary>schema.sql - flyway</summary>
   ...
 </details>
-<details>
-  <summary>build.gradle.kts</summary>
-  ...
-</details>
+
+## ResultSet to DTO mapping. Grouped object-tree fetching.
 
 // main.java <br>
 <br>
