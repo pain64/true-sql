@@ -68,7 +68,7 @@ void main() {
     //create db instance
     var ds = new PgDb(new JdbcDataSource(connection string));
     var userId = 42;
-    var user = ds."select name from users where id = \{userId}"
+    var name = ds."select name from users where id = \{userId}"
         .fetchOne(String.class);
 }
 ```
