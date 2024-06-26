@@ -1,4 +1,4 @@
-<a id="coverage">![Coverage](./github/badges/jacoco_coverage.svg)</a>
+<a id="coverage">![Coverage](.github/badges/jacoco_coverage.svg)</a>
 
 # TrueSql
 TrueSql is an ultimate sql database connector for Java.<br>
