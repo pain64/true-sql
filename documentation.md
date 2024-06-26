@@ -1,12 +1,14 @@
+https://img.shields.io/badge/Code%20Coverage-100%100-success?style=flat
 # True-SQL
-#### 100% coverage calculated here 
-True-SQL is an ultimate sql database connector for Java.
+###### 100% coverage calculated here 
+True-SQL is an ultimate sql database connector for Java.<br>
+It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL.
 
-Its development is motivated by the pain of thousands of developers. Therefore, the main focus was to make true-sql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose True-SQL. 
+##### Contact us via
+tg: [Alex](), [Dmitry]()<br>
+email: [truesqlbest@email.com]()
 
-Here you can learn more about the arguments and comparison with other DB connectors:
-
-**FEATURES:**
+### FEATURES:
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
 - [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
 - [Null-safety](#null-safety)
@@ -22,9 +24,14 @@ Here you can learn more about the arguments and comparison with other DB connect
 - [DB constraint violation checks](#db-constraint-violation-checks)
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
 - [Exceptional perfomance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
-<br>
 
-**TESTED ON ALL MAJOR DATABASES**
+#### More information about True-SQL
+[A review article about ORM issues.]()<br>
+[Article about True-SQL.]()<br>
+[Our youtube channel about True-SQL.]()<br>
+[In this telegram channel we answer questions about True-SQL.]()
+
+#### TESTED ON ALL MAJOR DATABASES
 
 [Coverage](#100-coverage-calculated-here) includes all databases tests with all true-sql functionality.
 <table>
