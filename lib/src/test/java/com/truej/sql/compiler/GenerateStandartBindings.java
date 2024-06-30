@@ -1,6 +1,6 @@
 package com.truej.sql.compiler;
 
-import com.truej.sql.v3.bindings.UrlReadWrite;
+import com.truej.sql.v3.bindings.AsObjectReadWrite;
 import com.truej.sql.v3.config.TypeReadWrite;
 import org.junit.jupiter.api.Test;
 import org.postgresql.geometric.PGpoint;
@@ -10,7 +10,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
@@ -77,40 +76,11 @@ public class GenerateStandartBindings {
     }
 
     // may be null?, sqlType
-    interface EE<B> extends TypeReadWrite<B> { }
+    public interface EE<B> extends TypeReadWrite<B> { }
 
-    class ReadWriteAsObject<A> implements EE<A> {
-        boolean mayBeNull() { return true; }
-        int sqlType() { return Types.OTHER; }
-
-        @Override public A get(
-            ResultSet rs, int columnIndex
-        ) throws SQLException {
-            return (A) rs.getObject(columnIndex);
-        }
-
-        @Override public void set(
-            PreparedStatement stmt, int parameterIndex, A value
-        ) throws SQLException {
-            stmt.setObject(parameterIndex, value);
-        }
-
-        @Override public A get(
-            CallableStatement stmt, int parameterIndex
-        ) throws SQLException {
-            return (A) stmt.getObject(parameterIndex);
-        }
-
-        @Override public void registerOutParameter(
-            CallableStatement stmt, int parameterIndex
-        ) throws SQLException {
-            stmt.registerOutParameter(parameterIndex, sqlType());
-        }
-    }
-
-    class PgPointReadWrite extends ReadWriteAsObject<PGpoint> { }
-    class PgPointReadWriteX extends PgPointReadWrite { }
-    class Int2DimArrayReadWrite extends ReadWriteAsObject<int[][]> { }
+    public class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
+    public class PgPointReadWriteX extends PgPointReadWrite { }
+    public class Int2DimArrayReadWrite extends AsObjectReadWrite<int[][]> { }
 
     Class<?> up(HashMap<Type, Type> context, Type from) {
         Function<Type, Class<?>> doo = t -> {

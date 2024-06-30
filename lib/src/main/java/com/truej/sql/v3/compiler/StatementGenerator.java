@@ -1,17 +1,10 @@
 package com.truej.sql.v3.compiler;
 
-import com.truej.sql.v3.config.TypeReadWrite;
-import com.truej.sql.v3.fetch.UpdateResult;
-import com.truej.sql.v3.prepare.Parameters;
-import com.truej.sql.v3.source.DataSourceW;
-
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.truej.sql.v3.compiler.GLangParser.*;
 import static com.truej.sql.v3.compiler.TrueSqlAnnotationProcessor.*;
@@ -105,74 +98,32 @@ public class StatementGenerator {
         }
     }
 
-
-    // Batched mode example
-    // -- generated DTO's
-    // <B, P1, E1 extends Exception, P2, E2 extends Exception>
-    // Stream<@Nullable Long> fetchStream_1(
-    //     List<B> batch,
-    //     ParameterExtractor<B, P1, E1> pe1,
-    //     ParameterExtractor<B, P2, E2> pe2,
-    //     ParamSetter<P1> ps1,
-    //     ParamSetter<P2> ps2,
-    //     Source source
-    // ) throws E1, E2 {
-    //     source.withConnection( connection -> ...
-    //         var queryText = "...";
-    //         var stmt = connection.prepareStatement(...); // managed with try-with-resource or ...
-    //
-    //         -- set parameters
-    //         for (var element : batch) {
-    //             var p1 = pe1.get(element);
-    //             var p2 = pe2.get(element);
-    //             ps1.set(1, p1);
-    //             ps2.set(2, p2);
-    //         }
-    //
-    //         -- execute simple
-    //         stmt.execute();
-    //         -- execute batched
-    //         var updateCount = stmt.executeBatch();
-    //
-    //         -- do mapping to dest type (ScalarType or AggregatedType)
-    //         -- with nullability checks
-    //         -- Stream<T> as output
-    //
-    //         -- transform by Fetcher: one, oneOrZero, list, stream
-    //
-    //        -- wrap with UpdateCount if needed
-    // }
-    // Single mode example (with unfold)
-    // <P1, P2A1, P2A2, E extends Exception>
-    // Long fetchOne_2(
-    //     P1 p1,
-    //     TypeReadWrite<P1> prw1,
-    //     List<Tuple2<P2A1, P2A2>> u2,
-    //     TypeReadWrite<P2A1> prw2a1,
-    //     TypeReadWrite<P2A2> prw2a2,
-    //     Source source
-    // ) {
-    //     ps1.set(++n, p1);
-    //     for (var element : u2) {
-    //         pb2a1.set(++n, element.a1);
-    //         pba2.set(++n, element.a2);
-    //     }
-    // }
-
-
+    // TODO: deal with nullability in DTO Fields
+    // TODO: deal with nullability in return type
     public static String generate(
+        Function<String, String> typeToGetField,
         int lineNumber,
         SourceMode source,
         QueryMode query,
         StatementMode prepareAs,
         FetchMode fetchAs,
+        boolean generateDto,
         boolean withUpdateCount
     ) {
         var out = new Out(new StringBuilder());
 
+        if (
+            generateDto &&
+            fetchAs instanceof FetchTo to
+            && to.toType() instanceof AggregatedType agg
+        ) {
+            DtoGenerator.generate(out, agg);
+            var _ = out."\n";
+        }
+
         var updateCountType =
             query instanceof BatchedQuery ? "long[]" : "Long";
-        var wrapWithUpdateCount = (Function<String, String>) t ->
+        var wrapTypeWithUpdateCount = (Function<String, String>) t ->
             STR."UpdateResult<\{updateCountType}, \{t}>";
 
         // FIXME: remove duplication with AnnotationProcessor
@@ -195,7 +146,7 @@ public class StatementGenerator {
         var resultType = withUpdateCount ? (
             fetchAs instanceof FetchNone
                 ? updateCountType
-                : wrapWithUpdateCount.apply(fetcherResultType)
+                : wrapTypeWithUpdateCount.apply(fetcherResultType)
         ) : fetcherResultType;
 
         final WriteNext typeParameters;
@@ -204,6 +155,7 @@ public class StatementGenerator {
         final WriteNext queryText;
         final WriteNext setParameters;
         final WriteNext execute;
+        final String updateCount;
 
         switch (query) {
             case BatchedQuery bp -> {
@@ -256,7 +208,8 @@ public class StatementGenerator {
                         stmt.addBatch();
                     }""";
 
-                execute = o -> o."var updateCount = stmt.executeBatch();";
+                execute = o -> o."var updateCount = stmt.executeLargeBatch();";
+                updateCount = "updateCount";
             }
             case SingleQuery sp -> {
                 var nonTextParts = sp.parts.stream()
@@ -266,8 +219,8 @@ public class StatementGenerator {
                     nonTextParts, ", ", (o, i, p) -> switch (p) {
                         case TextPart _ -> throw new IllegalStateException("unreachable");
                         case SimpleParameter _,
-                            InoutParameter _,
-                            OutParameter _ -> o."P\{i + 1}";
+                             InoutParameter _,
+                             OutParameter _ -> o."P\{i + 1}";
                         case UnfoldParameter up -> {
                             var attributes = Out.each(
                                 IntStream.range(0, up.n()).boxed().toList(),
@@ -282,8 +235,8 @@ public class StatementGenerator {
                     nonTextParts, ",\n", (o, i, p) -> switch (p) {
                         case TextPart _ -> throw new IllegalStateException("unreachable");
                         case SimpleParameter _,
-                            InoutParameter _,
-                            OutParameter _ -> o."""
+                             InoutParameter _,
+                             OutParameter _ -> o."""
                                 P\{i + 1} p\{i + 1},
                                 TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
                         case UnfoldParameter up -> {
@@ -320,8 +273,8 @@ public class StatementGenerator {
                                 buffer.append(""\"
                                     \{t.text()}""\");""";
                             case SimpleParameter _,
-                                InoutParameter _,
-                                OutParameter _ -> {
+                                 InoutParameter _,
+                                 OutParameter _ -> {
                                 pIndex[0]++;
                                 yield oo."buffer.append(\" ? \");";
                             }
@@ -354,8 +307,9 @@ public class StatementGenerator {
                         nonTextParts, "\n", (oo, i, p) -> switch (p) {
                             case TextPart _ -> throw new IllegalStateException("unreachable");
                             case SimpleParameter _,
-                                InoutParameter _ -> oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
-                            case OutParameter _ -> oo."";
+                                 InoutParameter _ -> oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
+                            case OutParameter _ ->
+                                oo."prw\{i + 1}.registerOutParameter(stmt, ++n);";
                             case UnfoldParameter up -> {
                                 var unfolded = Out.each(
                                     IntStream.range(0, up.n()).boxed().toList(),
@@ -377,6 +331,7 @@ public class StatementGenerator {
                 };
 
                 execute = o -> o."stmt.execute();";
+                updateCount = "stmt.getLargeUpdateCount()";
             }
         }
 
@@ -404,32 +359,38 @@ public class StatementGenerator {
             }
         };
 
+        // Generate DTO (recursive version)
+        // Fetch single, Fetch from out parameters
         var getResultSet = (WriteNext) o -> switch (prepareAs) {
-            case AsCall asCall -> null;
+            case AsCall _ -> null;
             case AsDefault _ -> o."var rs = stmt.getResultSet()";
             case AsGeneratedKeysColumnNames _,
-                AsGeneratedKeysIndices _ -> o."var rs = stmt.getGeneratedKeys()";
+                 AsGeneratedKeysIndices _ -> o."var rs = stmt.getGeneratedKeys()";
         };
 
-        // TODO: wrap with update result
+        var wrapResultWithUpdateCount = (Function<String, String>) result ->
+            withUpdateCount ? STR."new UpdateResult<>(\{updateCount}, \{result})" : result;
+
         var doFetch = (WriteNext) o -> switch (fetchAs) {
-            case FetchNone _ -> null;
+            case FetchNone _ -> withUpdateCount
+                ? o."return \{updateCount};"
+                : o."return null;";
             case FetchTo to -> {
-                MapperGenerator.generate(o, "XXX", List.of(
-                    new Field(new ScalarType(false, "java.lang.String"), "x")
-                ), (t, i) -> STR."fff_\{t}_\{i}");
+                MapperGenerator.generate(
+                    o, to.toType(), prepareAs instanceof AsCall, typeToGetField
+                );
 
                 yield switch (to) {
                     case FetchList _ -> o."""
-                        return mapped.toList()""";
+                        return \{wrapResultWithUpdateCount.apply("mapped.toList()")};""";
                     case FetchOne _ -> o."""
                         var iterator = mapped.iterator()
                         if (iterator.hasNext()) {
                             var result = iterator.next();
                             if (iterator.hasNext())
                                 throw new TooMuchRowsException();
-                                                
-                            return t.transform(base, executionResult, stmt, result);
+
+                            return \{wrapResultWithUpdateCount.apply("result")};
                         } else
                             throw new TooFewRowsException();
                         """;
@@ -439,29 +400,32 @@ public class StatementGenerator {
                             var result = iterator.next();
                             if (iterator.hasNext())
                                 throw new TooMuchRowsException();
-                            return result;
+                            return \{wrapResultWithUpdateCount.apply("result")};
                         }
-                                                
-                        return null;""";
+
+                        return \{wrapResultWithUpdateCount.apply("null")};""";
                     case FetchStream _ -> o."""
-                        return mapped""";
+                        return \{wrapResultWithUpdateCount.apply("mapped")};""";
                 };
             }
         };
 
-        var doWithPrepared = (WriteNext) o ->
+        var doWithPrepared = (WriteNext) o -> o."""
+             \{setParameters}
+
+             \{execute}
+
+             \{getResultSet}
+
+             \{doFetch}""";
+
+        var acquireStatement = (WriteNext) o ->
             fetchAs instanceof FetchStream
                 ? o."""
                 var stmt = connection.\{prepare};
                 try {
 
-                    \{setParameters}
-
-                    \{execute}
-
-                    \{getResultSet}
-
-                    \{doFetch}
+                   \{doWithPrepared}
 
                 } catch (Exception e) {
                     try {
@@ -474,26 +438,21 @@ public class StatementGenerator {
                 : o."""
                 try (var stmt = connection.\{prepare}) {
 
-                    \{setParameters}
+                    \{doWithPrepared}
 
-                    \{execute}
-
-                    \{getResultSet}
-
-                    \{doFetch}
                 }""";
 
         var doWithSource = (WriteNext) o -> switch (source) {
             case DATASOURCE -> o."""
                 try (var connection = source.w().getConnection()) {
-                    \{doWithPrepared}
+                    \{acquireStatement}
                 } catch (SQLException e) {
                     throw source.mapException(e);
                 }""";
             case CONNECTION -> o."""
                 try {
                     var connection = source.w();
-                    \{doWithPrepared}
+                    \{acquireStatement}
                 } catch (SQLException e) {
                     throw source.mapException(e);
                 }""";

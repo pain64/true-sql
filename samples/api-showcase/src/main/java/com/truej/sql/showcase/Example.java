@@ -15,7 +15,6 @@ import java.util.List;
 
 import static com.truej.sql.showcase.NewApi.fetch;
 import static com.truej.sql.showcase.NewApi.one;
-import static com.truej.sql.v3.TrueSql.*;
 
 // TODO:
 //   1. Реализация
@@ -43,7 +42,6 @@ import static com.truej.sql.v3.TrueSql.*;
 //
 // }
 // import ExampleDto.*;
-@GenDto
 public class Example {
 
     static class VarcharReader implements Reader {

@@ -1,8 +1,18 @@
-package com.truej.sql.v3.prepare;
+package com.truej.sql.v3.source;
 
 import java.util.List;
 
 public class Parameters {
+    public static class AsNullable { }
+    public static class AsNotNull { }
+
+    public static final AsNullable Nullable = new AsNullable();
+    public static final AsNotNull NotNull = new AsNotNull();
+
+    public interface BatchArgumentsExtractor<T> {
+        Object[] extract(T one);
+    }
+
     public record Pair<A1, A2>(A1 a1, A2 a2) {}
     public record Triple<A1, A2, A3>(A1 a1, A2 a2, A3 a3) {}
     public record Quad<A1, A2, A3, A4>(A1 a1, A2 a2, A3 a3, A4 a4) {}

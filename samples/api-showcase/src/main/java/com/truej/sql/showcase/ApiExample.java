@@ -1,6 +1,5 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.TrueSql;
 import com.truej.sql.test.Diff;
 import com.truej.sql.test.TestApi;
 

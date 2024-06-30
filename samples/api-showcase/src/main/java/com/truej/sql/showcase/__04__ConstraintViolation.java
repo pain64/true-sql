@@ -14,14 +14,14 @@ public class __04__ConstraintViolation {
 
     void unhandled(MainDataSource ds) {
         assertThrows(ConstraintViolationException.class, () ->
-            ds."insert into users values(1, 'John', 'xxx@email.com')".fetchNone()
+            ds.q("insert into users values(1, 'John', 'xxx@email.com')").fetchNone()
         );
     }
 
     void rethrow(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
-                ds."insert into users values(1, 'John', 'xxx@email.com')".fetchNone();
+                ds.q("insert into users values(1, 'John', 'xxx@email.com')").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
                     new Constraint<>("users", "users_pk", () -> {
@@ -36,7 +36,7 @@ public class __04__ConstraintViolation {
         assertEquals(
             ((Supplier<Boolean>) () -> {
                 try {
-                    ds."insert into users values(1, 'John', 'xxx@email.com')".fetchNone();
+                    ds.q("insert into users values(1, 'John', 'xxx@email.com')").fetchNone();
                     return true;
                 } catch (ConstraintViolationException ex) {
                     return ex.when(

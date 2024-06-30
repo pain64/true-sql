@@ -4,7 +4,7 @@ import com.truej.sql.v3.*;
 import com.truej.sql.v3.TrueSql;
 import com.truej.sql.v3.config.Configuration;
 import com.truej.sql.v3.fetch.*;
-import com.truej.sql.v3.prepare.Statement;
+// import com.truej.sql.v3.prepare.Statement;
 import com.truej.sql.v3.source.ConnectionW;
 import com.truej.sql.v3.source.DataSourceW;
 import com.truej.sql.v3.source.Source;
@@ -76,39 +76,39 @@ public class Test1 {
         }
     }
 
-    // Generated code
-    static class Generated {
-        static Statement<PreparedStatement> stmt_20_12(Source source, Argument a1) {
-            return new Statement<>() {
-                @Override protected Source source() { return source; }
-                @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
-                    return connection.prepareStatement("select id from users where id = ?");
-                }
-                @Override protected void bindArgs(PreparedStatement stmt) throws SQLException {
-                    a1.set(1, stmt);
-                }
-            };
-        }
-
-        static ResultSetMapper<Long> mapper_30_10() {
-            return rs -> new Iterator<>() {
-                @Override public boolean hasNext() {
-                    try {
-                        return rs.next();
-                    } catch (SQLException e) {
-                        throw new SqlExceptionR(e);
-                    }
-                }
-                @Override public Long next() {
-                    try {
-                        return rs.getLong(1);
-                    } catch (SQLException e) {
-                        throw new SqlExceptionR(e);
-                    }
-                }
-            };
-        }
-    }
+//    // Generated code
+//    static class Generated {
+//        static Statement<PreparedStatement> stmt_20_12(Source source, Argument a1) {
+//            return new Statement<>() {
+//                @Override protected Source source() { return source; }
+//                @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+//                    return connection.prepareStatement("select id from users where id = ?");
+//                }
+//                @Override protected void bindArgs(PreparedStatement stmt) throws SQLException {
+//                    a1.set(1, stmt);
+//                }
+//            };
+//        }
+//
+//        static ResultSetMapper<Long> mapper_30_10() {
+//            return rs -> new Iterator<>() {
+//                @Override public boolean hasNext() {
+//                    try {
+//                        return rs.next();
+//                    } catch (SQLException e) {
+//                        throw new SqlExceptionR(e);
+//                    }
+//                }
+//                @Override public Long next() {
+//                    try {
+//                        return rs.getLong(1);
+//                    } catch (SQLException e) {
+//                        throw new SqlExceptionR(e);
+//                    }
+//                }
+//            };
+//        }
+//    }
 
     // TODO: make compiler plugin & emit code
     // TODO: check that debugger works fine

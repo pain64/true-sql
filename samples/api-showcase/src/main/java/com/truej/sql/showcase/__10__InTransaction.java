@@ -11,13 +11,13 @@ public class __10__InTransaction {
 
     void onDataSource(MainDataSource ds) {
         try {
-            ds.inTransaction((ConnectionW cn) -> {
+            ds.inTransaction(cn -> {
 //                cn."""
 //                    insert into users values (1, 'Joe', 'example@email.com')
 //                    """.fetchNone();
 
                 assertEquals(
-                    cn."select name from users where id = 1"
+                    cn.q("select name from users where id = 1")
                         .fetchOne(String.class)
                     , "Joe"
                 );
@@ -26,8 +26,8 @@ public class __10__InTransaction {
             });
         } catch (ForceRollback ex) {
             assertNull(
-                ds."select name from users where id = 1"
-                    .fetchOneOrNull(String.class)
+                ds.q("select name from users where id = 1")
+                    .fetchOneOrZero(String.class)
             );
         }
     }
@@ -36,12 +36,12 @@ public class __10__InTransaction {
         try {
             ds.withConnection((ConnectionW cn) ->
                 cn.inTransaction(() -> {
-                    cn."""
+                    cn.q("""
                             insert into users values (1, 'Joe', 'example@email.com')
-                        """.fetchNone();
+                        """).fetchNone();
 
                     assertEquals(
-                        cn."select name from users where id = 1"
+                        cn.q("select name from users where id = 1")
                             .fetchOne(String.class)
                         , "Joe"
                     );
@@ -50,8 +50,8 @@ public class __10__InTransaction {
             );
         } catch (ForceRollback ex) {
             assertNull(
-                ds."select name from users where id = 1"
-                    .fetchOneOrNull(String.class)
+                ds.q("select name from users where id = 1")
+                    .fetchOneOrZero(String.class)
             );
         }
     }

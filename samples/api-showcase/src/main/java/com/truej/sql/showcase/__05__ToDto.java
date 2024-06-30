@@ -1,14 +1,8 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.Group;
-import org.junit.jupiter.api.Test;
-
-import javax.sql.DataSource;
-
 import java.math.BigDecimal;
 import java.util.List;
 
-import static com.truej.sql.v3.TrueSql.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class __05__ToDto {
@@ -16,7 +10,7 @@ public class __05__ToDto {
 
     void simple(MainDataSource ds) {
         assertEquals(
-            ds. "select id, name, email from users where id = \{ 42 }"
+            ds.q("select id, name, email from users where id = .1", 42)
                 .fetchOne(User.class)
             , new User(42, "Joe", "example@email.com")
         );
@@ -26,17 +20,17 @@ public class __05__ToDto {
     // FIXME: is @Group OK?
 
     record Bank(long id, BigDecimal money) { }
-    record Patient(long id, String name, @Group List<Bank> banks) { }
+    record Patient(long id, String name, List<Bank> banks) { }
     record Doctor(long id, String name) { }
     record Clinic(
         long id, String name,
-        @Group List<Patient> patients,
-        @Group List<Doctor> doctors
+        List<Patient> patients,
+        List<Doctor> doctors
     ) { }
 
     void grouped(MainDataSource ds) {
         assertEquals(
-            ds."""
+            ds.q("""
                     select
                         c.id        as "id                    ",
                         c.name      as "name                  ",
@@ -50,7 +44,7 @@ public class __05__ToDto {
                     inner join doctors d on d.clinic_id = c.id
                     inner join users   u on u.clinic_id = c.id
                     inner join banks   b on b.user_id   = u.id
-                """.fetchOne(Clinic.class),
+                """).fetchOne(Clinic.class),
             new Clinic(
                 1L, "Pet clinic",
                 List.of(

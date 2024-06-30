@@ -1,11 +1,10 @@
 package com.truej.sql.fetch;
 
 import com.truej.sql.v3.ConstraintViolationException;
-import com.truej.sql.v3.prepare.BatchStatement;
+// import com.truej.sql.v3.prepare.BatchStatement;
 import com.truej.sql.v3.SqlExceptionR;
 import com.truej.sql.v3.config.*;
-import com.truej.sql.v3.fetch.ResultSetMapper;
-import com.truej.sql.v3.prepare.Statement;
+// import com.truej.sql.v3.prepare.Statement;
 import com.truej.sql.v3.source.DataSourceW;
 import com.truej.sql.v3.source.Source;
 import org.hsqldb.HsqlException;
@@ -21,65 +20,65 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fixture {
-    public static Statement<PreparedStatement> queryStmt(Source source, String text) {
-        return new Statement<>() {
-            @Override protected Source source() { return source; }
-            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
-                return connection.prepareStatement(text);
-            }
-            @Override protected void bindArgs(PreparedStatement stmt) { }
-        };
-    }
-
-    public static Statement<PreparedStatement> queryStmtGeneratedKeys(Source source, String text, String... columnNames) {
-        return new Statement<>() {
-            @Override protected Source source() { return source; }
-            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
-                return connection.prepareStatement(text, columnNames);
-            }
-            @Override protected boolean isAsGeneratedKeys() { return true; }
-            @Override protected void bindArgs(PreparedStatement stmt) { }
-        };
-    }
-
-    public static BatchStatement<PreparedStatement> queryBatchStmt(Source source, String text) {
-        return new BatchStatement<>() {
-            @Override protected Source source() { return source; }
-            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
-                return connection.prepareStatement(text);
-            }
-            @Override protected void bindArgs(PreparedStatement stmt) { }
-        };
-    }
-
-    public static ResultSetMapper<Long> longMapper() {
-        return rs -> new Iterator<>() {
-            @Override public boolean hasNext() {
-                try {
-                    return rs.next();
-                } catch (SQLException e) {
-                    throw new SqlExceptionR(e);
-                }
-            }
-            @Override public Long next() {
-                try {
-                    return rs.getLong(1);
-                } catch (SQLException e) {
-                    throw new SqlExceptionR(e);
-                }
-            }
-        };
-    }
-
-    public static ResultSetMapper<Long> badMapper() {
-        return _ -> {
-            throw new SqlExceptionR(new SQLException("oops"));
-        };
-    }
-
-    public static Statement<PreparedStatement> badQuery(Source source) {
-        return queryStmt(source, "absurd");
-    }
+//    public static Statement<PreparedStatement> queryStmt(Source source, String text) {
+//        return new Statement<>() {
+//            @Override protected Source source() { return source; }
+//            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+//                return connection.prepareStatement(text);
+//            }
+//            @Override protected void bindArgs(PreparedStatement stmt) { }
+//        };
+//    }
+//
+//    public static Statement<PreparedStatement> queryStmtGeneratedKeys(Source source, String text, String... columnNames) {
+//        return new Statement<>() {
+//            @Override protected Source source() { return source; }
+//            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+//                return connection.prepareStatement(text, columnNames);
+//            }
+//            @Override protected boolean isAsGeneratedKeys() { return true; }
+//            @Override protected void bindArgs(PreparedStatement stmt) { }
+//        };
+//    }
+//
+//    public static BatchStatement<PreparedStatement> queryBatchStmt(Source source, String text) {
+//        return new BatchStatement<>() {
+//            @Override protected Source source() { return source; }
+//            @Override protected PreparedStatement prepare(Connection connection) throws SQLException {
+//                return connection.prepareStatement(text);
+//            }
+//            @Override protected void bindArgs(PreparedStatement stmt) { }
+//        };
+//    }
+//
+//    public static ResultSetMapper<Long> longMapper() {
+//        return rs -> new Iterator<>() {
+//            @Override public boolean hasNext() {
+//                try {
+//                    return rs.next();
+//                } catch (SQLException e) {
+//                    throw new SqlExceptionR(e);
+//                }
+//            }
+//            @Override public Long next() {
+//                try {
+//                    return rs.getLong(1);
+//                } catch (SQLException e) {
+//                    throw new SqlExceptionR(e);
+//                }
+//            }
+//        };
+//    }
+//
+//    public static ResultSetMapper<Long> badMapper() {
+//        return _ -> {
+//            throw new SqlExceptionR(new SQLException("oops"));
+//        };
+//    }
+//
+//    public static Statement<PreparedStatement> badQuery(Source source) {
+//        return queryStmt(source, "absurd");
+//    }
 
     @Configuration(
         checks = @CompileTimeChecks(

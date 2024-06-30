@@ -61,7 +61,7 @@ public class GLangParser {
         @Nullable String javaFieldName,
         @Nullable Chain next
     ) { }
-    public record Line(@Nullable String sqlTypeName, Chain chain) { }
+    public record Line(NullMode nullMode, @Nullable String sqlTypeName, Chain chain) { }
 
     public static Line parse(List<Lexeme> input) {
         if (input.get(0) instanceof Colon) {
@@ -73,36 +73,12 @@ public class GLangParser {
 
             var sqlTypeName = ((Text) input.get(2)).t;
 
-            return new Line(sqlTypeName, parseChain(input, 3));
+            // FIXME: nullMode
+            return new Line(NullMode.DEFAULT_NOT_NULL, sqlTypeName, parseChain(input, 3));
         } else
-            return new Line(null, parseChain(input, 0));
+            // FIXME: nullMode
+            return new Line(NullMode.DEFAULT_NOT_NULL, null, parseChain(input, 0));
     }
-
-    // inferred: i - Int
-    // parseChain = List Lexeme :input, Int :i ->
-    //     get input i ?
-    //        End     -> Chain nil nil nil
-    //        Text t1 -> get input i + 1 ?
-    //            End -> Chain nil t1.t nil
-    //            Dot -> Chain nil t1.t (parseChain input i + 2)
-    //            Text t2 -> get input i + 2 ?
-    //                End  -> Chain t1.t, t2.t, nil
-    //                Dot  -> Chain t1.t, t2.t, (parseChain input i + 3)
-    //                :l   -> E 'expected END or DOT but has {l}'
-    //            :l -> E 'expected END or DOT or TEXT but has {l}'
-    //         :l -> E 'expected END or TEXT but has {l}'
-
-//    parseResultSetColumnNames =
-//        List<String> columnNames, Function<String, String> sqlTypeToJava
-//    ) {
-//        return buildGroup(
-//            IntStream
-//                .range(0, columnNames.size())
-//                .mapToObj(n -> new NumberedLine(n, parse(lex(columnNames.get(n)))))
-//                .toList(),
-//            sqlTypeToJava
-//        );
-//    }
 
     public static Chain parseChain(List<Lexeme> input, int i) {
         return switch (input.get(i)) {
@@ -131,16 +107,20 @@ public class GLangParser {
     public sealed interface FieldType {
         String javaClassName();
     }
+    public enum NullMode { EXACTLY_NULLABLE, DEFAULT_NOT_NULL, EXACTLY_NOT_NULL}
+
     public record ScalarType(
-        @Nullable Boolean typeIsNullable,
-        String javaClassName
+        NullMode nullMode, String javaClassName
     ) implements FieldType { }
+
     public record AggregatedType(
         @Nullable String javaClassName, /* FIXME: remove???  */
         List<Field> fields
     ) implements FieldType { }
+
     public record Field(FieldType type, String name) { }
-    record NumberedLine(int n, Line line) { }
+
+    public record NumberedLine(int n, Line line) { }
 
     private static List<Field> buildGroup(
         List<NumberedLine> lines, Function<String, String> sqlTypeToJava
@@ -165,7 +145,9 @@ public class GLangParser {
                 throw new RuntimeException("Aggregated java class name not expected here");
 
             return new Field(
-                new ScalarType(false, sqlTypeToJava.apply(nl.line.sqlTypeName)),
+                new ScalarType(
+                    nl.line.nullMode, sqlTypeToJava.apply(nl.line.sqlTypeName)
+                ),
                 nl.line.chain.javaFieldName
             );
         });
@@ -212,37 +194,4 @@ public class GLangParser {
         );
     }
 
-//    ds."""
-//                select
-//                    c.id        as ":t user         id                       ",
-//                    c.name      as "                name                     ",
-//                    v.joined    as "                collection.              ",
-//                    user.id     as "        Patient patients.     id         ",
-//                    user.name   as "                patients.     name       ",
-//                    bank.id     as "                patients.Bank banks.id   ",
-//                    bank.money  as "                patients.     banks.money",
-//                    doctor.id   as "        Doctor  doctors.id               ",
-//                    doctor.name as "                doctors.name             "
-//                from clinics c
-//                inner join doctors d on d.clinic_id = c.id
-//                inner join users   u on u.clinic_id = c.id
-//                inner join banks   b on b.user_id   = u.id
-//            """.g.fetchOne(Clinic.class);
-
-//    ds."""
-//                select
-//                    c.id        as ":t user id                         ",
-//                    c.name      as "        name                       ",
-//                    v.joined    as "        collection.                ",
-//                    user.id     as "        patients(Patient).id       ",
-//                    user.name   as "        patients         .name     ",
-//                    bank.id     as "        patients.banks(Bank).id    ",
-//                    bank.money  as "        patients.banks       .money",
-//                    doctor.id   as "        doctors(Doctor).id         ",
-//                    doctor.name as "        doctors        .name       "
-//                from clinics c
-//                inner join doctors d on d.clinic_id = c.id
-//                inner join users   u on u.clinic_id = c.id
-//                inner join banks   b on b.user_id   = u.id
-//            """.g.fetchOne(Clinic.class);
 }

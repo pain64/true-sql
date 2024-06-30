@@ -1,6 +1,5 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.TrueSql;
 import com.truej.sql.config.Database;
 
 import javax.sql.DataSource;

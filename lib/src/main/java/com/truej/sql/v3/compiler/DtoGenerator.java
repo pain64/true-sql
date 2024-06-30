@@ -1,14 +1,11 @@
 package com.truej.sql.v3.compiler;
 
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.truej.sql.v3.compiler.GLangParser.*;
 import static com.truej.sql.v3.compiler.StatementGenerator.*;
 import static com.truej.sql.v3.compiler.StatementGenerator.Out.each;
-import static java.lang.StringTemplate.RAW;
 
 public class DtoGenerator {
     // FIXME: recursive case for Non-scalar version ???
@@ -22,34 +19,48 @@ public class DtoGenerator {
 //    record AAA(Bill b) {
 //        record Bill() {}
 //    }
-    public static String generateDto(String javaClassName, List<Field> fields) {
-        var out = new Out(new StringBuilder());
+    public static void generate(Out out, AggregatedType forType) {
+        var declType = (Function<Field, String>) f -> switch (f.type()) {
+            case AggregatedType _ -> STR."List<\{f.type().javaClassName()}>";
+            case ScalarType _ -> f.type().javaClassName();
+        };
 
-        var fieldDefinitions = each(fields, "\n", (o, _, f) ->
-            o."public final \{f.type().javaClassName()} \{f.name()};"
+        var nestedTypes = forType.fields().stream()
+            .filter(f -> f.type() instanceof AggregatedType)
+            .map(f -> (AggregatedType) f.type())
+            .toList();
+
+        var nestedDto = each(nestedTypes, "\n", (o, _, at) -> {
+            generate(o, at);
+            return null;
+        });
+
+        var fieldDefinitions = each(forType.fields(), "\n", (o, _, f) ->
+            o."public final \{declType.apply(f)} \{f.name()};"
         );
 
-        var constructorParameters = each(fields, ",\n", (o, _, f) ->
-            o."\{f.type().javaClassName()} \{f.name()}"
+        var constructorParameters = each(forType.fields(), ",\n", (o, _, f) ->
+            o."\{declType.apply(f)} \{f.name()}"
         );
 
-        var constructorFieldAssignments = each(fields, "\n", (o, _, f) ->
+        var constructorFieldAssignments = each(forType.fields(), "\n", (o, _, f) ->
             o."this.\{f.name()} = \{f.name()};"
         );
 
-        var equalsFieldComparisons = each(fields, " &&\n", (o, _, f) ->
+        var equalsFieldComparisons = each(forType.fields(), " &&\n", (o, _, f) ->
             o."java.util.Objects.equals(this.\{f.name()}, o.\{f.name()})"
         );
 
-        var hashCodeCalculations = each(fields, "\n", (o, _, f) ->
+        var hashCodeCalculations = each(forType.fields(), "\n", (o, _, f) ->
             o."h = h * 59 + java.util.Objects.hashCode(this.\{f.name()});"
         );
 
         var _ = out."""
-            class \{javaClassName} {
+            \{nestedDto}
+            class \{forType.javaClassName()} {
                 \{fieldDefinitions}
 
-                public \{javaClassName}(
+                public \{forType.javaClassName()}(
                     \{constructorParameters}
                 ) {
                     \{constructorFieldAssignments}
@@ -57,7 +68,7 @@ public class DtoGenerator {
 
                 @Override public boolean equals(Object other) {
                     return this == other || (
-                        other instanceof \{javaClassName} o &&
+                        other instanceof \{forType.javaClassName()} o &&
                         \{equalsFieldComparisons}
                     );
                 }
@@ -67,9 +78,6 @@ public class DtoGenerator {
                     \{hashCodeCalculations}
                     return h;
                 }
-            }
-            """;
-
-        return out.buffer.toString();
+            }""";
     }
 }

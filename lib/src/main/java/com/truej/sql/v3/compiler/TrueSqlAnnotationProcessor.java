@@ -16,7 +16,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.comp.Resolve;
@@ -58,17 +57,18 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     sealed interface SingleQueryPart extends QueryPart { }
 
     public record TextPart(String text) implements SingleQueryPart, BatchedQueryPart { }
-    public record SimpleParameter(JCExpression expression) implements SingleQueryPart, BatchedQueryPart { }
+    public record SimpleParameter(
+        JCExpression expression) implements SingleQueryPart, BatchedQueryPart { }
     public record InoutParameter(JCExpression expression) implements SingleQueryPart { }
     public record OutParameter() implements SingleQueryPart { }
     public record UnfoldParameter(int n, JCExpression expression) implements SingleQueryPart { }
 
     static List<QueryPart> parseQuery(
         Symtab symtab, JCCompilationUnit cu,
-        Names names, JCStringTemplate tree
+        Names names, String queryText, com.sun.tools.javac.util.List<JCExpression> args
     ) {
         var clParameters = symtab.enterClass(
-            cu.modle, names.fromString("com.truej.sql.v3.prepare.Parameters")
+            cu.modle, names.fromString("com.truej.sql.v3.source.Parameters")
         );
 
         interface ParseLeaf {
@@ -103,10 +103,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 return new SimpleParameter(invoke);
         };
 
+        var fragments = queryText.split("(?<=[\\s,=()])\\?");
+
         var result = new ArrayList<QueryPart>();
-        for (var i = 0; i < tree.fragments.size(); i++) {
-            result.add(new TextPart(tree.fragments.get(i)));
-            if (i < tree.expressions.size()) {
+        for (var i = 0; i < fragments.length; i++) {
+            result.add(new TextPart(fragments[i]));
+            if (i < args.size()) {
                 var expression = tree.expressions.get(i);
                 final QueryPart parsed;
 
@@ -240,13 +242,10 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                     if (
                         f.name.equals(names.fromString("fetchOne")) ||
-                        f.name.equals(names.fromString("fetchOneOrNull")) ||
-                        f.name.equals(names.fromString("fetchOneOptional")) ||
+                        f.name.equals(names.fromString("fetchOneOrZero")) ||
                         f.name.equals(names.fromString("fetchList")) ||
                         f.name.equals(names.fromString("fetchStream")) ||
-                        f.name.equals(names.fromString("fetchOutParameters")) ||
-                        f.name.equals(names.fromString("fetchNone")) ||
-                        f.name.equals(names.fromString("fetch"))
+                        f.name.equals(names.fromString("fetchNone"))
                     ) {
                         var t = f.name.equals(names.fromString("fetchNone")) ? null :
                             resolveType(names, symtab, cu, tree.args.head);
@@ -273,13 +272,13 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                         if (f.selected instanceof JCMethodInvocation inv) {
                             if (inv.meth instanceof JCFieldAccess fa) {
-                                if (fa.name.equals(names.fromString("asGeneratedKeys")))
+                                if (fa.name.equals(names.fromString("asGeneratedKeys"))) {
                                     destMode = DestMode.GENERATED_KEYS;
-                                else if (fa.name.equals(names.fromString("asCall")))
+                                    f = fa;
+                                } else if (fa.name.equals(names.fromString("asCall"))) {
                                     destMode = DestMode.CALL;
-                                else
-                                    throw new RuntimeException("bad pattern");
-                                f = fa;
+                                    f = fa;
+                                }
                             } else
                                 throw new RuntimeException("bad pattern");
                         }
@@ -292,9 +291,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                         afterPrepare = inv.args.head;
                                     else
                                         throw new RuntimeException("bad pattern");
-                                } else
-                                    throw new RuntimeException("bad pattern");
-                                f = fa;
+                                    f = fa;
+                                }
                             } else
                                 throw new RuntimeException("bad pattern");
                         }
@@ -303,35 +301,88 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                         final Symbol.ClassSymbol sourceType;
                         final ParsedConfiguration parsedConfig;
 
-                        if (f.selected instanceof JCStringTemplate template) {
-                            forPrepare = new ForPrepareInvocation(tree, parseQuery(symtab, cu, names, template));
+                        if (f.selected instanceof JCMethodInvocation inv) {
+                            if (inv.meth instanceof JCFieldAccess fa) {
+                                if (fa.name.equals(names.fromString("q"))) {
+                                    var tryAsQuery = (Function<Integer, @Nullable String>) i ->
+                                        inv.args.get(i) instanceof JCLiteral lit &&
+                                        lit.getValue() instanceof String text ? text : null;
 
-                            if (template.processor instanceof JCIdent processorId) {
-                                var clConnectionW = symtab.enterClass(
-                                    cu.modle, names.fromString("com.truej.sql.v3.source.ConnectionW")
-                                );
-                                var clDataSourceW = symtab.enterClass(
-                                    cu.modle, names.fromString("com.truej.sql.v3.source.DataSourceW")
-                                );
+                                    var queryText = tryAsQuery.apply(0);
+                                    if (queryText != null) { // single
+                                        forPrepare = new ForPrepareInvocation(
+                                            tree, parseQuery(symtab, cu, names, queryText, inv.args.tail)
+                                        );
+                                    } else {
+                                        queryText = tryAsQuery.apply(1);
+                                        if (queryText != null) { // batch
+                                            forPrepare = null;
+                                        } else
+                                            throw new RuntimeException("bad pattern");
+                                    }
 
-                                var vt = varTypes.get(processorId.name);
-                                if (
-                                    vt.getInterfaces().stream().anyMatch(
-                                        tt -> tt.tsym == clConnectionW || tt.tsym == clDataSourceW
-                                    )
-                                ) {
-                                    sourceType = vt;
-                                    parsedConfig = parseConfig(
-                                        sourceType.className(),
-                                        vt.getAnnotation(Configuration.class),
-                                        false
-                                    );
+                                    var xxx = 1;
+
+                                    if (fa.selected instanceof JCIdent processorId) {
+                                        var clConnectionW = symtab.enterClass(
+                                            cu.modle, names.fromString("com.truej.sql.v3.source.ConnectionW")
+                                        );
+                                        var clDataSourceW = symtab.enterClass(
+                                            cu.modle, names.fromString("com.truej.sql.v3.source.DataSourceW")
+                                        );
+
+                                        var vt = varTypes.get(processorId.name);
+                                        if (
+                                            vt.getInterfaces().stream().anyMatch(
+                                                tt -> tt.tsym == clConnectionW || tt.tsym == clDataSourceW
+                                            )
+                                        ) {
+                                            sourceType = vt;
+                                            parsedConfig = parseConfig(
+                                                sourceType.className(),
+                                                vt.getAnnotation(Configuration.class),
+                                                false
+                                            );
+                                        } else
+                                            throw new RuntimeException("bad pattern");
+                                    } else
+                                        throw new RuntimeException("bad pattern");
                                 } else
                                     throw new RuntimeException("bad pattern");
                             } else
                                 throw new RuntimeException("bad pattern");
                         } else
                             throw new RuntimeException("bad pattern");
+
+//                        if (f.selected instanceof JCStringTemplate template) {
+//                            forPrepare = new ForPrepareInvocation(tree, parseQuery(symtab, cu, names, template));
+//
+//                            if (template.processor instanceof JCIdent processorId) {
+//                                var clConnectionW = symtab.enterClass(
+//                                    cu.modle, names.fromString("com.truej.sql.v3.source.ConnectionW")
+//                                );
+//                                var clDataSourceW = symtab.enterClass(
+//                                    cu.modle, names.fromString("com.truej.sql.v3.source.DataSourceW")
+//                                );
+//
+//                                var vt = varTypes.get(processorId.name);
+//                                if (
+//                                    vt.getInterfaces().stream().anyMatch(
+//                                        tt -> tt.tsym == clConnectionW || tt.tsym == clDataSourceW
+//                                    )
+//                                ) {
+//                                    sourceType = vt;
+//                                    parsedConfig = parseConfig(
+//                                        sourceType.className(),
+//                                        vt.getAnnotation(Configuration.class),
+//                                        false
+//                                    );
+//                                } else
+//                                    throw new RuntimeException("bad pattern");
+//                            } else
+//                                throw new RuntimeException("bad pattern");
+//                        } else
+//                            throw new RuntimeException("bad pattern");
 
                         // TODO:
                         //    1. find source & configuration
@@ -358,8 +409,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                 var query = forPrepare.queryParts.stream()
                                     .map(p -> switch (p) {
                                         case InoutParameter _,
-                                            OutParameter _,
-                                            SimpleParameter _ -> "?";
+                                             OutParameter _,
+                                             SimpleParameter _ -> "?";
                                         case TextPart tp -> tp.text;
                                         case UnfoldParameter u -> IntStream.range(0, u.n)
                                             .mapToObj(_ -> "?")

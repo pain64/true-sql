@@ -2,6 +2,7 @@ package com.truej.sql.v3.compiler;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.truej.sql.v3.compiler.GLangParser.*;
@@ -147,49 +148,82 @@ public class MapperGenerator {
         return null;
     }
 
-    // TODO: support scalar types
-    // TODO: support for OutParameters
     public static void generate(
-        Out out, String dtoJavaClassName, List<Field> fields,
-        BiFunction<String, Integer, String> typeToGetField
+        Out out, FieldType toType, boolean isFromOutParameters,
+        Function<String, String> typeToGetField
     ) {
-        var flattened = flattenStartRow(fields);
-        var hasGrouping = fields.stream()
-            .anyMatch(f -> f.type() instanceof AggregatedType);
 
-        var mapFields = each(flattened, ",\n", (o, i, field) ->
-            o."\{typeToGetField.apply(field.javaClassName(), i + 1)}"
-        );
+        var from = isFromOutParameters ? "stmt" : "rs"; // FIXME: rs vs t
+
+        var getField = (BiFunction<ScalarType, Integer, String>) (t, i) -> {
+            var base = STR."new \{typeToGetField.apply(t.javaClassName())}().get(\{from}, \{i}";
+
+            if (t.nullMode() != NullMode.EXACTLY_NULLABLE)
+                return STR."Objects.requireNonNull(\{base})";
+            else
+                return base;
+        };
+
 
         final WriteNext extraDto;
-        final String toDto;
         final WriteNext groupTransform;
+        final WriteNext mapFields;
 
-        if (hasGrouping) {
-            var rowFields = each(flattened, ",\n", (o, i, field) ->
-                o."\{field.javaClassName()} c\{i + 1}"
-            );
+        switch (toType) {
+            case AggregatedType at -> {
+                final String toDto;
 
-            var groupKeysDto = (WriteNext) o ->
-                dtoForGroupKeys(o, 1, 0, fields);
+                var flattened = flattenStartRow(at.fields());
+                var hasGrouping = at.fields().stream()
+                    .anyMatch(f -> f.type() instanceof AggregatedType);
 
-            toDto = "Row";
-            extraDto = o -> o."""
-                record Row(
-                    \{rowFields}
-                ) {}
-                \{groupKeysDto}
-                """;
-            groupTransform = o ->
-                nextOperations(o, 1, 0, dtoJavaClassName, fields);
+                var eachField = each(flattened, ",\n", (o, i, field) ->
+                    o."\{getField.apply(field, i + 1)})"
+                );
 
-        } else {
-            toDto = dtoJavaClassName;
-            extraDto = _ -> null;
-            groupTransform = _ -> null;
+                if (hasGrouping) {
+                    var rowFields = each(flattened, ",\n", (o, i, field) ->
+                        o."\{field.javaClassName()} c\{i + 1}"
+                    );
+
+                    var groupKeysDto = (WriteNext) o ->
+                        dtoForGroupKeys(o, 1, 0, at.fields());
+
+                    toDto = "Row";
+                    extraDto = o -> o."""
+                        record Row(
+                            \{rowFields}
+                        ) {}
+                        \{groupKeysDto}
+                        """;
+                    groupTransform = o ->
+                        nextOperations(o, 1, 0, at.javaClassName(), at.fields());
+
+                } else {
+                    toDto = at.javaClassName();
+                    extraDto = _ -> null;
+                    groupTransform = _ -> null;
+                }
+
+                mapFields = o -> o."""
+                    new \{toDto} (
+                        \{eachField}
+                    )""";
+            }
+            case ScalarType st -> {
+                mapFields = o ->
+                    o."\{getField.apply(st, 1)})";
+                extraDto = _ -> null;
+                groupTransform = _ -> null;
+            }
         }
 
-        var _ = out."""
+        if (isFromOutParameters) {
+            var _ = out."""
+                var mapped = \{mapFields};
+                """;
+        } else {
+            var _ = out."""
             \{extraDto}
             var mapped = Stream.iterate(
                 rs, t -> {
@@ -201,14 +235,14 @@ public class MapperGenerator {
                 }, t -> t
             ).map(t -> {
                 try {
-                    return new \{toDto}(
-                        \{mapFields}
-                    );
+                    return
+                        \{mapFields};
                 } catch (SQLException e) {
                     throw source.mapException(e);
                 }
             })
             \{groupTransform};
             """;
+        }
     }
 }
