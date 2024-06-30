@@ -9,7 +9,7 @@ public class __08__Batch {
         assertEquals(
             ds.q(
                 List.of("a", "b", "c"),
-                "insert into t1 values(.1)",
+                "insert into t1 values(?)",
                 s -> new Object[]{s}
             ).asGeneratedKeys("id").fetchList(Long.class)
             , List.of(1L, 2L, 3L)

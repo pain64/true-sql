@@ -7,7 +7,7 @@ public class __07__Call {
 
     void simple(MainDataSource ds) {
         assertEquals(
-            ds.q("{ call .1 = some_procedure(.2, .3) }", out(), 42, inout(42))
+            ds.q("{ call ? = some_procedure(?, ?) }", out(), 42, inout(42))
                 .asCall().fetchOne(Integer.class)
             , 84
         );

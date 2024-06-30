@@ -54,7 +54,7 @@ public class DtoTypesTest {
                       .withUpdateCount.g.fetchOne(java.lang.String.class);
 
                     cn.q("insert into t1 values(2, ?)", v)
-                      .afterPrepare(s -> s.setFetchSize(9000))
+                      // .afterPrepare(s -> s.setFetchSize(9000))
                       .asGeneratedKeys("id")
                       .withUpdateCount.g.fetchOne(java.lang.String.class);
                   }

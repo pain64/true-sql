@@ -10,7 +10,7 @@ public class __05__ToDto {
 
     void simple(MainDataSource ds) {
         assertEquals(
-            ds.q("select id, name, email from users where id = .1", 42)
+            ds.q("select id, name, email from users where id = ?", 42)
                 .fetchOne(User.class)
             , new User(42, "Joe", "example@email.com")
         );

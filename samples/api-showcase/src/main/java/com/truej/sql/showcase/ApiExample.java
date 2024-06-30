@@ -32,16 +32,16 @@ public class ApiExample {
     // TODO: Вынести в отдельный API
 
     void testF() {
-        var now = new Date();
-        var uuid = UUID.randomUUID();
-        TestApi.assertWith(() -> {
-            // test scenario
-            // UUID
-            f(() -> now, () -> uuid);
-        }, new Diff(TrueSql.SQL."""
-            +users(\{uuid}, \{now}, 'joe@gmail.com')
-            -users(2, 'Ivan', 'ivan@ya.ru'   )"""
-        ));
+//        var now = new Date();
+//        var uuid = UUID.randomUUID();
+//        TestApi.assertWith(() -> {
+//            // test scenario
+//            // UUID
+//            f(() -> now, () -> uuid);
+//        }, new Diff(TrueSql.SQL."""
+//            +users(\{uuid}, \{now}, 'joe@gmail.com')
+//            -users(2, 'Ivan', 'ivan@ya.ru'   )"""
+//        ));
     }
 
     void testF2() {

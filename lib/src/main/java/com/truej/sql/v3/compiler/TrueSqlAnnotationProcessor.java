@@ -103,13 +103,13 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 return new SimpleParameter(invoke);
         };
 
-        var fragments = queryText.split("(?<=[\\s,=()])\\?");
+        var fragments = (queryText + " ").split("(?<=[\\s,=()])\\?");
 
         var result = new ArrayList<QueryPart>();
         for (var i = 0; i < fragments.length; i++) {
             result.add(new TextPart(fragments[i]));
             if (i < args.size()) {
-                var expression = tree.expressions.get(i);
+                var expression = args.get(i);
                 final QueryPart parsed;
 
                 if (expression instanceof JCMethodInvocation invoke) {

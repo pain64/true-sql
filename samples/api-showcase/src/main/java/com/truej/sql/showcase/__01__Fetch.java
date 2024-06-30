@@ -1,6 +1,5 @@
 package com.truej.sql.showcase;
 
-import com.truej.sql.v3.prepare.ManagedAction;
 import com.truej.sql.v3.source.ConnectionW;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public class __01__Fetch {
 //          .fetchOne(long.class);
 
         assertEquals(
-            ds.q("select name from users where id = .1", 42)
+            ds.q("select name from users where id = ?", 42)
                 .fetchOne(String.class)
             , "Joe"
         );
@@ -24,7 +23,7 @@ public class __01__Fetch {
 
     void oneOrNull(MainDataSource ds) {
         assertNull(
-            ds.q("select name from users where id = .1", 1)
+            ds.q("select name from users where id = ?", 1)
                 .fetchOneOrZero(String.class)
         );
     }
