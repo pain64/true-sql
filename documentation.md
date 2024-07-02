@@ -124,7 +124,7 @@ ds.q("select name, id from user where id = ?", 123).fetchOne(String.class);
 Moreover, by communicating directly with the database, we can generate DTO in compile-time. <br>
 **Just add ".g" and mark up your query.**
 
-#### Simple row-wise select
+### Simple row-wise select
 ```java
 var user = ds.q("select id, name from user").g.fetchList(User.class);
 ```
@@ -136,7 +136,7 @@ record User(long id, String name) {};
 ```
 </details>
 
-#### List grouping
+### List grouping
 
 ```java
 var clinicAddresses = ds.q("""
@@ -155,7 +155,7 @@ record ClinicAddresses(String name, List<String> addresses) {};
 ```
 </details>
 
-#### Nested DTO
+### Nested DTO
 
 ```java
 var clinics = ds.q("""
@@ -181,7 +181,7 @@ record Clinic(long id, String name, List<User> users) {
 </details>
 
 
-#### RAMPAGE!
+### RAMPAGE!
 
 ```java
 var clinics = ds.q("""
@@ -252,7 +252,7 @@ This table represents all possible situations.
     </tr>
 </table>
 
-##### Fetch scalar
+### Fetch scalar
 Use fetch method overload to tell TrueSql interpret column as Nullable or NotNull.
 
 ```java
@@ -266,7 +266,7 @@ var names = ds.q("select info from users where info is not null")
     .fetchOneOrZero(NotNull, String.class);
 ```
 ###### NB?
-##### Fetch with your own DTO
+### Fetch with your own DTO
 Use org.jetrbrains.annotations in DTO.
 
 ```java
@@ -277,7 +277,7 @@ record User(long id, @Nullable String info) { };
 record Clinic(long id, @NotNull String info) { };
 ```
 
-##### Fetch with .g
+### Fetch with .g
 By default TrueSql annotate fields in line with db driver. You can change it with next syntax:
 
 ```java
@@ -311,14 +311,14 @@ record UserG(long id, String name) { }
 We save and ***improve*** all necessary JDBC possibilities.<br>
 **All features above remain in force!**
 
-#### GeneratedKeys
+### GeneratedKeys
 
 ```java
 var user = ds.q("insert into user values (?)", "Pavel")
     .asGeneratedKeys("id").fetchOne(Long.class);
 ```
 
-#### UpdateCount
+### UpdateCount
 
 ```java
 var updateCount = ds.q("update user set name = ? where id % 2 == 0", "Paul")
@@ -326,7 +326,7 @@ var updateCount = ds.q("update user set name = ? where id % 2 == 0", "Paul")
 ```
 ###### NB: update count will always be long.
 
-#### Batching
+### Batching
 
 ```java
 //List<Long>
@@ -351,7 +351,7 @@ var keys = ds.q(
     ).fetchNone()
 ```
 
-#### Transactions and connection pinning
+### Transactions and connection pinning
 In case you want pin connection
 
 ```java
@@ -374,7 +374,7 @@ cn.inTransaction(() -> {
 })
 ```
 
-#### Streaming fetching
+### Streaming fetching
 If you don't want to materialize all ResultSet rows, you could use fetchStream()
 ```java
 ds.withConnection(cn -> {
@@ -387,7 +387,7 @@ ds.withConnection(cn -> {
 })
 ```
 
-#### Stored procedure call
+### Stored procedure call
 TrueSql provide next way to use stored procedures and fetch out parameters
 
 ```java
@@ -398,7 +398,7 @@ ds.q("{ call ? = some_procedure(?, ?) }", out(), 42, inout(42))
 ```
 ###### NB: functions out(), inout() has JDBC sense
 
-#### Unfold parameters for "in-clause"
+### Unfold parameters for "in-clause"
 TrueSql can dynamicly generate query with n parameters
 ```java
 var ids = List.of(1, 2, 3);
@@ -415,7 +415,7 @@ ds.q("select v from t1 where (id, v) in = (?)", unfold2(params))
 ## Extra type bindings
 Nowadays bind custom types is a casual need. TrueSql provides two ways to bind  parameters.
 
-##### JDBC as object binding
+### JDBC as object binding
 If DTO supports asObject binding
 
 ```java
@@ -435,7 +435,7 @@ class PgPointRW extends AsObjectReadWrite<PGPoint> { };
 ) record PgDb(DataSource w) implements DataSourceW { };
 ```
 
-##### JDBC extended binding
+### JDBC extended binding
 First, implement TypeReadWrite interface
 
 ```java
@@ -488,7 +488,7 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 ) record PgDb(DataSource w) implements DataSourceW { };
 ```
 
-##### Usage
+### Usage
 If type exists in db
 
 ```java
