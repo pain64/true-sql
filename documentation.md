@@ -19,8 +19,9 @@ email: [truesqlbest@email.com]()
   - [Transactions and connection pinning](#transactions-and-connection-pinning)
   - [Streaming fetching](#streaming-fetching)
   - [Stored procedure call](#stored-procedure-call)
-  - [Extra type bindings](#extra-type-bindings)
+  - [Unfold parameters for "in-clause"](#unfold-parameters-for-in-clause)
 - [Multiple database schemas in module](#multiple-database-schemas-in-one-module)
+- [Extra type bindings](#extra-type-bindings)
 - [DB constraint violation checks](#db-constraint-violation-checks)
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
 - [Exceptional perfomance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
@@ -225,7 +226,7 @@ record Clinic(long id, String name, List<String> addresses, List<User> users) {
 </details>
 
 ## Null-safety
-NullPointerException is a nightmare for every Java developer. It's important to catch null in the beginning. TrueSql get information about fields nullability from db driver. The war is end? [Unfortunately, not all databases calculates nullability right.](#table_with_proofs) In case you disagree with db driver, we print compilation time warning. If you found an example, you can create a ticket to db vendor and restore order!
+NullPointerException is a nightmare for every Java developer. It's important to catch null in the beginning. TrueSql get information about fields nullability from db driver. The war is end? [Unfortunately, not all databases driver calculates nullability right.](#table_with_proofs) In case you disagree with db driver, we print compilation time warning. If you found an example, you can create a ticket to db vendor and restore order!
 
 This table represents all possible situations.  
 <table>
@@ -387,10 +388,118 @@ ds.withConnection(cn -> {
 ```
 
 #### Stored procedure call
-lalala
+TrueSql provide next way to use stored procedures and fetch out parameters
 
-#### Extra type bindings
-lalala
+```java
+import static com.truej.sql.v3.source.Parameters.*;
+
+ds.q("{ call ? = some_procedure(?, ?) }", out(), 42, inout(42))
+    .asCall().fetchOne(Integer.class)
+```
+###### NB: functions out(), inout() has JDBC sense
+
+#### Unfold parameters for "in-clause"
+TrueSql can dynamicly generate query with n parameters
+```java
+var ids = List.of(1, 2, 3);
+ds.q("select id, name from users where id in (?)", unfold(ids))
+    .g.fetchList(User.class);
+```
+And if you have N-width parameter use unfoldN
+```java
+var params = List.of(new Pair<>(1, "a"), new Pair<>(2, "b"));
+ds.q("select v from t1 where (id, v) in = (?)", unfold2(params))
+    .fetchList(String.class);
+```
+
+## Extra type bindings
+Nowadays bind custom types is a casual need. TrueSql provides two ways to bind  parameters.
+
+##### JDBC as object binding
+If DTO supports asObject binding
+
+```java
+import com.truej.sql.v3.bindings.AsObjectReadWrite;
+
+class PgPoint { }; // in pg jdbc library
+class PgPointRW extends AsObjectReadWrite<PGPoint> { };
+// now add to type to Configuration
+@Configuration(
+    typeBindings = {
+        @TypeBinding(
+            compatibleSqlType = Types.OTHER,
+            compatibleSqlTypeName = "point",
+            rw = PgPointRW.class
+        ),
+    }
+) record PgDb(DataSource w) implements DataSourceW { };
+```
+
+##### JDBC extended binding
+First, implement TypeReadWrite interface
+
+```java
+abstract class PgEnumRW<T extends Enum<T>> implements TypeReadWrite<T> {
+
+    public abstract Class<T> aClass();
+
+    @Override public T get(
+        ResultSet rs, int columnIndex
+    ) throws SQLException {
+        return Enum.valueOf(aClass(), rs.getString(columnIndex));
+    }
+
+    @Override public void set(
+        PreparedStatement stmt, int parameterIndex, T value
+    ) throws SQLException {
+        stmt.setObject(parameterIndex, value, Types.OTHER);
+    }
+
+    @Override public T get(
+        CallableStatement stmt, int parameterIndex
+    ) throws SQLException {
+        return Enum.valueOf(aClass(), stmt.getString(parameterIndex));
+    }
+
+    @Override public void registerOutParameter(
+        CallableStatement stmt, int parameterIndex
+    ) throws SQLException {
+        stmt.registerOutParameter(parameterIndex, Types.OTHER);
+    }
+}
+```
+
+In current example, creating class and add to configuration
+
+```java
+enum UserSex {MALE, FEMALE}
+class PgUserSexRW extends PgEnumRW<UserSex> {
+    @Override public Class<UserSex> aClass() { return UserSex.class; }
+}
+
+@Configuration(
+    typeBindings = {
+        @TypeBinding(
+            compatibleSqlType = Types.OTHER,
+            compatibleSqlTypeName = "user_sex",
+            rw = PgUserSexRW.class
+        )
+    }
+) record PgDb(DataSource w) implements DataSourceW { };
+```
+
+##### Usage
+If type exists in db
+
+```java
+var userSex = ds.q("select sex from users where id = ?").fetchOne(UserSex.class, 42);
+```
+Otherwise, use next syntax
+
+```java
+ds.q("select name, sex as ":t UserSex" from users")
+    .g.fetchList(User.class);
+```
 
 ## Multiple database schemas in one module
 
@@ -416,7 +525,7 @@ try {
 ```
 
 ## 100% sql-injection safety guarantee
-1. All queries text are static.
+1. In case of unfold feature, TrueSql only add parameters nests to query text. In other cases query text stay static.
 2. All parameters passes as PreparedStatement parameters.
 
 For these reasons, sql-injection can't happen.
