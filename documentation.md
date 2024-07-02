@@ -67,7 +67,7 @@ record PgDb(DataSource w) implements DataSourceW {};
     var ds = new PgDb(new JdbcDataSource("localhost:5432"));
     var userId = 42;
     // chill
-    var name = ds."select name from users where id = \{userId}"
+    var name = ds.q("select name from users where id = ?", userId)
         .fetchOne(String.class);
 }
 ```
@@ -89,10 +89,10 @@ record User(long id, String name) {};
 record Clinic(long id, String name, List<User> users) {};
 
 var userId = 42;
-var user = ds."select id, name from users where id = \{userId}"
+var user = ds.q("select id, name from users where id = ?", userId)
     .fetchOne(User.class);
 
-var clinics = ds."""
+var clinics = ds.q("""
     select
         c.id, 
         c.name, 
@@ -101,7 +101,7 @@ var clinics = ds."""
     from clinics c
         left join clinic_users cu on cu.clinic_id = c.id
         left join user u on u.id = cu.user_id
-    """.fetchList(Clinic.class);
+    """).fetchList(Clinic.class);
 ```
 
 ###### NB: fetchOne() expects exactly one, otherwise raise RuntimeError.
@@ -110,13 +110,13 @@ All possibilities of grouped object-tree demonstrated below.
 ## Compile-time query validation and DTO generation
 During compilation, we send queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
 ```java
-ds."select * frm user".fetchNone();
+ds.q("select * frm user").fetchNone();
 //raise compiletime error... syntax error
 
-ds."select * from yser".fetchNone();
+ds.q("select * from yser").fetchNone();
 //raise compiletime error... table doesnt exist
 
-ds."select name, id from user where id = \{123}".fetchOne(String.class);
+ds.q("select name, id from user where id = ?", 123).fetchOne(String.class);
 //raise compiletime error... wrong DTO
 ```
 
@@ -125,7 +125,7 @@ Moreover, by communicating directly with the database, we can generate DTO in co
 
 #### Simple row-wise select
 ```java
-var user = ds."select id, name from user".g.fetchList(User.class);
+var user = ds.q("select id, name from user").g.fetchList(User.class);
 ```
 <details>
     <summary>User</summary>
@@ -138,13 +138,13 @@ record User(long id, String name) {};
 #### List grouping
 
 ```java
-var clinicAddresses = ds."""
+var clinicAddresses = ds.q("""
     select distinct
         c.name as "name", 
         ca.address as "addresses."
     from clinic c 
         join clinic_adresses ca on c.id = ca.id_clinic
-    """.g.fetchList(ClinicAddresses.class);
+    """).g.fetchList(ClinicAddresses.class);
 ```
 <details>
     <summary>ClinicAddresses</summary>
@@ -157,7 +157,7 @@ record ClinicAddresses(String name, List<String> addresses) {};
 #### Nested DTO
 
 ```java
-var clinics = ds."""
+var clinics = ds.q("""
     select
         c.id   as		"id",
         c.name as 		"name",
@@ -166,7 +166,7 @@ var clinics = ds."""
     from clinic c
         left join clinic_users cu on cu.clinic_id = c.id
         left join user u on u.id = cu.user_id
-    """.fetchList(Clinic.class);
+    """).fetchList(Clinic.class);
 ```
 
 <details>
@@ -183,7 +183,7 @@ record Clinic(long id, String name, List<User> users) {
 #### RAMPAGE!
 
 ```java
-var clinics = ds."""
+var clinics = ds.q("""
     select
         c.id   as       “id”,
         ca.address as   “addresses.”,
@@ -198,7 +198,7 @@ var clinics = ds."""
         left join clinic_users cu on cu.clinic_id = c.id
         left join user u on u.id = cu.user_id
         left join bill b on u.id = b.user_id
-    """.fetchList(Clinic.class);
+    """).fetchList(Clinic.class);
 
 ```
 
@@ -225,11 +225,86 @@ record Clinic(long id, String name, List<String> addresses, List<User> users) {
 </details>
 
 ## Null-safety
-minimal overture about null-safety.
-TrueSql forces you to take care about nulls. You will have to annotate all nullable values with org.jetbrains.annotations.Nullable.
-db - columns - driver - columns (may be nullable?)
-drivers can make mistakes. 
-you can force Nullability of the field with …
+NullPointerException is a nightmare for every Java developer. It's important to catch null in the beginning. TrueSql get information about fields nullability from db driver. The war is end? [Unfortunately, not all databases calculates nullability right.](#table_with_proofs) In case you disagree with db driver, we print compilation time warning. If you found an example, you can create a ticket to db vendor and restore order!
+
+This table represents all possible situations.  
+<table>
+    <tr>
+        <td><b>you\driver</td>
+        <td><b>Nullable</td>
+        <td><b>NotNull</td>
+    </tr>
+    <tr>
+        <td><b>Not annotated</td>
+        <td background="red">comptime error,<br> must annotate</td>
+        <td>good</td>
+    </tr>
+    <tr>
+        <td><b>Nullable</td>
+        <td>good</td>
+        <td>warning</td>
+    </tr>
+    <tr>
+        <td><b>NotNull</td>
+        <td>warning</td>
+        <td>good</td>
+    </tr>
+</table>
+
+##### Fetch scalar
+Use fetch method overload to tell TrueSql interpret column as Nullable or NotNull.
+
+```java
+import static com.truej.sql.v3.source.Parameters.Nullable;
+import static com.truej.sql.v3.source.Parameters.NotNull;
+//...
+var infos = ds.q("select info from users where id = ?")
+    .fetchOne(Nullable, String.class, 42);
+
+var names = ds.q("select info from users where info is not null")
+    .fetchOneOrZero(NotNull, String.class);
+```
+###### NB?
+##### Fetch with your own DTO
+Use org.jetrbrains.annotations in DTO.
+
+```java
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+//consider name Nullablle/NotNull
+record User(long id, @Nullable String info) { };
+record Clinic(long id, @NotNull String info) { };
+```
+
+##### Fetch with .g
+By default TrueSql annotate fields in line with db driver. You can change it with next syntax:
+
+```java
+var user = ds.q("select id, info as ":t?" from users")
+    .fetchList(User.class);
+```
+
+<details>
+    <summary>generated User</summary>
+
+```java
+record UserG(long id, @Nullable String name) { }
+```
+</details>
+
+
+```java
+var user = ds.q("select id, name as ":t!" from users")
+    .fetchList(User.class);
+```
+
+<details>
+    <summary>generated User</summary>
+
+```java
+record UserG(long id, String name) { }
+```
+</details>
 
 ## Full featured
 We save and ***improve*** all necessary JDBC possibilities.<br>
@@ -238,15 +313,15 @@ We save and ***improve*** all necessary JDBC possibilities.<br>
 #### GeneratedKeys
 
 ```java
-var user = ds."insert into user values (\{"Pavel"})"
-    .asGeneratedKeys("id").g.fetchOne(Long.class);
+var user = ds.q("insert into user values (?)", "Pavel")
+    .asGeneratedKeys("id").fetchOne(Long.class);
 ```
 
 #### UpdateCount
 
 ```java
-var updateCount = ds."update user set name = \{"Paul"} where id % 2 == 0"
-    .withUpdateCount.g.fetchNone();
+var updateCount = ds.q("update user set name = ? where id % 2 == 0", "Paul")
+    .withUpdateCount.fetchNone();
 ```
 ###### NB: update count will always be long.
 
@@ -254,9 +329,10 @@ var updateCount = ds."update user set name = \{"Paul"} where id % 2 == 0"
 
 ```java
 //List<Long>
-var keys = ds.batch(
+var keys = ds.q(
     List.of("Joe", "Ivan", "Mike"),
-        s -> B."insert into user values(\{s})"
+        "insert into user values(?)",
+            s -> new Object[]{s}
     ).asGeneratedKeys("id").fetchList(Long.class)
 ```
 
@@ -267,10 +343,10 @@ record Discount(Date date, BigDecimal discount) {}
 
 List<Discount> discounts = ...
 
-var keys = ds.batch(
+var keys = ds.q(
     discounts,
-        date, discount_perc -> 
-            B."update bill set discount = \{discount_perc} where date = \{date}"
+        "update bill set discount = ? where date = ?",
+        d -> new Object[]{d.date, d.discount_perc}
     ).fetchNone()
 ```
 
@@ -279,21 +355,21 @@ In case you want pin connection
 
 ```java
 ds.withConnection(cn -> {
-	cn."""
+	cn.q("""
 	create temp table temp_table as
 	with t(s) as (values (‘a’), (‘b’))
-    """.fetchNone();
+    """).fetchNone();
 
-    return cn."select * from temp_table".fetchList(String.class);
+    return cn.q("select * from temp_table").fetchList(String.class);
 })
 ```
 
 In case you need transaction mode
 ```java
 cn.inTransaction(() -> {
-    cn."insert into users values (1, ‘Joe’, ‘some@email.com’)".fetchNone();
+    cn.q("insert into users values (1, ‘Joe’, ‘some@email.com’)").fetchNone();
 
-    return cn."select name from users where id = 1".fetchOne(String.class);
+    return cn.q("select name from users where id = 1").fetchOne(String.class);
 })
 ```
 
@@ -301,12 +377,12 @@ cn.inTransaction(() -> {
 If you don't want to materialize all ResultSet rows, you could use fetchStream()
 ```java
 ds.withConnection(cn -> {
-        try (
-            var stream = cn."select id, name from users".g
-                .fetchStream(User.class)
-        ) {
-        //stream.toList();
-        }
+    try (
+        var stream = cn.q("select id, name from users").g
+            .fetchStream(User.class)
+    ) {
+    //stream.toList();
+    }
 })
 ```
 
@@ -329,7 +405,7 @@ The way you can catch DB constraint violations.
 
 ```java
 try {
-	ds."insert into users values(1, ‘John’, ‘privetic@mail.com’)".fetchNone();
+	ds.q("insert into users values(1, ‘John’, ‘privetic@mail.com’)").fetchNone();
 } catch (ConstraintViolationException ex) {
 	ex.when(
 		new Constraint<>("users", "users_pk", () -> {
@@ -349,4 +425,3 @@ For these reasons, sql-injection can't happen.
 TrueSql translates to pure JDBC. This means that no others can be any faster.
 
 ??? here table with comparsion with other frameworks
-
