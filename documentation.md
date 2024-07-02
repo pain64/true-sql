@@ -329,17 +329,6 @@ var updateCount = ds.q("update user set name = ? where id % 2 == 0", "Paul")
 ### Batching
 
 ```java
-//List<Long>
-var keys = ds.q(
-    List.of("Joe", "Ivan", "Mike"),
-        "insert into user values(?)",
-            s -> new Object[]{s}
-    ).asGeneratedKeys("id").fetchList(Long.class)
-```
-
-<br>
-
-```java
 record Discount(Date date, BigDecimal discount) {}
 
 List<Discount> discounts = ...
@@ -350,6 +339,7 @@ var keys = ds.q(
         d -> new Object[]{d.date, d.discount_perc}
     ).fetchNone()
 ```
+###### NB: batching works with both asGeneratedKeys() and withUpdateCount
 
 ### Transactions and connection pinning
 In case you want pin connection
