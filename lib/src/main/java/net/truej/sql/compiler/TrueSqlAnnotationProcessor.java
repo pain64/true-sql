@@ -56,6 +56,9 @@ import static net.truej.sql.config.Configuration.STRING_NOT_DEFINED;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
+
+    public static Map<JCCompilationUnit, Map<JCMethodInvocation, QueryMode>> pathParametersTrees = new HashMap<>();
+
     // TODO: validate
     //     - parse existing dto to GLang - find constructor
     //     - check result set metadata against parsed
@@ -67,7 +70,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     // TODO: deal with error reporting
 
     record ForPrepareInvocation(
-        JCTree tree, QueryMode queryMode
+        JCMethodInvocation tree, QueryMode queryMode
     ) { }
 
     record SafeFetchInvocation( // FIXME: keep parameters
@@ -671,31 +674,36 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                          AsGeneratedKeysColumnNames _,
                                          AsGeneratedKeysIndices _ -> {
 
-                                        var rMetadata = stmt.getMetaData();
+                                        if (fetchMethodName.equals("fetchNone"))
+                                            columns = List.of();
+                                        else {
+                                            // TODO: check that metadata != null
+                                            var rMetadata = stmt.getMetaData();
 
-                                        columns = IntStream.range(1, rMetadata.getColumnCount() + 1).mapToObj(i -> {
-                                            try {
-                                                return new ColumnMetadata(
-                                                    switch (rMetadata.isNullable(i)) {
-                                                        case ResultSetMetaData.columnNoNulls ->
-                                                            NullMode.EXACTLY_NOT_NULL;
-                                                        case ResultSetMetaData.columnNullable ->
-                                                            NullMode.EXACTLY_NULLABLE;
-                                                        case
-                                                            ResultSetMetaData.columnNullableUnknown ->
-                                                            NullMode.DEFAULT_NOT_NULL;
-                                                        default ->
-                                                            throw new IllegalStateException("unreachable");
-                                                    },
-                                                    rMetadata.getColumnType(i),
-                                                    rMetadata.getColumnTypeName(i),
-                                                    rMetadata.getColumnClassName(i),
-                                                    rMetadata.getColumnLabel(i)
-                                                );
-                                            } catch (SQLException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        }).toList();
+                                            columns = IntStream.range(1, rMetadata.getColumnCount() + 1).mapToObj(i -> {
+                                                try {
+                                                    return new ColumnMetadata(
+                                                        switch (rMetadata.isNullable(i)) {
+                                                            case ResultSetMetaData.columnNoNulls ->
+                                                                NullMode.EXACTLY_NOT_NULL;
+                                                            case ResultSetMetaData.columnNullable ->
+                                                                NullMode.EXACTLY_NULLABLE;
+                                                            case
+                                                                ResultSetMetaData.columnNullableUnknown ->
+                                                                NullMode.DEFAULT_NOT_NULL;
+                                                            default ->
+                                                                throw new IllegalStateException("unreachable");
+                                                        },
+                                                        rMetadata.getColumnType(i),
+                                                        rMetadata.getColumnTypeName(i),
+                                                        rMetadata.getColumnClassName(i),
+                                                        rMetadata.getColumnLabel(i)
+                                                    );
+                                                } catch (SQLException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            }).toList();
+                                        }
                                     }
                                     case AsCall _ -> {
                                         var pMetadata = stmt.getParameterMetaData();
@@ -874,6 +882,10 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                             dtoMode instanceof GenerateDto,
                             isWithUpdateCount
                         );
+
+                        pathParametersTrees
+                            .computeIfAbsent(cu, _ -> new HashMap<>())
+                            .put(forPrepare.tree, forPrepare.queryMode);
 
                         invocations.add(new SafeFetchInvocation(
                             // FIXME

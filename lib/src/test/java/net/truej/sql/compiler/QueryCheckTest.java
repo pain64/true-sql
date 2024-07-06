@@ -8,7 +8,6 @@ import java.io.IOException;
 import static net.truej.sql.util.CompileAssert.assertGenerated;
 
 public class QueryCheckTest {
-    @Disabled
     @Test void first() throws IOException {
         assertGenerated(
             """ 

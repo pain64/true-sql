@@ -33,6 +33,7 @@ public class DtoTypesTest {
                 import org.postgresql.geometric.PGpoint;
                 import java.sql.Connection;
                 import java.util.List;
+                import net.truej.sql.source.NoopInvocation;
                 
                 
                 class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
@@ -52,6 +53,7 @@ public class DtoTypesTest {
                   record User(long id, String name) {}
                 
                   void simple(MainConnection cn, String v) {
+                      NoopInvocation.noop();
 
 //                    cn.q("insert into t1 values(1, ?)", v)
 //                        .fetchOne(String.class);

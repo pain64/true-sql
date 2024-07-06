@@ -5,7 +5,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.TYPE})
 public @interface Configuration {
     String STRING_NOT_DEFINED = "__MAGIC__TRUE_SQL_PROPERTY_NOT_DEFINED";
