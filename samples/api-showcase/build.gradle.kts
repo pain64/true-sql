@@ -2,7 +2,7 @@ plugins {
     id("java")
 }
 
-group = "com.truej"
+group = "net.truej"
 version = "1.0-SNAPSHOT"
 
 repositories {
