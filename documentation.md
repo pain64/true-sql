@@ -82,6 +82,28 @@ record PgDb(DataSource w) implements DataSourceW {};
   ...
 </details>
 
+## Configuration
+If you want TrueSql to do compile time checks you need to configure DataSource (**STRONGLY RECOMENDED**)
+
+```java
+@Configuration(
+    checks = @CompileTimeChecks(
+                url = "jdbc:hsqldb:file:db1"
+                username = "user",
+                password = "userpassword"
+    )
+) record PgDb(DataSource w) implements DataSourceW {};
+```
+You can configure db connection with next ENV variables
+
+    truesql.xxx.MainConnection.url=null
+    truesql.xxx.MainConnection.username=null
+    truesql.xxx.MainConnection.password=null
+
+To check configuration when build use flag
+
+    ./gradlew build -Dtruesql.printConfig=true
+
 ## ResultSet to DTO mapping. Grouped object-tree fetching.
 TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (jdbc representation of query result) to DTO. TrueSql map fields according to the declare order. 
 
@@ -307,6 +329,8 @@ record UserG(long id, String name) { }
 ```
 </details>
 
+###### NB: driver can say "Unknown" nullability. Then TrueSql accept user decision and dont print warnings
+
 ## Full featured
 We save and ***improve*** all necessary JDBC possibilities.<br>
 **All features above remain in force!**
@@ -403,7 +427,7 @@ ds.q("select v from t1 where (id, v) in = (?)", unfold2(params))
 ```
 
 ## Extra type bindings
-Nowadays bind custom types is a casual need. TrueSql provides two ways to bind  parameters.
+Nowadays bind custom types is a casual need. TrueSql provides two ways to bind parameters. 
 
 ### JDBC as object binding
 If DTO supports asObject binding
@@ -413,20 +437,18 @@ import com.truej.sql.v3.bindings.AsObjectReadWrite;
 
 class PgPoint { }; // in pg jdbc library
 class PgPointRW extends AsObjectReadWrite<PGPoint> { };
-// now add to type to Configuration
+
 @Configuration(
     typeBindings = {
         @TypeBinding(
-            compatibleSqlType = Types.OTHER,
-            compatibleSqlTypeName = "point",
             rw = PgPointRW.class
-        ),
+        )
     }
 ) record PgDb(DataSource w) implements DataSourceW { };
 ```
 
 ### JDBC extended binding
-First, implement TypeReadWrite interface
+Implement TypeReadWrite interface
 
 ```java
 abstract class PgEnumRW<T extends Enum<T>> implements TypeReadWrite<T> {
@@ -459,7 +481,7 @@ abstract class PgEnumRW<T extends Enum<T>> implements TypeReadWrite<T> {
 }
 ```
 
-In current example, creating class and add to configuration
+Add bind and compatibility check to configuration
 
 ```java
 enum UserSex {MALE, FEMALE}
@@ -470,7 +492,9 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 @Configuration(
     typeBindings = {
         @TypeBinding(
+            //JDBC column sql type
             compatibleSqlType = Types.OTHER,
+            //JDBC column sql type name provided by db
             compatibleSqlTypeName = "user_sex",
             rw = PgUserSexRW.class
         )
@@ -478,7 +502,7 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 ) record PgDb(DataSource w) implements DataSourceW { };
 ```
 
-### Usage
+### Usage in fetch
 If type exists in db
 
 ```java
@@ -487,9 +511,29 @@ var userSex = ds.q("select sex from users where id = ?").fetchOne(UserSex.class,
 Otherwise, use next syntax
 
 ```java
-ds.q("select name, sex as ":t UserSex" from users")
+var UserSex = ds.q("select name, sex as ":t UserSex" from users")
     .g.fetchList(User.class);
 ```
+
+### Type bindings comatibility check
+TrueSql will check type binding compatibility in order with this table
+<table>
+    <tr>
+        <td><b>SqlType\SqlTypeName</td>
+        <td><b>No</td>
+        <td><b>Specified</td>
+    </tr>
+    <tr>
+        <td><b>No</td>
+        <td>check bound className match<br>with JDBC getColumnClassName()</td>
+        <td>check db sql type name match<br>with compatibleSqlTypeName</td>
+    </tr>
+    <tr>
+        <td><b>Specified</td>
+        <td>check JDBC sql type match with compatibleSqlType</td>
+        <td>check both compatibleSqlType<br>and compatibleSqlTypeName</td>
+    </tr>
+</table>
 
 ## Multiple database schemas in one module
 
@@ -500,7 +544,30 @@ record MSDb(DataSource w) implements DataSourceW {};
 ###### NB:
 
 ## DB constraint violation checks
-The way you can catch DB constraint violations.
+Here an example how you can wrap all exceptions that may arise at DataSourceW or ConnectionW
+
+```java
+import net.truej.sql.ConstraintViolationException;
+
+public record MainDataSource(DataSource w) implements DataSourceW {
+    @Override public RuntimeException mapException(SQLException ex) {
+
+        if (ex instanceof SQLIntegrityConstraintViolationException iex) {
+            var hex = (HsqlException) iex.getCause();
+            var parts = hex.getMessage().split(";");
+            var constraintAndTable = parts[parts.length - 1].split("table:");
+
+            return new ConstraintViolationException(
+                constraintAndTable[1].trim(),
+                constraintAndTable[0].trim()
+            );
+        }
+
+        return DataSourceW.super.mapException(ex);
+    }
+}
+```
+If you use net.truej.sql.ConstraintViolationException then TrueSql will check constraint existence in database. The way you can catch wrapped DB constraint violations:
 
 ```java
 try {
