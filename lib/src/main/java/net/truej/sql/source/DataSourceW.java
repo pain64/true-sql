@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-public interface DataSourceW extends RuntimeConfig {
+public non-sealed interface DataSourceW extends Source {
     DataSource w();
 
     interface WithConnectionAction<T, E extends Exception> {

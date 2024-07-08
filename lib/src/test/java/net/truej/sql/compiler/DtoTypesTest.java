@@ -33,7 +33,6 @@ public class DtoTypesTest {
                 import org.postgresql.geometric.PGpoint;
                 import java.sql.Connection;
                 import java.util.List;
-                import net.truej.sql.source.NoopInvocation;
                 
                 
                 @TrueSql class Test {

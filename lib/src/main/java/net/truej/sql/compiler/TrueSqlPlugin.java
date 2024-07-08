@@ -13,7 +13,6 @@ import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.api.BasicJavacTask;
 import net.truej.sql.bindings.Standard;
-import net.truej.sql.source.NoopInvocation;
 import net.truej.sql.source.ParameterExtractor;
 
 import java.util.function.Function;
@@ -63,15 +62,6 @@ public class TrueSqlPlugin implements Plugin {
                     var resolve = Resolve.instance(context);
                     var names = Names.instance(context);
                     var maker = TreeMaker.instance(context);
-
-                    var clNoop = symtab.getClass(symtab.unnamedModule, names.fromString(
-                        NoopInvocation.class.getName()
-                    ));
-
-                    var mtNoop = (Symbol.MethodSymbol) clNoop.members()
-                        .getSymbolsByName(names.fromString("noop"))
-                        .iterator().next();
-
                     var elements = JavacElements.instance(context);
 
                     var cuTrees = patchParametersTrees.get(e.getCompilationUnit());
@@ -98,8 +88,6 @@ public class TrueSqlPlugin implements Plugin {
                                     invocation.fetchMethodName + "__line" + invocation.lineNumber + "__"
                                 )).iterator().next();
 
-                            // tree.meth = maker.Select(maker.Ident(clNoop), mtNoop);
-
                             tree.meth = maker.Select(maker.Ident(clGenerated), mtGenerated);
                             tree.args = List.nil();
 
@@ -121,15 +109,10 @@ public class TrueSqlPlugin implements Plugin {
                                     m.params.isEmpty()
                                 ).iterator().next();
 
-
-                                // return maker.Literal(TypeT);
-
-                                // new rwClassSymbol()
                                 var newClass = maker.NewClass(null, List.nil(), maker.Ident(rwClassSymbol), List.nil(), null);
                                 newClass.type = new Type.ClassType(Type.noType, List.nil(), rwClassSymbol);
                                 newClass.constructor = rwClassConstructor;
                                 newClass.constructor.type = rwClassConstructor.type;
-
 
                                 return newClass;
                             };
@@ -142,7 +125,6 @@ public class TrueSqlPlugin implements Plugin {
                                 // TODO: all primitive types
                                 return t;
                             };
-
 
                             var metadataIndex = 0;
 

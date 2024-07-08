@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Stream;
 
-public interface ConnectionW extends RuntimeConfig {
+public non-sealed interface ConnectionW extends Source {
     Connection w();
 
     interface InTransactionAction<T, E extends Exception> {

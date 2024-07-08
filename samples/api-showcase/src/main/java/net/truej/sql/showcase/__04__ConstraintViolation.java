@@ -23,7 +23,7 @@ public class __04__ConstraintViolation {
                 ds.q("insert into users values(1, 'John', 'xxx@email.com')").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>("users", "users_pk", () -> {
+                    new Constraint<>(ds, "users", "users_pk", () -> {
                         throw new Handled();
                     })
                 );
@@ -39,7 +39,7 @@ public class __04__ConstraintViolation {
                     return true;
                 } catch (ConstraintViolationException ex) {
                     return ex.when(
-                        new Constraint<>("users", "users_pk", () -> false)
+                        new Constraint<>(ds, "users", "users_pk", () -> false)
                     );
                 }
             }).get(), false
