@@ -49,9 +49,10 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                             """);
                     initConn.createStatement().execute("""
                             drop procedure p1 if exists;
-                            create procedure p1(in x int, inout r int)
+                            create procedure p1(in x int, inout y int, out z int)
                               begin atomic
-                                 set r = x * 2;
+                                 set y = y + x;
+                                 set z = y + x;
                               end
                             """);
                 }
@@ -89,14 +90,17 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                 }
             );
 
-            var r = TestCompiler2.compile(compilationUnits).get(className + "_");
+            var compiled = TestCompiler2.compile(compilationUnits);
 
-            var bytes = r.data.toByteArray();
+            //var bytes = r.data.toByteArray();
 
             var theClass = new URLClassLoader(
                 new URL[]{}, this.getClass().getClassLoader()
             ) {{
-                defineClass(className + "_", bytes, 0, bytes.length);
+                compiled.forEach((compClassName, r) -> {
+                    var bytes = r.data.toByteArray();
+                    defineClass(compClassName, bytes, 0, bytes.length);
+                });
             }}.loadClass(className + "_");
 
 

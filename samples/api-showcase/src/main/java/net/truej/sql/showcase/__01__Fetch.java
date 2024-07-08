@@ -1,5 +1,6 @@
 package net.truej.sql.showcase;
 
+import net.truej.sql.TrueSql;
 import net.truej.sql.source.ConnectionW;
 
 import java.util.List;

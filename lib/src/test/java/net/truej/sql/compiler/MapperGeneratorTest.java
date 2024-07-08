@@ -19,7 +19,7 @@ public class MapperGeneratorTest {
             new Field(new ScalarType(NullMode.EXACTLY_NOT_NULL, "java.lang.Long"), "id"),
             new Field(new ScalarType(NullMode.EXACTLY_NOT_NULL, "java.lang.String"), "currency"),
             new Field(new ScalarType(NullMode.EXACTLY_NOT_NULL, "java.math.BigDecimal"), "amount")
-        )), false, t -> switch (t) {
+        )), null, t -> switch (t) {
             case "java.lang.String" -> "StringReadWrite";
             case "java.lang.Long" -> "LongReadWrite";
             case "java.math.BigDecimal" -> "BigDecimalReadWrite";
@@ -89,7 +89,7 @@ public class MapperGeneratorTest {
                 )),
                 "patients"
             )
-        )), false, t -> switch (t) {
+        )), null, t -> switch (t) {
             case "java.lang.String" -> "StringReadWrite";
             case "java.lang.Long" -> "LongReadWrite";
             case "java.math.BigDecimal" -> "BigDecimalReadWrite";

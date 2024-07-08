@@ -8,7 +8,6 @@ import java.io.IOException;
 import static net.truej.sql.util.CompileAssert.assertGenerated;
 
 public class QueryCheckTest {
-    @Disabled
     @Test void first() throws IOException {
         assertGenerated(
             """ 
@@ -24,7 +23,8 @@ public class QueryCheckTest {
                 import lombok.EqualsAndHashCode;
                 import lombok.AllArgsConstructor;
                 
-                @EqualsAndHashCode @AllArgsConstructor class AAA {
+                @TrueSql class Simple {
+                 @EqualsAndHashCode @AllArgsConstructor class AAA {
                   final int x;
                   final int y;
                   final List<String> z;
@@ -37,7 +37,6 @@ public class QueryCheckTest {
                 ))
                 record C1(Connection w) implements ConnectionW {}
                 
-                @TrueSql class Simple {
                   void v1(C1 cn) {
                     cn.q("select v from t1 where id = ?", 42).fetchOne(Nullable, String.class);
 

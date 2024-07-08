@@ -20,18 +20,18 @@ public class SourceFindTest {
                 import java.sql.Connection;
                 import javax.sql.DataSource;
                 
-                @Configuration
-                record C1(Connection w) implements ConnectionW {}
-                @Configuration
-                record C2(Connection w) implements ConnectionW {}
-                record C3(Connection w) implements ConnectionW {}
-                record C4(Connection w) implements ConnectionW {}
-                @Configuration
-                record D5(DataSource w) implements DataSourceW {}
-                
-                record ADto(String name, int age) {}
-                
                 @TrueSql class Simple {
+                  @Configuration
+                  record C1(Connection w) implements ConnectionW {}
+                  @Configuration
+                  record C2(Connection w) implements ConnectionW {}
+                  record C3(Connection w) implements ConnectionW {}
+                  record C4(Connection w) implements ConnectionW {}
+                  @Configuration
+                  record D5(DataSource w) implements DataSourceW {}
+                
+                  record ADto(String name, int age) {}
+
                   void v1(C1 cn) {
                     cn.q("select v from t1").fetchList(String.class);
                   }

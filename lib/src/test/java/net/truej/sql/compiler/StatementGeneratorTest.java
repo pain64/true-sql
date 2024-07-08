@@ -41,7 +41,7 @@ public class StatementGeneratorTest {
                         return h;
                     }
                 }
-                <B, P1, E1 extends Exception>
+                public static <B, P1, E1 extends Exception>
                 List<User> fetchList__line12__(
                     List<B> batch,
                     ParameterExtractor<B, P1> pe1,
@@ -103,7 +103,7 @@ public class StatementGeneratorTest {
                 },
                 12,
                 SourceMode.CONNECTION,
-                new BatchedQuery(List.of(
+                new BatchedQuery(null, null, List.of(
                     new TextPart("select id, name from users where id = "),
                     new SimpleParameter(null),
                     new TextPart("")
@@ -129,7 +129,7 @@ public class StatementGeneratorTest {
     @Test void singleUnfold() {
         Assertions.assertEquals(
             """
-                <P1, P2A1, P2A2>
+                public static <P1, P2A1, P2A2>
                 UpdateResult<Long, List<java.lang.String>> fetchList__line12__(
                     P1 p1,
                     TypeReadWrite<P1> prw1,

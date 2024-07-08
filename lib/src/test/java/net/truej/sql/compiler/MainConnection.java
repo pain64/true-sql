@@ -8,8 +8,11 @@ import java.sql.Connection;
 
 @Configuration(
     checks = @CompileTimeChecks(
-        url = "jdbc:postgresql://localhost:5432/uikit_sample",
-        username = "uikit",
-        password = "1234"
+        url = "jdbc:hsqldb:mem:db",
+        username = "SA",
+        password = ""
+//        url = "jdbc:postgresql://localhost:5432/uikit_sample",
+//        username = "uikit",
+//        password = "1234"
     )
 ) public record MainConnection(Connection w) implements ConnectionW { }

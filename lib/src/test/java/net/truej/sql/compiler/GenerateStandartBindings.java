@@ -125,7 +125,7 @@ public class GenerateStandartBindings {
         var instances = bindings.stream().map(b ->
             "new Binding(" +
             "\"" + (b.typeName.startsWith("Primitive") ? b.typeName.replace("Primitive", "").toLowerCase(): b.typeValueName) + "\", "+
-            "\"" + b.typeName + "ReadWrite\", " +
+            "\"net.truej.sql.bindings." + b.typeName + "ReadWrite\", " +
             b.mayBeNull + ", " +
             "null, null)"
         ).collect(Collectors.joining(",\n        "));

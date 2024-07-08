@@ -57,7 +57,7 @@ import static net.truej.sql.config.Configuration.STRING_NOT_DEFINED;
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
 
-    public static Map<JCCompilationUnit, Map<JCMethodInvocation, QueryMode>> pathParametersTrees = new HashMap<>();
+    public static Map<JCCompilationUnit, Map<JCMethodInvocation, TrueSqlPlugin.Invocation>> patchParametersTrees = new HashMap<>();
 
     // TODO: validate
     //     - parse existing dto to GLang - find constructor
@@ -82,7 +82,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     public record TextPart(String text) implements QueryPart { }
     public record SimpleParameter(JCExpression expression) implements QueryPart { }
     public record InoutParameter(JCExpression expression) implements QueryPart { }
-    public record OutParameter() implements QueryPart { }
+    public record OutParameter(Symbol.ClassSymbol toClass) implements QueryPart { }
     public record UnfoldParameter(int n, JCExpression expression) implements QueryPart { }
 
     sealed interface DtoMode { }
@@ -92,10 +92,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
     static QueryMode parseQuery(
         Symtab symtab, JCCompilationUnit cu, Names names,
-        boolean isBatchMode, String queryText, com.sun.tools.javac.util.List<JCExpression> args
+        // FIXME: two nullable parameters with corellation
+        JCExpression batchListDataExpression, JCLambda batchLambda,
+        String queryText, com.sun.tools.javac.util.List<JCExpression> args
     ) {
         var clParameters = symtab.enterClass(
-            cu.modle, names.fromString("net.truej.sql.source.Parameters")
+            cu.modle, names.fromString(Parameters.class.getName())
         );
 
         interface ParseLeaf {
@@ -106,9 +108,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             var check = (Function<String, Boolean>) (sName) -> {
                 if (name.equals(names.fromString(sName))) {
                     if (!checkImport) return true;
-                    var imp = cu.starImportScope.findFirst(name);
 
-                    if (isBatchMode) throw new RuntimeException(
+                    var imp = cu.starImportScope.findFirst(name);
+                    if (imp == null)
+                        imp = cu.namedImportScope.findFirst(name);
+
+                    if (batchLambda != null) throw new RuntimeException(
                         sName + " parameter is not applicable in batch mode"
                     );
 
@@ -122,7 +127,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             if (check.apply("inout")) {
                 return new InoutParameter(invoke.args.head);
             } else if (check.apply("out")) {
-                return new OutParameter();
+                var found = resolveType(names, symtab, cu, invoke.args.head);
+                return new OutParameter(found);
             } else if (check.apply("unfold")) {
                 return new UnfoldParameter(1, invoke.args.head);
             } else if (check.apply("unfold2")) {
@@ -167,8 +173,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             }
         }
 
-        return isBatchMode
-            ? new BatchedQuery(result)
+        return batchLambda != null
+            ? new BatchedQuery(batchListDataExpression, batchLambda, result)
             : new SingleQuery(result);
     }
 
@@ -197,21 +203,32 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
         Predicate<Symbol> isClass = s -> s instanceof Symbol.ClassSymbol;
 
         if (tree instanceof JCIdent id) {
-            var found = (Symbol.ClassSymbol) cu.toplevelScope.findFirst(id.name, isClass);
+            var found = new Symbol.ClassSymbol[]{null};
+            found[0] = (Symbol.ClassSymbol) cu.toplevelScope.findFirst(id.name, isClass);
 
-            if (found == null || found.type.isErroneous())
-                found = (Symbol.ClassSymbol) cu.namedImportScope.findFirst(id.name, isClass);
+            if (found[0] == null || found[0].type.isErroneous())
+                cu.accept(new TreeScanner() {
+                    @Override public void visitClassDef(JCClassDecl tree) {
+                        if (tree.name.equals(id.name) && tree.sym != null)
+                            found[0] = tree.sym;
 
-            if (found == null || found.type.isErroneous())
-                found = symtab.getClass(cu.modle, cu.packge.fullname.append('.', id.name));
+                        super.visitClassDef(tree);
+                    }
+                });
 
-            if (found == null || found.type.isErroneous())
-                found = (Symbol.ClassSymbol) cu.starImportScope.findFirst(id.name, isClass);
+            if (found[0] == null || found[0].type.isErroneous())
+                found[0] = (Symbol.ClassSymbol) cu.namedImportScope.findFirst(id.name, isClass);
 
-            if (found == null || found.type.isErroneous())
+            if (found[0] == null || found[0].type.isErroneous())
+                found[0] = symtab.getClass(cu.modle, cu.packge.fullname.append('.', id.name));
+
+            if (found[0] == null || found[0].type.isErroneous())
+                found[0] = (Symbol.ClassSymbol) cu.starImportScope.findFirst(id.name, isClass);
+
+            if (found[0] == null || found[0].type.isErroneous())
                 return null;
 
-            return found;
+            return found[0];
 
         } else if (tree instanceof JCFieldAccess tail) {
             var fqn = tail.name;
@@ -238,7 +255,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     }
 
     List<SafeFetchInvocation> findFetchInvocations(
-        Names names, Symtab symtab, JCCompilationUnit cu, JCTree tree
+        Names names, Symtab symtab, JCCompilationUnit cu, JCTree tree, String generatedClassName
     ) {
         var invocations = new ArrayList<SafeFetchInvocation>();
 
@@ -388,7 +405,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                                     f = fa;
                                 } else if (fa.name.equals(names.fromString("asCall"))) {
-                                    statementMode = new AsCall();
+                                    statementMode = new AsCall(new int[]{});
                                     f = fa;
                                 }
 
@@ -411,6 +428,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                         }
 
                         final ForPrepareInvocation forPrepare;
+                        final JCIdent sourceExpression;
                         final Symbol.ClassSymbol sourceType;
                         final SourceMode sourceMode;
                         final ParsedConfiguration parsedConfig;
@@ -427,7 +445,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                     var queryText = tryAsQuery.apply(0);
                                     if (queryText != null) // single
                                         queryMode = parseQuery(
-                                            symtab, cu, names, false, queryText, inv.args.tail
+                                            symtab, cu, names, null, null, queryText, inv.args.tail
                                         );
                                     else {
                                         queryText = tryAsQuery.apply(1);
@@ -440,7 +458,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                 lmb.body instanceof JCNewArray array
                                             )
                                                 queryMode = parseQuery(
-                                                    symtab, cu, names, true, queryText, array.elems
+                                                    symtab, cu, names, inv.args.head, lmb, queryText, array.elems
                                                 );
                                             else
                                                 throw new RuntimeException("bad pattern");
@@ -451,6 +469,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                     forPrepare = new ForPrepareInvocation(tree, queryMode);
 
                                     if (fa.selected instanceof JCIdent processorId) {
+                                        sourceExpression = processorId;
                                         var clConnectionW = symtab.enterClass(
                                             cu.modle, names.fromString("net.truej.sql.source.ConnectionW")
                                         );
@@ -550,7 +569,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                             var doReport = (Reporter) (m, you, driver) -> {
                                 throw new RuntimeException(
                                     "nullability mismatch for column " + (columnIndex + 1) +
-                                    (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                    (fieldName != null ? " (for field `" + fieldName + "`) " : "") +
                                     " your decision: " + you + " driver infers: " + driver
                                 );
                             };
@@ -609,25 +628,25 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                 if (!binding.className().equals(column.javaClassName()))
                                     throw new RuntimeException(
                                         "type mismatch for column " + (columnIndex + 1) +
-                                        (fieldName != null ? "(for field `" + fieldName + "`)" : "") +
-                                        "expected: " + binding.className() + " has: " + column.javaClassName()
+                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                        ". Expected " + binding.className() + " but has " + column.javaClassName()
                                     );
                             } else {
                                 if (binding.compatibleSqlTypeName() != null) {
                                     if (!binding.compatibleSqlTypeName().equals(column.sqlTypeName()))
                                         throw new RuntimeException(
-                                            "sql type name mismatch for column " + (columnIndex + 1) +
-                                            (fieldName != null ? "(for field `" + fieldName + "`)" : "") +
-                                            "expected: " + binding.compatibleSqlTypeName() + " has: " + column.sqlTypeName()
+                                            "Sql type name mismatch for column " + (columnIndex + 1) +
+                                            (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                            ". Expected " + binding.compatibleSqlTypeName() + " but has " + column.sqlTypeName()
                                         );
                                 }
 
                                 if (binding.compatibleSqlType() != null) {
                                     if (binding.compatibleSqlType() != column.sqlType())
                                         throw new RuntimeException(
-                                            "sql type id (java.sql.Types) mismatch for column " + (columnIndex + 1) +
-                                            (fieldName != null ? "(for field `" + fieldName + "`)" : "") +
-                                            "expected: " + binding.compatibleSqlType() + " has: " + column.sqlType()
+                                            "Sql type id (java.sql.Types) mismatch for column " + (columnIndex + 1) +
+                                            (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                            ". Expected " + binding.compatibleSqlType() + " but has " + column.sqlType()
                                         );
                                 }
                             }
@@ -709,49 +728,74 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                         var pMetadata = stmt.getParameterMetaData();
                                         var parameters = forPrepare.queryMode.parts().stream()
                                             .filter(p ->
-                                                !(p instanceof TextPart) &&
-                                                !(p instanceof UnfoldParameter)
+                                                !(p instanceof TextPart)
                                             ).toList();
 
                                         if (parameters.size() != pMetadata.getParameterCount())
                                             throw new RuntimeException("parameter count mismatch");
 
-                                        columns = IntStream.range(0, pMetadata.getParameterCount()).mapToObj(i -> {
-                                            try {
-                                                var pMode = pMetadata.getParameterMode(i + 1);
+                                        var outParameterIndexes = IntStream.range(0, parameters.size())
+                                            .peek(i -> {
+                                                try {
+                                                    var pMode = pMetadata.getParameterMode(i + 1);
+                                                    var pModeText = switch (pMode) {
+                                                        case ParameterMetaData.parameterModeIn ->
+                                                            "IN";
+                                                        case ParameterMetaData.parameterModeInOut ->
+                                                            "INOUT";
+                                                        case ParameterMetaData.parameterModeOut ->
+                                                            "OUT";
+                                                        case
+                                                            ParameterMetaData.parameterModeUnknown ->
+                                                            "UNKNOWN";
+                                                        default ->
+                                                            throw new IllegalStateException("unreachable");
+                                                    };
 
-                                                switch (parameters.get(i)) {
-                                                    case SimpleParameter _ -> {
-                                                        if (
-                                                            pMode != ParameterMetaData.parameterModeIn &&
-                                                            pMode != ParameterMetaData.parameterModeUnknown
-                                                        )
-                                                            throw new RuntimeException(
-                                                                "parameter mode mismatch for " + (i + 1)
-                                                            );
+                                                    switch (parameters.get(i)) {
+                                                        case SimpleParameter _ -> {
+                                                            if (
+                                                                pMode != ParameterMetaData.parameterModeIn &&
+                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                            )
+                                                                throw new RuntimeException(
+                                                                    "For parameter " + (i + 1) +
+                                                                    " mode mismatch. Expected IN but has " + pModeText
+                                                                );
+                                                        }
+                                                        case InoutParameter _ -> {
+                                                            if (
+                                                                pMode != ParameterMetaData.parameterModeInOut &&
+                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                            )
+                                                                throw new RuntimeException(
+                                                                    "For parameter " + (i + 1) +
+                                                                    " mode mismatch. Expected INOUT but has " + pModeText
+                                                                );
+                                                        }
+                                                        case OutParameter _ -> {
+                                                            if (
+                                                                pMode != ParameterMetaData.parameterModeOut &&
+                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                            )
+                                                                throw new RuntimeException(
+                                                                    "For parameter " + (i + 1) +
+                                                                    " mode mismatch. Expected OUT but has " + pModeText
+                                                                );
+                                                        }
+                                                        default ->
+                                                            throw new IllegalStateException("unreachable");
                                                     }
-                                                    case InoutParameter _ -> {
-                                                        if (
-                                                            pMode != ParameterMetaData.parameterModeInOut &&
-                                                            pMode != ParameterMetaData.parameterModeUnknown
-                                                        )
-                                                            throw new RuntimeException(
-                                                                "parameter mode mismatch for " + (i + 1)
-                                                            );
-                                                    }
-                                                    case OutParameter _ -> {
-                                                        if (
-                                                            pMode != ParameterMetaData.parameterModeOut &&
-                                                            pMode != ParameterMetaData.parameterModeUnknown
-                                                        )
-                                                            throw new RuntimeException(
-                                                                "parameter mode mismatch for " + (i + 1)
-                                                            );
-                                                    }
-                                                    default ->
-                                                        throw new IllegalStateException("unreachable");
+                                                } catch (SQLException e) {
+                                                    throw new RuntimeException(e);
                                                 }
+                                            })
+                                            .filter(i -> !(parameters.get(i) instanceof SimpleParameter))
+                                            .map(i -> i + 1)
+                                            .toArray();
 
+                                        columns = Arrays.stream(outParameterIndexes).mapToObj(i -> {
+                                            try {
                                                 return new ColumnMetadata(
                                                     switch (pMetadata.isNullable(i)) {
                                                         case ParameterMetaData.parameterNoNulls ->
@@ -773,6 +817,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                 throw new RuntimeException(e);
                                             }
                                         }).toList();
+
+                                        statementMode = new AsCall(outParameterIndexes);
                                     }
                                 }
 
@@ -784,7 +830,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                                         if (dtoFields.size() != columns.size())
                                             throw new RuntimeException(
-                                                "target type implies " + dtoFields.size() + " columns but result has"
+                                                "target type implies " + dtoFields.size() + " columns but result has "
                                                 + columns.size()
                                             );
 
@@ -809,7 +855,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                         yield parsed;
                                     }
                                     case GenerateDto gDto -> {
-                                        var fields = GLangParser.parseResultSetColumns(
+                                        var fields = parseResultSetColumns(
                                             columns, (column, columnIndex, javaClassNameHint, dtoNullMode) -> {
 
                                                 // FIXME: deduplicate
@@ -851,6 +897,24 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                         );
                                     }
 
+                                    if (statementMode instanceof AsCall) {
+                                        var parameters = forPrepare.queryMode.parts().stream()
+                                            .filter(p ->
+                                                !(p instanceof TextPart)
+                                            ).toList();
+
+                                        var outParameterIndexes = IntStream.range(0, parameters.size())
+                                            .filter(i -> !(parameters.get(i) instanceof SimpleParameter))
+                                            .map(i -> i + 1)
+                                            .toArray();
+
+                                        if (outParameterIndexes.length != dtoFields.size())
+                                            throw new RuntimeException(
+                                                "expected " + dtoFields.size() + " columns for dto but has " +
+                                                outParameterIndexes.length + " INOUT/OUT parameters"
+                                            );
+                                    }
+
                                     yield parsed;
                                 }
                                 case GenerateDto _ -> throw new RuntimeException(
@@ -883,9 +947,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                             isWithUpdateCount
                         );
 
-                        pathParametersTrees
+                        patchParametersTrees
                             .computeIfAbsent(cu, _ -> new HashMap<>())
-                            .put(forPrepare.tree, forPrepare.queryMode);
+                            .put(forPrepare.tree, new TrueSqlPlugin.Invocation(
+                                parsedConfig.typeBindings, generatedClassName, fetchMethodName, lineNumber,
+                                sourceExpression, forPrepare.queryMode, null
+                            ));
 
                         invocations.add(new SafeFetchInvocation(
                             // FIXME
@@ -986,6 +1053,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     @Override public boolean process(
         Set<? extends TypeElement> annotations, RoundEnvironment roundEnv
     ) {
+        System.out.println("annotation processor started!!!");
+
         var env = (JavacProcessingEnvironment) processingEnv;
         var context = env.getContext();
         var types = Types.instance(context);
@@ -1018,14 +1087,14 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             var found = elements.getTreeAndTopLevel(element, null, null);
             var tree = found.fst;
             var cu = found.snd;
-
-            var invocations = findFetchInvocations(names, symtab, cu, tree);
-
             var elementSymbol = (Symbol.ClassSymbol) element;
+
+            var generatedClassName = (elementSymbol).getQualifiedName() + "TrueSql";
+            var invocations = findFetchInvocations(names, symtab, cu, tree, generatedClassName);
 
             try {
                 var builderFile = env.getFiler().createSourceFile(
-                    (elementSymbol).getQualifiedName() + "TrueSql", element
+                    generatedClassName, element
                 );
 
                 try (var out = new PrintWriter(builderFile.openWriter())) {

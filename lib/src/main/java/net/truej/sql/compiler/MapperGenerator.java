@@ -145,14 +145,16 @@ public class MapperGenerator {
     }
 
     public static void generate(
-        StatementGenerator.Out out, GLangParser.FieldType toType, boolean isFromOutParameters,
+        StatementGenerator.Out out, GLangParser.FieldType toType,
+        int[] outParametersIndexes,
         Function<String, String> typeToRwClass
     ) {
 
-        var from = isFromOutParameters ? "stmt" : "rs"; // FIXME: rs vs t
+        var from = outParametersIndexes != null ? "stmt" : "rs"; // FIXME: rs vs t
 
         var getField = (BiFunction<GLangParser.ScalarType, Integer, String>) (t, i) -> {
-            var base = STR."new \{typeToRwClass.apply(t.javaClassName())}().get(\{from}, \{i}";
+            var j = outParametersIndexes == null ? i : outParametersIndexes[i - 1];
+            var base = STR."new \{typeToRwClass.apply(t.javaClassName())}().get(\{from}, \{j}";
 
             if (t.nullMode() != GLangParser.NullMode.EXACTLY_NULLABLE)
                 return STR."Objects.requireNonNull(\{base})";
@@ -214,7 +216,7 @@ public class MapperGenerator {
             }
         }
 
-        if (isFromOutParameters) {
+        if (outParametersIndexes != null) {
             var _ = out."""
                 var mapped = \{mapFields};
                 """;

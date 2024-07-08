@@ -22,7 +22,7 @@ public class Parameters {
     public static <A, B, C> Void unfold3(List<Triple<A, B, C>> many) { return null; }
     public static <A, B, C, D> Void unfold4(List<Quad<A, B, C, D>> many) { return null; }
 
-    public static Void out() { return null; }
+    public static Void out(Class<?> toClass) { return null; }
 
     public static <T> Void inout(T value) {
         return null;

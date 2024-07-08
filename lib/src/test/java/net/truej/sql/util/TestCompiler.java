@@ -30,7 +30,7 @@ public class TestCompiler {
             arguments, null, compilationUnits);
 
         if (!task.call())
-            throw new RuntimeException("compilation error");
+            throw new RuntimeException(output.toString());
 
         return fileManager.getCompiled();
     }

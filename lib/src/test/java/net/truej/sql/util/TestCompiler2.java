@@ -32,11 +32,14 @@ public class TestCompiler2 {
         );
 
         var task = (BasicJavacTask) compiler.getTask(output, fileManager,
-            diagnostic -> System.out.println(diagnostic.toString()),
+            diagnostic ->
+                System.out.println(diagnostic.toString()),
             arguments, null, compilationUnits);
 
-        if (!task.call())
-            throw new RuntimeException("compilation error");
+        if (!task.call()) {
+            System.out.println(output);
+            throw new RuntimeException(output.toString());
+        }
 
         return fileManager.compiled2;
     }

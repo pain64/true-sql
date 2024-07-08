@@ -1,5 +1,7 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.tree.JCTree;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -15,12 +17,15 @@ public class StatementGenerator {
     public sealed interface QueryMode {
         List<QueryPart> parts();
     }
-    public record BatchedQuery(List<QueryPart> parts) implements QueryMode { }
+    public record BatchedQuery(
+        JCTree.JCExpression listDataExpression,
+        JCTree.JCLambda expressionLambda, List<QueryPart> parts
+    ) implements QueryMode { }
     public record SingleQuery(List<QueryPart> parts) implements QueryMode { }
 
     public sealed interface StatementMode { }
     public record AsDefault() implements StatementMode { }
-    public record AsCall() implements StatementMode { }
+    public record AsCall(int[] outParametersIndexes) implements StatementMode { }
     public record AsGeneratedKeysIndices(int... columnIndexes) implements StatementMode { }
     public record AsGeneratedKeysColumnNames(String... columnNames) implements StatementMode { }
 
@@ -239,10 +244,11 @@ public class StatementGenerator {
                     nonTextParts, ",\n", (o, i, p) -> switch (p) {
                         case TextPart _ -> throw new IllegalStateException("unreachable");
                         case SimpleParameter _,
-                             InoutParameter _,
-                             OutParameter _ -> o."""
-                                P\{i + 1} p\{i + 1},
-                                TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
+                             InoutParameter _ -> o."""
+                            P\{i + 1} p\{i + 1},
+                            TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
+                        case OutParameter _ -> o."""
+                            TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
                         case UnfoldParameter up -> {
                             var attributes = Out.each(
                                 IntStream.range(0, up.n()).boxed().toList(),
@@ -383,7 +389,7 @@ public class StatementGenerator {
                 : o."return null;";
             case FetchTo to -> {
                 MapperGenerator.generate(
-                    o, to.toType(), prepareAs instanceof AsCall, typeToRwClass
+                    o, to.toType(), prepareAs instanceof AsCall ac ? ac.outParametersIndexes : null, typeToRwClass
                 );
 
                 yield switch (to) {
@@ -469,7 +475,7 @@ public class StatementGenerator {
         };
 
         var _ = out."""
-            \{typeParameters}
+            public static \{typeParameters}
             \{resultType} \{methodName}__line\{lineNumber}__(
                 \{parametersCode}
                 \{from}

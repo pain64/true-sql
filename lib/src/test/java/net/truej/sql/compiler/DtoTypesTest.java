@@ -36,63 +36,63 @@ public class DtoTypesTest {
                 import net.truej.sql.source.NoopInvocation;
                 
                 
-                class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
+                @TrueSql class Test {
+                  public static class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
                 
-                @Configuration(
-                    typeBindings = {
-                        @TypeBinding(rw = PgPointReadWrite.class)
-                    }
-                )
-                record MainConnection(Connection w) implements ConnectionW {}
+                  @Configuration(
+                      typeBindings = {
+                          @TypeBinding(rw = PgPointReadWrite.class)
+                      }
+                  )
+                  record MainConnection(Connection w) implements ConnectionW {}
                 
-                record ADto(String name, int age) {}
-                record BDto(long id, List<String> names) {}
-                
-                @TrueSql class Simple {
+                  record ADto(String name, int age) {}
+                  record BDto(long id, List<String> names) {}
                 
                   record User(long id, String name) {}
                 
                   void simple(MainConnection cn, String v) {
-                      NoopInvocation.noop();
 
-//                    cn.q("insert into t1 values(1, ?)", v)
-//                        .fetchOne(String.class);
-//
-//                    cn.q("insert into t1 values(1, ?)", v).fetchOne(Nullable, String.class);
-//
-//                    cn.q("insert into t1 values(1, ?)", v).fetchOne(ADto.class);
-//
-//                    cn.q("select id, name from users").fetchList(BDto.class);
+                    cn.q("insert into t1 values(1, ?)", v)
+                        .fetchOne(String.class);
+
+                    cn.q("insert into t1 values(1, ?)", v).fetchOne(Nullable, String.class);
+
+                    cn.q("insert into t1 values(1, ?)", v).fetchOne(ADto.class);
+
+                    // FIXME
+                    // cn.q("select id, name from users").fetchList(BDto.class);
 
                     // cn.q("insert into t1 values(1, ?)", v).g.fetchOne(NewDto.class);
 
-                    //cn.q("insert into t1 values(2, ?)", v)
-                    //  .withUpdateCount.fetchOne(PGpoint.class);
+// FIXME
+//                    cn.q("insert into t1 values(2, ?)", v)
+//                      .withUpdateCount.fetchOne(PGpoint.class);
 
-                    cn.q("insert into t1 values(2, ?)", v)
-                      .asCall()
-                      .withUpdateCount.fetchOne(java.lang.String.class);
+//                    cn.q("insert into t1 values(2, ?)", v)
+//                      .asCall()
+//                      .withUpdateCount.fetchOne(java.lang.String.class);
 
                     cn.q("insert into t1 values(2, ?)", v)
                       .asGeneratedKeys("id")
                       .withUpdateCount.fetchOne(java.lang.String.class);
 
-                    cn.q("insert into t1 values(2, ?)", v)
-                      // .afterPrepare(s -> s.setFetchSize(9000))
-                      .asGeneratedKeys("id")
-                      .withUpdateCount.fetchOne(java.lang.String.class);
+//                    cn.q("insert into t1 values(2, ?)", v)
+//                      // .afterPrepare(s -> s.setFetchSize(9000))
+//                      .asGeneratedKeys("id")
+//                      .withUpdateCount.fetchOne(java.lang.String.class);
 
-                    cn.q("insert into t1 values(2, ?)", v)
-                      // .afterPrepare(s -> s.setFetchSize(9000))
-                      .asGeneratedKeys(1)
-                      .withUpdateCount.fetchOne(java.lang.String.class);
+//                    cn.q("insert into t1 values(2, ?)", v)
+//                      // .afterPrepare(s -> s.setFetchSize(9000))
+//                      .asGeneratedKeys(1)
+//                      .withUpdateCount.fetchOne(java.lang.String.class);
 
                     var users = List.of(new User(1L, "Joe"));
 
                     cn.q(
                       users, "insert into t1 values(?, ?)",
                       u -> new Object[]{u.id, u.name}
-                    ).fetchOne(String.class);
+                    ).asGeneratedKeys("id").fetchList(Long.class);
                   }
                 }"""
         );
