@@ -41,4 +41,7 @@ import java.util.HashMap;
         Assertions.assertEquals(hmap.get(users.get(0)), "Sql");
         Assertions.assertEquals(hmap.get(users.get(1)), "Sql");
     }
+//    @Test public void test2(MainConnection cn) throws JsonProcessingException {
+//        cn.q()
+//    }
 }
