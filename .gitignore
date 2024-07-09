@@ -1,5 +1,5 @@
 .gradle
-gradle.properties
+publish.sh
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/

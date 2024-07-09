@@ -89,7 +89,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("net.truej", "sql", "0.0.1")
+    coordinates("net.truej", "sql", "0.0.2")
 
     pom {
         name.set("TrueSql")
