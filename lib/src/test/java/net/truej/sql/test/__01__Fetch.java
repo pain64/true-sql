@@ -103,9 +103,9 @@ import static net.truej.sql.source.Parameters.Nullable;
         );
 
 
-        var info = new ArrayList<>() {};
-        info.add(null);
-        info.add("Do not disturb");
+        var info = new ArrayList<String>() {{
+            add(null); add("Do not disturb");
+        }};
 
         Assertions.assertEquals(
                 info,

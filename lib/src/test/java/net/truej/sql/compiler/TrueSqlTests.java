@@ -112,8 +112,29 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                             insert into clinic(id, name, city_id) values(2, 'London Heart Hospital', 1);
                             insert into clinic(id, name, city_id) values(3, 'Diagnostic center', 1);
                             
-                            insert into bill(id, amount, discount, date) values(1, 2000.55, null, cast('2024-07-01 15:00:00' as datetime));
+                            insert into bill(id, amount, discount, date) values(1, 2000.55, null, cast('2024-07-01 12:00:00' as datetime));
+                            insert into bill(id, amount, discount, date) values(2, 1000.20, null, cast('2024-07-01 16:00:00' as datetime));
+                            insert into bill(id, amount, discount, date) values(3, 5000, null, cast('2024-08-01 15:00:00' as datetime));
+                            insert into bill(id, amount, discount, date) values(4, 7000.77, null, cast('2024-08-01 15:00:00' as datetime));
+                            insert into bill(id, amount, discount, date) values(5, 500.10, null, cast('2024-09-01 15:00:00' as datetime));
                     """);
+                    initConn.createStatement().execute("""
+                            create procedure digit_magic(in x int, inout y int, out z int)
+                              begin atomic
+                                 set y = y + x;
+                                 set z = y + x;
+                              end;
+                            create procedure bill_zero()
+                            modifies sql data
+                              begin atomic
+                                 update bill set amount = 0;
+                              end
+                            create procedure discount_bill(in datedisc datetime)
+                            modifies sql data
+                              begin atomic
+                                 update bill set discount = amount * 0.1 where date = datedisc;
+                              end
+                            """);
                 }
             }};
 
