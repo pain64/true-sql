@@ -15,3 +15,6 @@ import javax.sql.DataSource;
 //        password = "1234"
         )
 ) public record MainDataSource(DataSource w) implements DataSourceW { }
+
+// net.truej.sql.source.DataSourceW$1
+// net.truej.sql.source.DataSourceW

@@ -35,27 +35,26 @@ import static org.junit.jupiter.api.Assertions.assertNull;
             );
         }
     }
+    
+    @Test public void testDataSource(MainDataSource ds) {
+        try {
+            ds.withConnection(cn ->
+                    cn.inTransaction(() -> {
+                        cn.q("insert into clinic values(?, ?, ?)",4, "Paris St. Marie Hospital", 2).fetchNone();
 
-    //FIXME: class net.truej.sql.source.DataSourceW$1 cannot be cast to class net.truej.sql.source.DataSourceW (net.truej.sql.source.DataSourceW$1 and net.truej.sql.source.DataSourceW are in unnamed module of loader 'app')
-//    @Test public void testDataSource(MainDataSource ds) {
-//        try {
-//            ds.withConnection(cn ->
-//                    cn.inTransaction(() -> {
-//                        cn.q("insert into clinic values(?, ?, ?)",4, "Paris St. Marie Hospital", 2).fetchNone();
-//
-//                        assertEquals(
-//                                cn.q("select name from clinic where id = ?", 4)
-//                                        .fetchOne(String.class)
-//                                , "Paris St. Marie Hospital"
-//                        );
-//                        throw new ForceRollback();
-//                    })
-//            );
-//        } catch (ForceRollback ex) {
-//            assertNull(
-//                    ds.q("select name from clinic where id = ?", 4)
-//                            .fetchOneOrZero(String.class)
-//            );
-//        }
-//    }
+                        assertEquals(
+                                cn.q("select name from clinic where id = ?", 4)
+                                        .fetchOne(String.class)
+                                , "Paris St. Marie Hospital"
+                        );
+                        throw new ForceRollback();
+                    })
+            );
+        } catch (ForceRollback ex) {
+            assertNull(
+                    ds.q("select name from clinic where id = ?", 4)
+                            .fetchOneOrZero(String.class)
+            );
+        }
+    }
 }

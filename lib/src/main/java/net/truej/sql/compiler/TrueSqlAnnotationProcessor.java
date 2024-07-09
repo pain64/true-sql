@@ -262,6 +262,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
         new TreeScanner() {
             final Map<Name, Symbol.ClassSymbol> varTypes = new HashMap<>();
+            final Set<Name> withConnectionSource = new HashSet<>();
 
             @Override public void visitVarDef(JCVariableDecl tree) {
                 if (tree.sym == null) {
@@ -288,8 +289,11 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     tree.args.head instanceof JCLambda lmb
                 ) {
                     var found = varTypes.get(id.name);
-                    if (found != null)
-                        varTypes.put(lmb.params.head.name, found);
+                    if (found != null) {
+                        var cnParameterName = lmb.params.head.name;
+                        varTypes.put(cnParameterName, found);
+                        withConnectionSource.add(cnParameterName);
+                    }
 
                 } else if (tree.meth instanceof JCFieldAccess f) {
                     var fetchMethodName = f.name.toString();
@@ -492,9 +496,13 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                 tt -> tt.tsym == clDataSourceW
                                             )
                                         ) {
-                                            sourceMode = SourceMode.DATASOURCE;
+                                            if (withConnectionSource.contains(processorId.name))
+                                                sourceMode = SourceMode.CONNECTION;
+                                            else
+                                                sourceMode = SourceMode.DATASOURCE;
                                         } else
                                             throw new RuntimeException("bad pattern");
+
 
                                         sourceType = vt;
                                         parsedConfig = parseConfig(
