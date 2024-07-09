@@ -17,7 +17,9 @@ import java.util.List;
     record CityClinics (String city, List<String> clinics) {}
 
     record User(String name, @Nullable String info, BigDecimal amount) {}
-    record Report (String city, List<String> clinics, List<User> users) {}
+    record Report(String city, List<String> clinics, List<User> users) {}
+    record User2(@Nullable String name, @Nullable String info, @Nullable BigDecimal amount) {}
+    record Report2(String city, List<String> clinics, List<User2> users) {}
     @Test public void test(MainConnection cn) {
 
         Assertions.assertEquals(
@@ -51,24 +53,53 @@ import java.util.List;
                 )
         );
 
-        //TODO: Joe MUST be in count
-//        Assertions.assertEquals(
-//                report,
-//                cn.q("""
-//                    select
-//                        ci.name as city,
-//                        cl.name as clinic,
-//                        u.name as user,
-//                        u.info as info,
-//                        sum(b.amount) as amount
-//                    from city ci
-//                        join clinic cl on ci.id = cl.city_id
-//                        join clinic_users clu on clu.clinic_id = cl.id
-//                        join user u on clu.user_id = u.id
-//                        join user_bills ub on ub.user_id = u.id
-//                        join bill b on b.id = ub.bill_id
-//                    group by ci.name, cl.name, u.name, u.info
-//                    """).fetchList(Report.class)
-//        );
+        Assertions.assertEquals(
+                report,
+                cn.q("""
+                    select
+                        ci.name as city,
+                        cl.name as clinic,
+                        u.name as user,
+                        u.info as info,
+                        sum(b.amount) as amount
+                    from city ci
+                        join clinic cl on ci.id = cl.city_id
+                        join clinic_users clu on clu.clinic_id = cl.id
+                        join user u on clu.user_id = u.id
+                        join user_bills ub on ub.user_id = u.id
+                        join bill b on b.id = ub.bill_id
+                    group by ci.name, cl.name, u.name, u.info
+                    """).fetchList(Report.class)
+        );
+
+        var report2 = List.of(
+                new Report2("London",
+                        List.of("London Heart Hospital", "Diagnostic center"),
+                        List.of(new User2("Joe", null, new BigDecimal("3000.75")))
+                ),
+                new Report2("Paris",
+                        List.of("Paris Neurology Hospital"),
+                        List.of(new User2("Donald", "Do not disturb", new BigDecimal("12500.87")))
+                )
+        );
+
+        Assertions.assertEquals(
+                report2,
+                cn.q("""
+                    select
+                        ci.name as city,
+                        cl.name as clinic,
+                        u.name as user,
+                        u.info as info,
+                        sum(b.amount) as amount
+                    from city ci
+                        join clinic cl on ci.id = cl.city_id
+                        left join clinic_users clu on clu.clinic_id = cl.id
+                        left join user u on clu.user_id = u.id
+                        left join user_bills ub on ub.user_id = u.id
+                        left join bill b on b.id = ub.bill_id
+                    group by ci.name, cl.name, u.name, u.info
+                    """).fetchList(Report2.class)
+        );
     }
 }
