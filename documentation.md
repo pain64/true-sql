@@ -88,11 +88,7 @@ If you want TrueSql to do compile time checks you need to configure DataSource (
 ```java
 @Configuration(
     checks = @CompileTimeChecks(
-<<<<<<< HEAD
-                url = "jdbc:hsqldb:file:db1"
-=======
                 url = "jdbc:hsqldb:file:db1",
->>>>>>> a54df4f (update)
                 username = "user",
                 password = "userpassword"
     )
