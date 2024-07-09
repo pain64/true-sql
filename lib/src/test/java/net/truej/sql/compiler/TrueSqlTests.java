@@ -117,6 +117,15 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                             insert into bill(id, amount, discount, date) values(3, 5000, null, cast('2024-08-01 15:00:00' as datetime));
                             insert into bill(id, amount, discount, date) values(4, 7000.77, null, cast('2024-08-01 15:00:00' as datetime));
                             insert into bill(id, amount, discount, date) values(5, 500.10, null, cast('2024-09-01 15:00:00' as datetime));
+                            
+                            insert into clinic_users values(1, 2);
+                            insert into clinic_users values(2, 1);
+                            
+                            insert into user_bills values(1, 1);
+                            insert into user_bills values(1, 2);
+                            insert into user_bills values(2, 3);
+                            insert into user_bills values(2, 4);
+                            insert into user_bills values(2, 5);
                     """);
                     initConn.createStatement().execute("""
                             create procedure digit_magic(in x int, inout y int, out z int)

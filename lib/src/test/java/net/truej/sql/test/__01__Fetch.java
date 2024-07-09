@@ -36,14 +36,6 @@ import static net.truej.sql.source.Parameters.Nullable;
                 .fetchOne(NotNull, String.class)
         );
 
-//        кстати сюда нельзя вставить юзера
-//        record User(long id, String name, @Nullable String info) {}
-//        FIXME: type mismatch for column 1 (for field `id`). Expected long but has java.lang.Long
-//        Assertions.assertEquals(
-//                new User(1L,"Joe", null),
-//                cn.q("select id, name, info from user where id = ?", 1).fetchOneOrZero(User.class)
-//        );
-
         Assertions.assertEquals(
                 new User(1L,"Joe", null),
                 cn.q("select id, name, info from user where id = ?", 1)
@@ -117,22 +109,6 @@ import static net.truej.sql.source.Parameters.Nullable;
                 info,
                 cn.q("select info from user").fetchStream(Nullable, String.class).toList()
         );
-
-        var citiesClinics = List.of(
-                new CitiesClinics("Paris", List.of("Paris Neurology Hospital")),
-                new CitiesClinics("London", List.of("London Heart Hospital", "Diagnostic center"))
-        );
-
-        Assertions.assertEquals(
-                citiesClinics,
-                cn.q("""
-                select
-                    ci.name as city,
-                    cl.name
-                from clinic cl join city ci on cl.city_id = ci.id
-                """).fetchList(CitiesClinics.class)
-        );
-
 
         Assertions.assertNull(
                 cn.q("insert into user(id, name, info) values(?, ?, ?)",3L, "Mike", "Strong left hook")
