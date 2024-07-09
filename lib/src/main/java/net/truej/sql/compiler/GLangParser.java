@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -71,7 +70,7 @@ public class GLangParser {
     public record Line(NullMode nullMode, @Nullable String javaClassName, Chain chain) { }
 
     public static Line parse(
-        BindType bindType, ColumnMetadata column, int columnIndex, List<Lexeme> input
+        BindColumn bindColumn, ColumnMetadata column, int columnIndex, List<Lexeme> input
     ) {
 
         final NullMode nullMode;
@@ -106,8 +105,10 @@ public class GLangParser {
             javaClassNameHint = null;
         }
 
+        var bindResult = bindColumn.bind(column, columnIndex, javaClassNameHint, nullMode);
+
         return new Line(
-            nullMode, bindType.bind(column, columnIndex, javaClassNameHint, nullMode), parseChain(input, 0)
+            bindResult.nullMode, bindResult.javaClassName, parseChain(input, 0)
         );
     }
 
@@ -160,7 +161,7 @@ public class GLangParser {
 
         var baseNumber = locals.getFirst().n;
         for (var i = 0; i < locals.size(); i++) {
-            if (i + locals.get(i).n != baseNumber)
+            if (baseNumber + i != locals.get(i).n)
                 throw new RuntimeException(
                     "The declarations of the members of the group should run consecutively"
                 );
@@ -216,21 +217,22 @@ public class GLangParser {
         String sqlTypeName, String javaClassName, String columnName
     ) { }
 
-    public interface BindType {
-        String bind(
+    public interface BindColumn {
+        record Result(String javaClassName, NullMode nullMode) {}
+        Result bind(
             ColumnMetadata column, int columnIndex, @Nullable String javaClassNameHint, NullMode dtoNullMode
         );
     }
 
     public static List<Field> parseResultSetColumns(
-        List<ColumnMetadata> columns, BindType bindType
+        List<ColumnMetadata> columns, BindColumn bindColumn
     ) {
         return buildGroup(
             IntStream
                 .range(0, columns.size())
                 .mapToObj(n -> {
                     var column = columns.get(n);
-                    return new NumberedColumn(n, parse(bindType, column, n, lex(column.columnName)));
+                    return new NumberedColumn(n, parse(bindColumn, column, n, lex(column.columnName)));
                 })
                 .toList()
         );

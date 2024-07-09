@@ -23,6 +23,7 @@ dependencies {
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
     implementation("org.projectlombok:lombok:1.18.32")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

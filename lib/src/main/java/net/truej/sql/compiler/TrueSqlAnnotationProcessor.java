@@ -871,15 +871,20 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                     dtoNullMode
                                                 );
 
-                                                checkNullability.check(
-                                                    column.columnName(), dtoNullMode, columnIndex, column
-                                                );
+                                                final NullMode nullMode;
+                                                if (dtoNullMode != NullMode.DEFAULT_NOT_NULL) {
+                                                    checkNullability.check(
+                                                        column.columnName(), dtoNullMode, columnIndex, column
+                                                    );
+                                                    nullMode = dtoNullMode;
+                                                } else
+                                                    nullMode = column.nullMode();
 
                                                 checkTypeCompatibility.check(
                                                     columnIndex, column.columnName(), binding, column
                                                 );
 
-                                                return binding.className();
+                                                return new BindColumn.Result(binding.className(), nullMode);
                                             }
                                         );
 

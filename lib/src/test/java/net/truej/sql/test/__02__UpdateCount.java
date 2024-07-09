@@ -20,18 +20,18 @@ import java.util.List;
         Assertions.assertEquals(
                 1L,
                 cn.q("""
-                        update bill 
-                        set discount = amount * ? 
+                        update bill
+                        set discount = amount * ?
                         where cast(date as date) = '2024-09-01'
-                        """, new BigDecimal(0.1)
+                        """, new BigDecimal("0.1")
                 ).withUpdateCount.fetchNone()
         );
 
         record DateDiscount (Timestamp date, BigDecimal discount) {}
 
         var discounts = List.of(
-                new DateDiscount(Timestamp.valueOf("2024-07-01 00:00:00"), new BigDecimal(0.2)),
-                new DateDiscount(Timestamp.valueOf("2024-08-01 00:00:00"), new BigDecimal(0.15))
+                new DateDiscount(Timestamp.valueOf("2024-07-01 00:00:00"), new BigDecimal("0.2")),
+                new DateDiscount(Timestamp.valueOf("2024-08-01 00:00:00"), new BigDecimal("0.15"))
         );
 
         Assertions.assertArrayEquals(

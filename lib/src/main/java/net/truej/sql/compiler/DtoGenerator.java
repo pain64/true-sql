@@ -46,7 +46,7 @@ public class DtoGenerator {
 
         var _ = out."""
             \{nestedDto}
-            class \{forType.javaClassName()} {
+            public static class \{forType.javaClassName()} {
                 \{fieldDefinitions}
 
                 public \{forType.javaClassName()}(
