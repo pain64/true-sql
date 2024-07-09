@@ -3,6 +3,7 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.fetch.EvenSoNullPointerException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.truej.sql.source.Parameters.NotNull;
 import static net.truej.sql.source.Parameters.Nullable;
 
 
@@ -18,6 +20,7 @@ import static net.truej.sql.source.Parameters.Nullable;
 @TrueSql public class __01__Fetch {
     record User(Long id, String name, @Nullable String info) {}
     record Clinic(String name, String city) {}
+    // FIXME: rename to CityClinics
     record CitiesClinics(String name, List<String> clinics) {}
     @Test public void test(MainConnection cn) {
 
@@ -25,9 +28,13 @@ import static net.truej.sql.source.Parameters.Nullable;
                 "Donald",
                 cn.q("select name from user where id = ?", 2).fetchOne(String.class)
         );
-        Assertions.assertNull(cn.q("select info from user where id = ?", 1).fetchOne(Nullable, String.class));
-        //FIXME: NotNull doesn't work!!!!
-        //Assertions.assertNull(cn.q("select info from user where id = ?", 1).fetchOne(NotNull, String.class));
+
+        // TODO: also check that warning
+        Assertions.assertThrows(
+            EvenSoNullPointerException.class,
+            () -> cn.q("select info from user where id = ?", 1)
+                .fetchOne(NotNull, String.class)
+        );
 
 //        кстати сюда нельзя вставить юзера
 //        record User(long id, String name, @Nullable String info) {}
@@ -111,20 +118,20 @@ import static net.truej.sql.source.Parameters.Nullable;
                 cn.q("select info from user").fetchStream(Nullable, String.class).toList()
         );
 
-//        FIXME: не работает incompatible types: inference variable T has incompatible bounds
-//        var citiesClinics = List.of(
-//                new CitiesClinics("Paris", List.of("Paris Neurology Hospital")),
-//                new CitiesClinics("London", List.of("London Heart Hospital", "Diagnostic center"))
-//        );
-//        Assertions.assertEquals(
-//                citiesClinics,
-//                cn.q("""
-//                select
-//                    ci.name as city,
-//                    cl.name
-//                from clinic cl join city ci on cl.city_id = ci.id
-//                """).fetchList(CitiesClinics.class)
-//        );
+        var citiesClinics = List.of(
+                new CitiesClinics("Paris", List.of("Paris Neurology Hospital")),
+                new CitiesClinics("London", List.of("London Heart Hospital", "Diagnostic center"))
+        );
+
+        Assertions.assertEquals(
+                citiesClinics,
+                cn.q("""
+                select
+                    ci.name as city,
+                    cl.name
+                from clinic cl join city ci on cl.city_id = ci.id
+                """).fetchList(CitiesClinics.class)
+        );
 
 
         Assertions.assertNull(

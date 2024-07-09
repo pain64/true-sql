@@ -40,9 +40,9 @@ public class MapperGeneratorTest {
                     try {
                         return
                             new Bill (
-                                Objects.requireNonNull(new LongReadWrite().get(rs, 1)),
-                                Objects.requireNonNull(new StringReadWrite().get(rs, 2)),
-                                Objects.requireNonNull(new BigDecimalReadWrite().get(rs, 3))
+                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 1)),
+                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 2)),
+                                EvenSoNullPointerException.check(new BigDecimalReadWrite().get(rs, 3))
                             );
                     } catch (SQLException e) {
                         throw source.mapException(e);
@@ -62,7 +62,7 @@ public class MapperGeneratorTest {
             new Field(new ScalarType(NullMode.EXACTLY_NOT_NULL, "java.lang.Long"), "id"),
             new Field(new ScalarType(NullMode.EXACTLY_NOT_NULL, "java.lang.String"), "name"),
             new Field(
-                new AggregatedType(null, List.of(
+                new AggregatedType("List<java.lang.String>", List.of(
                     new Field(new ScalarType(NullMode.EXACTLY_NULLABLE, "java.lang.String"), null)
                 )),
                 "addresses"
@@ -131,16 +131,16 @@ public class MapperGeneratorTest {
                     try {
                         return
                             new Row (
-                                Objects.requireNonNull(new LongReadWrite().get(rs, 1)),
-                                Objects.requireNonNull(new StringReadWrite().get(rs, 2)),
+                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 1)),
+                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 2)),
                                 new StringReadWrite().get(rs, 3),
-                                Objects.requireNonNull(new LongReadWrite().get(rs, 4)),
-                                Objects.requireNonNull(new StringReadWrite().get(rs, 5)),
-                                Objects.requireNonNull(new LongReadWrite().get(rs, 6)),
-                                Objects.requireNonNull(new StringReadWrite().get(rs, 7)),
-                                Objects.requireNonNull(new LongReadWrite().get(rs, 8)),
-                                Objects.requireNonNull(new StringReadWrite().get(rs, 9)),
-                                Objects.requireNonNull(new BigDecimalReadWrite().get(rs, 10))
+                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 4)),
+                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 5)),
+                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 6)),
+                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 7)),
+                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 8)),
+                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 9)),
+                                EvenSoNullPointerException.check(new BigDecimalReadWrite().get(rs, 10))
                             );
                     } catch (SQLException e) {
                         throw source.mapException(e);

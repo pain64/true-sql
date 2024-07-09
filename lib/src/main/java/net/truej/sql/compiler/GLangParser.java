@@ -145,7 +145,7 @@ public class GLangParser {
     ) implements FieldType { }
 
     public record AggregatedType(
-        String javaClassName, /* FIXME: remove???  */
+        String javaClassName,
         List<Field> fields
     ) implements FieldType { }
 

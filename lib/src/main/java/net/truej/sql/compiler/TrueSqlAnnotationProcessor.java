@@ -36,6 +36,7 @@ import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeReadWrite;
+import net.truej.sql.fetch.EvenSoNullPointerException;
 import net.truej.sql.fetch.TooFewRowsException;
 import net.truej.sql.fetch.TooMuchRowsException;
 import net.truej.sql.fetch.UpdateResult;
@@ -340,8 +341,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                     nullMode = NullMode.EXACTLY_NULLABLE;
                                 } else if (
                                     (tree.args.head instanceof JCIdent id &&
-                                     id.name.equals(names.fromString("Nullable"))) ||
-                                    tree.args.head.toString().equals("net.truej.sql.source.Parameters.Nullable")
+                                     id.name.equals(names.fromString("NotNull"))) ||
+                                    tree.args.head.toString().equals("net.truej.sql.source.Parameters.NotNull")
                                 ) {
                                     nullMode = NullMode.EXACTLY_NOT_NULL;
                                 } else
@@ -567,11 +568,16 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                             }
 
                             var doReport = (Reporter) (m, you, driver) -> {
-                                throw new RuntimeException(
-                                    "nullability mismatch for column " + (columnIndex + 1) +
-                                    (fieldName != null ? " (for field `" + fieldName + "`) " : "") +
-                                    " your decision: " + you + " driver infers: " + driver
-                                );
+                                var message = "nullability mismatch for column " + (columnIndex + 1) +
+                                              (fieldName != null ? " (for field `" + fieldName + "`) " : "") +
+                                              " your decision: " + you + " driver infers: " + driver;
+                                switch (m) {
+                                    case WARNING:
+                                        System.out.println(message);
+                                        break;
+                                    case ERROR:
+                                        throw new RuntimeException(message);
+                                }
                             };
 
                             switch (fieldNullMode) {
@@ -1111,9 +1117,11 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     out.write("import " + UpdateResult.class.getName() + ";\n");
                     out.write("import " + ParameterExtractor.class.getName() + ";\n");
                     out.write("import " + Parameters.class.getName() + ".*;\n");
+                    out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
                     out.write("import net.truej.sql.bindings.*;\n");
                     out.write("import java.util.List;\n");
                     out.write("import java.util.stream.Stream;\n");
+                    out.write("import java.util.stream.Collectors;\n");
                     out.write("import java.util.Objects;\n");
                     out.write("import java.sql.SQLException;\n");
                     // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");

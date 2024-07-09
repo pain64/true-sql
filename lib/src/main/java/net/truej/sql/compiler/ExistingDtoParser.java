@@ -48,13 +48,17 @@ public class ExistingDtoParser {
                     var className = cSym.className();
 
                     if (className.equals("java.util.List")) {
+                        var parsed = parse(
+                            NullMode.DEFAULT_NOT_NULL,
+                            hasTypeBinding,
+                            initName,
+                            (Symbol.ClassSymbol) p.type.allparams().head.tsym
+                        );
                         return new Field(
-                            parse(
-                                NullMode.DEFAULT_NOT_NULL,
-                                hasTypeBinding,
-                                initName,
-                                (Symbol.ClassSymbol) p.type.allparams().head.tsym
-                            ),
+                            parsed instanceof ScalarType st ? new AggregatedType(
+                                "List<" + st.javaClassName() + ">",
+                                List.of(new Field(st, ""))
+                            ) : parsed,
                             p.name.toString()
                         );
                     } else if (hasTypeBinding.apply(className)) {
@@ -97,7 +101,7 @@ public class ExistingDtoParser {
     public static List<FlattenedDtoField> flattedDtoType(FieldType ft) {
         return switch (ft) {
             case ScalarType st -> List.of(
-                new ExistingDtoParser.FlattenedDtoField(null, st)
+                new ExistingDtoParser.FlattenedDtoField("result", st)
             );
             case AggregatedType at -> flattenAggregatedType(at);
         };

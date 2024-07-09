@@ -79,7 +79,7 @@ public class StatementGeneratorTest {
                                 try {
                                     return
                                         new User (
-                                            Objects.requireNonNull(new LongReadWrite().get(rs, 1)),
+                                            EvenSoNullPointerException.check(new LongReadWrite().get(rs, 1)),
                                             new StringReadWrite().get(rs, 2)
                                         );
                                 } catch (SQLException e) {
@@ -182,7 +182,7 @@ public class StatementGeneratorTest {
                             ).map(t -> {
                                 try {
                                     return
-                                        Objects.requireNonNull(new StringReadWrite().get(rs, 1));
+                                        EvenSoNullPointerException.check(new StringReadWrite().get(rs, 1));
                                 } catch (SQLException e) {
                                     throw source.mapException(e);
                                 }

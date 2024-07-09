@@ -70,7 +70,7 @@ public class MapperGenerator {
                 o."r.c\{offset + i + 1}"
             );
 
-            var dtoMapper = dtoJavaClassName == null
+            var dtoMapper = dtoJavaClassName.startsWith("List<")
                 ? dtoFieldsMapper : (StatementGenerator.WriteNext) o -> o."""
                     new \{dtoJavaClassName}(
                         \{dtoFieldsMapper}
@@ -157,7 +157,7 @@ public class MapperGenerator {
             var base = STR."new \{typeToRwClass.apply(t.javaClassName())}().get(\{from}, \{j}";
 
             if (t.nullMode() != GLangParser.NullMode.EXACTLY_NULLABLE)
-                return STR."Objects.requireNonNull(\{base})";
+                return STR."EvenSoNullPointerException.check(\{base})";
             else
                 return base;
         };
