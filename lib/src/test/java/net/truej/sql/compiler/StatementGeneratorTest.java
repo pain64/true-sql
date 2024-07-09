@@ -14,7 +14,7 @@ public class StatementGeneratorTest {
         Assertions.assertEquals(
             """
                 
-                class User {
+                public static class User {
                     public final java.lang.Long id;
                     public final java.lang.String name;
                                 

@@ -155,7 +155,7 @@ public class MapperGeneratorTest {
                     )
                 ).entrySet().stream()
                 .filter(g1 ->
-                    java.util.Objects.nonNull(g1.getKey().c1) &&
+                    java.util.Objects.nonNull(g1.getKey().c1) ||
                     java.util.Objects.nonNull(g1.getKey().c2)
                 ).map(g1 ->
                     new Clinic(
@@ -167,7 +167,7 @@ public class MapperGeneratorTest {
                             r.c3
                         ).distinct().toList(),
                         g1.getValue().stream().filter(r ->
-                            java.util.Objects.nonNull(r.c4) &&
+                            java.util.Objects.nonNull(r.c4) ||
                             java.util.Objects.nonNull(r.c5)
                         ).map(r ->
                             new Doctor(
@@ -184,15 +184,15 @@ public class MapperGeneratorTest {
                             )
                         ).entrySet().stream()
                         .filter(g2 ->
-                            java.util.Objects.nonNull(g2.getKey().c6) &&
+                            java.util.Objects.nonNull(g2.getKey().c6) ||
                             java.util.Objects.nonNull(g2.getKey().c7)
                         ).map(g2 ->
                             new Patient(
                                 g2.getKey().c6,
                                 g2.getKey().c7,
                                 g2.getValue().stream().filter(r ->
-                                    java.util.Objects.nonNull(r.c8) &&
-                                    java.util.Objects.nonNull(r.c9) &&
+                                    java.util.Objects.nonNull(r.c8) ||
+                                    java.util.Objects.nonNull(r.c9) ||
                                     java.util.Objects.nonNull(r.c10)
                                 ).map(r ->
                                     new Bill(

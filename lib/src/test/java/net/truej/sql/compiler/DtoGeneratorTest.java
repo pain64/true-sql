@@ -20,7 +20,7 @@ public class DtoGeneratorTest {
         Assertions.assertEquals(
             """
                 
-                class A {
+                public static class A {
                     public final java.lang.String f1;
                             
                     public A(
@@ -63,7 +63,7 @@ public class DtoGeneratorTest {
         Assertions.assertEquals(
             """
                 
-                class B {
+                public static class B {
                     public final float f4;
                                 
                     public B(
@@ -85,7 +85,7 @@ public class DtoGeneratorTest {
                         return h;
                     }
                 }
-                class A {
+                public static class A {
                     public final java.lang.String f1;
                     public final float f2;
                     public final List<B> f3;

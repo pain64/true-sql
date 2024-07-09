@@ -62,7 +62,7 @@ public class MapperGenerator {
             .filter(f -> f.type() instanceof GLangParser.AggregatedType).toList();
 
         if (next.isEmpty()) {
-            var dtoFilter = StatementGenerator.Out.each(locals, " &&\n", (o, i, _) ->
+            var dtoFilter = StatementGenerator.Out.each(locals, " ||\n", (o, i, _) ->
                 o."java.util.Objects.nonNull(r.c\{offset + i + 1})"
             );
 
