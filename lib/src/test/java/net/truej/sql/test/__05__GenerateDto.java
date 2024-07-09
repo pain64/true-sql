@@ -41,7 +41,23 @@ import java.util.HashMap;
         Assertions.assertEquals(hmap.get(users.get(0)), "Sql");
         Assertions.assertEquals(hmap.get(users.get(1)), "Sql");
     }
-//    @Test public void test2(MainConnection cn) throws JsonProcessingException {
-//        cn.q()
-//    }
+    @Test public void test2(MainConnection cn) throws JsonProcessingException {
+        Assertions.assertEquals(
+                """
+                    [{"ID":1,"NAME":"Joe","INFO":null},{"ID":2,"NAME":"Donald","INFO":"Do not disturb"}]""",
+                new ObjectMapper().writeValueAsString(
+                        cn.q("""
+                            select
+                                c.id   as		"id",
+                                c.name as 		"name",
+                                u.id   as 		"User users.id",
+                                u.name as 		"     users.name"
+                            from clinic c
+                                left join clinic_users cu on cu.clinic_id = c.id
+                                left join user u on u.id = cu.user_id
+                        """).g.fetchList(Clinic.class)
+                )
+        );
+
+    }
 }

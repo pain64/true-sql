@@ -185,11 +185,11 @@ var clinics = ds.q("""
         c.id   as		"id",
         c.name as 		"name",
         u.id   as 		"User users.id",
-        u.name as 		"     users.name",
+        u.name as 		"     users.name"
     from clinic c
         left join clinic_users cu on cu.clinic_id = c.id
         left join user u on u.id = cu.user_id
-    """).fetchList(Clinic.class);
+    """).g.fetchList(Clinic.class);
 ```
 
 <details>
