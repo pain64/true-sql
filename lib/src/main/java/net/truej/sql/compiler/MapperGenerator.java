@@ -83,7 +83,7 @@ public class MapperGenerator {
                     \{dtoMapper}
                 ).distinct()""";
         } else {
-            var keysFilter = StatementGenerator.Out.each(locals, " &&\n", (o, i, _) ->
+            var keysFilter = StatementGenerator.Out.each(locals, " ||\n", (o, i, _) ->
                 o."java.util.Objects.nonNull(g\{level}.getKey().c\{offset + i + 1})"
             );
 
