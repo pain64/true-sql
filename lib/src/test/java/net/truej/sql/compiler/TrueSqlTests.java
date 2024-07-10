@@ -167,7 +167,7 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                             """);
                     initConn.createStatement().execute("""
                             CREATE TABLE users (
-                            	id int PRIMARY KEY,
+                            	id bigint PRIMARY KEY,
                             	name varchar(100) NOT NULL,
                             	info varchar(200)
                             );
