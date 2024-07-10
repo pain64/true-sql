@@ -22,6 +22,8 @@ import static net.truej.sql.source.Parameters.Nullable;
     record Clinic(String name, String city) {}
     // FIXME: rename to CityClinics
     record CitiesClinics(String name, List<String> clinics) {}
+
+
     @Test public void test(MainConnection cn) {
 
         Assertions.assertEquals(
@@ -114,14 +116,17 @@ import static net.truej.sql.source.Parameters.Nullable;
                 cn.q("insert into user(id, name, info) values(?, ?, ?)",3L, "Mike", "Strong left hook")
                         .fetchNone()
         );
-        //FIXME: cannot find type binding for null
-//        Assertions.assertNull(
-//                cn.q("insert into user(id, name, info) values(?, ?, ?)",4L, "Ali", null)
-//                        .fetchNone()
-//        );
 
-        //cn.q()
+        Assertions.assertNull(
+            cn.q("insert into user values(?, ?, ?)", 4L, "Ali", null).fetchNone()
+        );
 
+        Assertions.assertEquals(
+            new User(4L, "Ali", null),
+            cn.q(
+                "select id, name, info from user where id = ?", 4L
+            ).fetchOne(User.class)
+        );
     }
 }
 

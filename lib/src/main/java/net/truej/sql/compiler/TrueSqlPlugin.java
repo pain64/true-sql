@@ -12,6 +12,7 @@ import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.api.BasicJavacTask;
+import net.truej.sql.bindings.NullParameter;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.source.ParameterExtractor;
 
@@ -92,17 +93,25 @@ public class TrueSqlPlugin implements Plugin {
                             tree.args = List.nil();
 
                             var createRwFor = (Function<Type, JCTree.JCExpression>) type -> {
-                                var forClassName = type.tsym.flatName().toString();
+                                final Symbol.ClassSymbol rwClassSymbol;
 
-                                var binding = invocation.bindings.stream().filter(b ->
-                                    b.className().equals(forClassName)
-                                ).findFirst().orElseThrow(() -> new RuntimeException(
-                                    "cannot find binding for " + forClassName
-                                ));
+                                if (type == symtab.botType)
+                                    rwClassSymbol = symtab.getClass(
+                                        symtab.unnamedModule, names.fromString(NullParameter.class.getName())
+                                    );
+                                else {
+                                    var forClassName = type.tsym.flatName().toString();
 
-                                var rwClassSymbol = symtab.getClass(
-                                    symtab.unnamedModule, names.fromString(binding.rwClassName())
-                                );
+                                    var binding = invocation.bindings.stream().filter(b ->
+                                        b.className().equals(forClassName)
+                                    ).findFirst().orElseThrow(() -> new RuntimeException(
+                                        "cannot find binding for " + forClassName
+                                    ));
+
+                                    rwClassSymbol = symtab.getClass(
+                                        symtab.unnamedModule, names.fromString(binding.rwClassName())
+                                    );
+                                }
 
                                 var rwClassConstructor = (Symbol.MethodSymbol) rwClassSymbol.members().getSymbols(sym ->
                                     sym instanceof Symbol.MethodSymbol m && m.name.equals(names.fromString("<init>")) &&
