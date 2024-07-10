@@ -3,6 +3,7 @@ package net.truej.sql.compiler;
 import net.truej.sql.util.TestCompiler2;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
+import org.postgresql.ds.PGSimpleDataSource;
 
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
@@ -22,7 +23,7 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
         TestInstanceFactoryContext factoryContext,
         ExtensionContext extensionContext
     ) throws TestInstantiationException {
-
+        //hsqldb start
         try {
             new JDBCDataSource() {{
                 // "jdbc:postgresql://localhost:5432/uikit_sample", "uikit", "1234"
@@ -151,6 +152,121 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
             throw new RuntimeException(e);
         }
 
+        //pg start
+        try {
+            new PGSimpleDataSource() {{
+                // "jdbc:postgresql://localhost:5432/uikit_sample", "uikit", "1234"
+                setURL("jdbc:postgresql://localhost:5432/truesqldb");
+                setUser("sa");
+                setPassword("");
+
+                try (var initConn = this.getConnection()) {
+                    initConn.createStatement().execute("""
+                            DROP SCHEMA if exists public CASCADE;
+                            CREATE SCHEMA PUBLIC;
+                            """);
+                    initConn.createStatement().execute("""
+                            CREATE TABLE users (
+                            	id int PRIMARY KEY,
+                            	name varchar(100) NOT NULL,
+                            	info varchar(200)
+                            );
+                            
+                            CREATE TABLE clinic (
+                            	id bigint PRIMARY KEY,
+                            	name varchar(100) NOT NULL,
+                            	city_id bigint NOT NULL
+                            );
+                            
+                            CREATE TABLE city (
+                            	id bigint PRIMARY KEY,
+                            	name varchar(50) NOT NULL
+                            );
+                            CREATE TABLE bill (
+                            	id bigint PRIMARY KEY,
+                            	amount decimal(15,2) NOT NULL,
+                            	discount decimal(15,2),
+                            	date timestamp NOT NULL
+                            );
+                            CREATE TABLE clinic_users (
+                            	clinic_id bigint NOT NULL,
+                            	user_id bigint NOT NULL
+                            );
+                            CREATE TABLE user_bills (
+                            	user_id bigint NOT NULL,
+                            	bill_id bigint NOT NULL
+                            );
+                    """);
+                    initConn.createStatement().execute("""
+                            ALTER TABLE clinic ADD CONSTRAINT clinic_fk2 FOREIGN KEY (city_id) REFERENCES city(id);
+                                        
+                            ALTER TABLE clinic_users ADD CONSTRAINT clinic_users_fk0 FOREIGN KEY (clinic_id) REFERENCES clinic(id);
+                            
+                            ALTER TABLE clinic_users ADD CONSTRAINT clinic_users_fk1 FOREIGN KEY (user_id) REFERENCES users(id);
+                            ALTER TABLE user_bills ADD CONSTRAINT user_bills_fk0 FOREIGN KEY (user_id) REFERENCES users(id);
+                            
+                            ALTER TABLE user_bills ADD CONSTRAINT user_bills_fk1 FOREIGN KEY (bill_id) REFERENCES bill(id);
+                    """);
+                    initConn.createStatement().execute("""
+                            insert into users(id, name, info) values(1, 'Joe', null);
+                            insert into users(id, name, info) values(2, 'Donald', 'Do not disturb');
+                            
+                            insert into city(id, name) values(1, 'London');
+                            insert into city(id, name) values(2, 'Paris');
+                            
+                            insert into clinic(id, name, city_id) values(1, 'Paris Neurology Hospital', 2);
+                            insert into clinic(id, name, city_id) values(2, 'London Heart Hospital', 1);
+                            insert into clinic(id, name, city_id) values(3, 'Diagnostic center', 1);
+                            
+                            insert into bill(id, amount, discount, date) values(1, 2000.55, null, '2024-07-01 12:00:00'::timestamp);
+                            insert into bill(id, amount, discount, date) values(2, 1000.20, null, '2024-07-01 16:00:00'::timestamp);
+                            insert into bill(id, amount, discount, date) values(3, 5000, null, '2024-08-01 15:00:00'::timestamp);
+                            insert into bill(id, amount, discount, date) values(4, 7000.77, null, '2024-08-01 15:00:00'::timestamp);
+                            insert into bill(id, amount, discount, date) values(5, 500.10, null, '2024-09-01 15:00:00'::timestamp);
+                            
+                            insert into clinic_users values(1, 2);
+                            insert into clinic_users values(2, 1);
+                            
+                            insert into user_bills values(1, 1);
+                            insert into user_bills values(1, 2);
+                            insert into user_bills values(2, 3);
+                            insert into user_bills values(2, 4);
+                            insert into user_bills values(2, 5);
+                    """);
+                    initConn.createStatement().execute("""
+                            create procedure digit_magic(in x int, inout y int, out z int)
+                            language plpgsql
+                            AS
+                              $$
+                              begin
+                               y = y + x;
+                               z = y + x;
+                              end;
+                              $$;
+                            create procedure bill_zero()
+                            language plpgsql
+                            AS
+                            $$
+                              begin
+                                 update bill set amount = 0;
+                              end;
+                            $$;
+                            create procedure discount_bill(in datedisc timestamp)
+                            language plpgsql
+                            AS
+                            $$
+                              begin
+                                 update bill set discount = amount * 0.1 where date = datedisc;
+                              end;
+                            $$;
+                            """);
+                }
+            }};
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
         var className = factoryContext.getTestClass().getName();
         var simpleClassName = factoryContext.getTestClass().getSimpleName();
         var classFile = className.replace(".", "/");
@@ -206,25 +322,33 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
         ParameterContext parameterContext, ExtensionContext extensionContext
     ) throws ParameterResolutionException {
         var pType = parameterContext.getParameter().getType();
-        return pType == MainConnection.class || pType == MainDataSource.class;
+        return pType == MainConnection.class || pType == MainDataSource.class || pType == PgDataSource.class;
     }
 
     @Override public Object resolveParameter(
         ParameterContext parameterContext, ExtensionContext extensionContext
     ) throws ParameterResolutionException {
         try {
-            var ds = new JDBCDataSource() {{
+            var hsqlDs = new JDBCDataSource() {{
                 // "jdbc:postgresql://localhost:5432/uikit_sample", "uikit", "1234"
                 setURL("jdbc:hsqldb:mem:db");
                 setUser("SA");
                 setPassword("");
             }};
 
+            var pgDs = new PGSimpleDataSource() {{
+                setURL("jdbc:postgresql://localhost:5432/truesqldb");
+                setUser("sa");
+                setPassword("");
+            }};
+
             var pType = parameterContext.getParameter().getType();
             if (pType == MainConnection.class) {
-                return new MainConnection(ds.getConnection());
+                return new MainConnection(hsqlDs.getConnection());
             } else if (pType == MainDataSource.class) {
-                return new MainDataSource(ds);
+                return new MainDataSource(hsqlDs);
+            } else if (pType == PgDataSource.class) {
+                return new PgDataSource(pgDs);
             }
 
             throw new IllegalStateException("unreachable");
