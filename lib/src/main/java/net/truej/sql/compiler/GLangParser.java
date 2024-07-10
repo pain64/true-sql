@@ -197,20 +197,46 @@ public class GLangParser {
                 )
             ).entrySet().stream().map(group -> {
                 var groupLines = group.getValue();
-                var aggregatedTypeName =
-                    groupLines.getFirst().line.chain.fieldClassName;
+                if (groupLines.size() == 1) {
+                    var numbered = groupLines.getFirst();
+                    if (numbered.line.chain.fieldClassName != null)
+                        throw new RuntimeException(
+                            "Dto class name not allowed for group with one element - " +
+                            "thees groups converts to List<single group element class name> "
+                        );
 
-                if (aggregatedTypeName == null)
-                    throw new RuntimeException("Aggregated java class name required");
+                    if (numbered.line.chain.next != null && numbered.line.chain.next.next != null)
+                        throw new RuntimeException(
+                            "Inner groups not allowed for group with one element"
+                        );
 
-                return new Field(
-                    new AggregatedType(aggregatedTypeName, buildGroup(
-                        groupLines.stream().map(nl -> new NumberedColumn(
-                            nl.n, new Line(nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next)
-                        )).toList()
-                    )),
-                    group.getKey()
-                );
+                    return new Field(
+                        new AggregatedType(
+                            "List<" + groupLines.getFirst().line.javaClassName + ">",
+                            List.of(new Field(
+                                new ScalarType(
+                                    numbered.line.nullMode, numbered.line.javaClassName
+                                ), ""
+                            ))
+                        ),
+                        group.getKey()
+                    );
+                } else {
+                    var aggregatedTypeName =
+                        groupLines.getFirst().line.chain.fieldClassName;
+
+                    if (aggregatedTypeName == null)
+                        throw new RuntimeException("Aggregated java class name required");
+
+                    return new Field(
+                        new AggregatedType(aggregatedTypeName, buildGroup(
+                            groupLines.stream().map(nl -> new NumberedColumn(
+                                nl.n, new Line(nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next)
+                            )).toList()
+                        )),
+                        group.getKey()
+                    );
+                }
             });
 
         return Stream.concat(localsChecked, next).toList();
@@ -222,7 +248,7 @@ public class GLangParser {
     ) { }
 
     public interface BindColumn {
-        record Result(String javaClassName, NullMode nullMode) {}
+        record Result(String javaClassName, NullMode nullMode) { }
         Result bind(
             ColumnMetadata column, int columnIndex, @Nullable String javaClassNameHint, NullMode dtoNullMode
         );

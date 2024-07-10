@@ -10,12 +10,18 @@ public class DtoGenerator {
 
     public static void generate(Out out, AggregatedType forType) {
         var declType = (Function<Field, String>) f -> switch (f.type()) {
-            case AggregatedType _ -> STR."List<\{f.type().javaClassName()}>";
+            case AggregatedType _ ->
+                f.type().javaClassName().startsWith("List<")
+                    ? f.type().javaClassName()
+                    : STR."List<\{f.type().javaClassName()}>";
             case ScalarType _ -> f.type().javaClassName();
         };
 
         var nestedTypes = forType.fields().stream()
-            .filter(f -> f.type() instanceof AggregatedType)
+            .filter(f ->
+                f.type() instanceof AggregatedType at &&
+                !at.javaClassName().startsWith("List<")
+            )
             .map(f -> (AggregatedType) f.type())
             .toList();
 
