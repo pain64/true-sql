@@ -65,4 +65,32 @@ import java.util.HashMap;
                 )
         );
     }
+
+    @Test public void test3(MainConnection cn) throws JsonProcessingException {
+        Assertions.assertEquals(
+            """
+                [\
+                {"id":1,"name":"Paris Neurology Hospital","users":[{"id":2,"name":"Donald"}]},\
+                {"id":2,"name":"London Heart Hospital","users":[{"id":1,"name":"Joe"}]},\
+                {"id":3,"name":"Diagnostic center","users":[{"id":0,"name":null}]}\
+                ]""",
+            new ObjectMapper().writeValueAsString(
+                cn.q("""
+                            select
+                                ci.name as "city",
+                                cl.name as "clinic.",
+                                u.name as  "User1 users.name",
+                                u.info as  "      users.info",
+                                b.date as  "      users.Bill bills.date",
+                                b.amount as "     users.     bills.amount"
+                            from city ci
+                                join clinic cl on ci.id = cl.city_id
+                                left join clinic_users clu on clu.clinic_id = cl.id
+                                left join user u on clu.user_id = u.id
+                                left join user_bills ub on ub.user_id = u.id
+                                left join bill b on b.id = ub.bill_id
+                """).g.fetchList(Clinic2.class)
+            )
+        );
+    }
 }
