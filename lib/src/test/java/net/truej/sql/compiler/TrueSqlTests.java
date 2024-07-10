@@ -151,6 +151,33 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                                 name varchar(100)
                              );
                         """);
+                    initConn.createStatement().execute("""
+                        create table all_default_data_types(
+                            bigdecimal_type decimal(15,3) NOT NULL,
+                            bigdecimal_type_null decimal(15,3),
+                            boolean_type boolean NOT NULL,
+                            boolean_type_null boolean,
+                            --bytearray_type bytea NOT NULL,
+                            --bytearray_type_null bytea,
+                            date_type date NOT NULL,
+                            date_type_null date,
+                            integer_type integer NOT NULL,
+                            integer_type_null integer,
+                            long_type bigint NOT NULL,
+                            long_type_null bigint,
+                            string_type varchar(200) NOT NULL,
+                            string_type_null varchar(200),
+                            short_type smallint NOT NULL,
+                            short_type_null smallint,
+                            time_type time NOT NULL,
+                            time_type_null time,
+                            timestamp_type timestamp NOT NULL,
+                            timestamp_type_null timestamp,
+                            --url_type boolean NOT NULL,
+                            url_type_null boolean
+                            
+                        )
+                        """);
                 }
             }};
 
@@ -277,6 +304,30 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
 //                                name varchar(100)
 //                             ) ON COMMIT DELETE ROWS;
 //                        """);
+                    initConn.createStatement().execute("""
+                        create table all_default_data_types(
+                            bigdecimal_type decimal(15,3) NOT NULL,
+                            bigdecimal_type_null decimal(15,3),
+                            boolean_type boolean NOT NULL,
+                            boolean_type_null boolean,
+                            --bytearray_type bytea NOT NULL,
+                            --bytearray_type_null bytea,
+                            date_type date NOT NULL,
+                            date_type_null date,
+                            integer_type integer NOT NULL,
+                            integer_type_null integer,
+                            long_type bigint NOT NULL,
+                            long_type_null bigint,
+                            string_type varchar(200) NOT NULL,
+                            string_type_null varchar(200),
+                            short_type smallint NOT NULL,
+                            short_type_null smallint,
+                            time_type time NOT NULL,
+                            time_type_null time,
+                            timestamp_type timestamp NOT NULL,
+                            timestamp_type_null timestamp
+                        )
+                        """);
                 }
             }};
 
