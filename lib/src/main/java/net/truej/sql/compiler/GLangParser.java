@@ -187,7 +187,7 @@ public class GLangParser {
             .collect(
                 Collectors.groupingBy(
                     nl -> {
-                        var javaFieldName = nl.line.chain.next.fieldName;
+                        var javaFieldName = nl.line.chain.fieldName;
                         if (javaFieldName == null)
                             throw new RuntimeException("Field name required");
 
@@ -198,13 +198,17 @@ public class GLangParser {
             ).entrySet().stream().map(group -> {
                 var groupLines = group.getValue();
                 var aggregatedTypeName =
-                    groupLines.getFirst().line.javaClassName;
+                    groupLines.getFirst().line.chain.fieldClassName;
 
                 if (aggregatedTypeName == null)
                     throw new RuntimeException("Aggregated java class name required");
 
                 return new Field(
-                    new AggregatedType(aggregatedTypeName, buildGroup(groupLines)),
+                    new AggregatedType(aggregatedTypeName, buildGroup(
+                        groupLines.stream().map(nl -> new NumberedColumn(
+                            nl.n, new Line(nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next)
+                        )).toList()
+                    )),
                     group.getKey()
                 );
             });

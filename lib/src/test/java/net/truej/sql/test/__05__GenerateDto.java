@@ -14,6 +14,7 @@ import java.util.HashMap;
 
 @ExtendWith(TrueSqlTests.class)
 @TrueSql public class __05__GenerateDto {
+
     @Test public void test(MainConnection cn) throws JsonProcessingException {
         Assertions.assertEquals(
             """
@@ -27,7 +28,7 @@ import java.util.HashMap;
             select * from user where id = 1
             union all
             select * from user where id = 1"""
-        ).g.fetchList(NUser.class);
+        ).g.fetchList(User1.class);
 
         // check generated equals
         Assertions.assertEquals(users.get(0), users.get(1));
@@ -41,16 +42,21 @@ import java.util.HashMap;
         Assertions.assertEquals(hmap.get(users.get(0)), "Sql");
         Assertions.assertEquals(hmap.get(users.get(1)), "Sql");
     }
+
     @Test public void test2(MainConnection cn) throws JsonProcessingException {
         Assertions.assertEquals(
                 """
-                    [{"ID":1,"NAME":"Joe","INFO":null},{"ID":2,"NAME":"Donald","INFO":"Do not disturb"}]""",
+                    [\
+                    {"id":1,"name":"Paris Neurology Hospital","users":[{"id":2,"name":"Donald"}]},\
+                    {"id":2,"name":"London Heart Hospital","users":[{"id":1,"name":"Joe"}]},\
+                    {"id":3,"name":"Diagnostic center","users":[{"id":0,"name":null}]}\
+                    ]""",
                 new ObjectMapper().writeValueAsString(
                         cn.q("""
                             select
                                 c.id   as		"id",
                                 c.name as 		"name",
-                                u.id   as 		"User users.id",
+                                u.id   as 		"User2 users.id",
                                 u.name as 		"     users.name"
                             from clinic c
                                 left join clinic_users cu on cu.clinic_id = c.id
@@ -58,6 +64,5 @@ import java.util.HashMap;
                         """).g.fetchList(Clinic.class)
                 )
         );
-
     }
 }

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
             );
         }
     }
-    
+
     @Test public void testDataSource(MainDataSource ds) {
         try {
             ds.withConnection(cn ->

@@ -11,8 +11,8 @@ import java.util.List;
 
 @ExtendWith(TrueSqlTests.class)
 @TrueSql public class __07__WithConnection {
-    @Test public void test(MainDataSource ds) {
-        //FIXME: conn dropped? cant find temp_table on insert
+//    @Test public void test(MainDataSource ds) {
+//        //FIXME: conn dropped? cant find temp_table on insert
 ////        Assertions.assertEquals(
 ////                List.of("a", "b"),
 //                ds.withConnection( cn -> {
@@ -34,5 +34,5 @@ import java.util.List;
 //                    return null;
 //                });
 //      //  );
-    }
+//    }
 }

@@ -4,8 +4,6 @@ package net.truej.sql.test;
 public class __05__GenerateDtoTrueSql {
     // This classes will be generated
     class User {}
-    class NUser {}
-    class Clinic {
-        class User {}
-    }
+    class User1 {}
+    class Clinic { }
 }
