@@ -146,7 +146,7 @@ public class StatementGeneratorTest {
                     buffer.append(""\"
                         and (name, age) in (""\");
                     for (var i = 0; i < p2.size(); i++) {
-                        buffer.append(" ?, ? ");
+                        buffer.append(" (?, ?) ");
                         if (i != p2.size() - 1)
                             buffer.append(", ");
                     }

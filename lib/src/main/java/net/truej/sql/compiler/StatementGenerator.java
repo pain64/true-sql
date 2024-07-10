@@ -295,9 +295,14 @@ public class StatementGenerator {
                                     IntStream.range(0, up.n()).boxed().toList(),
                                     ", ", (ooo, _, _) -> ooo."?"
                                 );
+
+                                var withParens = up.n() == 1
+                                    ? unfolded
+                                    : (WriteNext) ooo -> ooo."(\{unfolded})";
+
                                 yield oo."""
                                     for (var i = 0; i < p\{pIndex[0]}.size(); i++) {
-                                        buffer.append(" \{unfolded} ");
+                                        buffer.append(" \{withParens} ");
                                         if (i != p\{pIndex[0]++}.size() - 1)
                                             buffer.append(", ");
                                     }""";
