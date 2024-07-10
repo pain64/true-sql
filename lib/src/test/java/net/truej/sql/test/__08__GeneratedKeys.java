@@ -45,45 +45,56 @@ public class __08__GeneratedKeys {
                 new Discount(5L, new BigDecimal("100.02"))));
         var actual1 = ds.q("update bill set discount = amount * ?", new BigDecimal("0.2"))
             .asGeneratedKeys("id", "discount").withUpdateCount.fetchList(Discount.class);
+        Assertions.assertEquals(
+            expected1.updateCount, actual1.updateCount
+        );
+        Assertions.assertEquals(
+            expected1.value, actual1.value
+        );
 
 
-//        record DateDiscount(Timestamp date, BigDecimal discount) {
-//        }
-//
-//        var discounts = List.of(
-//                new DateDiscount(Timestamp.valueOf("2024-07-01 00:00:00"), new BigDecimal("0.2")),
-//                new DateDiscount(Timestamp.valueOf("2024-08-01 00:00:00"), new BigDecimal("0.15"))
-//        );
-//
-//        Assertions.assertEquals(
-//                List.of(new Discount(1L, new BigDecimal("20.00")),
-//                        new Discount(2L, new BigDecimal("20.00")),
-//                        new Discount(3L, new BigDecimal("15.00")),
-//                        new Discount(4L, new BigDecimal("15.00"))),
-//                ds.q(discounts,
-//                                """
-//                                        update bill
-//                                        set discount = 100 * ?
-//                                        where date::date = ?::date""",
-//                                v -> new Object[]{v.discount, v.date}).asGeneratedKeys("id", "discount")
-//                        .fetchList(Discount.class)
-//        );
+        record DateDiscount(Timestamp date, BigDecimal discount) {
+        }
 
-//        Assertions.assertEquals(
-//                new UpdateResult<>(new long[]{2L, 2L},
-//                        List.of(new Discount(1L, new BigDecimal("20.00")),
-//                                new Discount(2L, new BigDecimal("20.00")),
-//                                new Discount(3L, new BigDecimal("15.00")),
-//                                new Discount(4L, new BigDecimal("15.00")))
-//                ),
-//
-//                ds.q(discounts,
-//                                """
-//                                        update bill
-//                                        set discount = 100 * ?
-//                                        where date::date = ?::date""",
-//                                v -> new Object[]{v.discount, v.date}).asGeneratedKeys("id", "discount")
-//                        .withUpdateCount.fetchList(Discount.class)
-//        );
+        var discounts = List.of(
+                new DateDiscount(Timestamp.valueOf("2024-07-01 00:00:00"), new BigDecimal("0.2")),
+                new DateDiscount(Timestamp.valueOf("2024-08-01 00:00:00"), new BigDecimal("0.15"))
+        );
+
+        var expected2 = List.of(new Discount(1L, new BigDecimal("20.00")),
+            new Discount(2L, new BigDecimal("20.00")),
+            new Discount(3L, new BigDecimal("15.00")),
+            new Discount(4L, new BigDecimal("15.00")));
+        var actual2 = ds.q(discounts,
+                """
+                        update bill
+                        set discount = 100 * ?
+                        where date::date = ?::date""",
+                v -> new Object[]{v.discount, v.date}).asGeneratedKeys("id", "discount")
+            .fetchList(Discount.class);
+
+        Assertions.assertEquals(
+            expected2, actual2
+        );
+        var expected3 = new UpdateResult<>(new long[]{2L, 2L},
+            List.of(new Discount(1L, new BigDecimal("20.00")),
+                new Discount(2L, new BigDecimal("20.00")),
+                new Discount(3L, new BigDecimal("15.00")),
+                new Discount(4L, new BigDecimal("15.00")))
+        );
+        var actual3 = ds.q(discounts,
+                """
+                        update bill
+                        set discount = 100 * ?
+                        where date::date = ?::date""",
+                v -> new Object[]{v.discount, v.date}).asGeneratedKeys("id", "discount")
+            .withUpdateCount.fetchList(Discount.class);
+
+        Assertions.assertArrayEquals(
+                expected3.updateCount, actual3.updateCount
+        );
+        Assertions.assertEquals(
+            expected3.value, actual3.value
+        );
     }
 }

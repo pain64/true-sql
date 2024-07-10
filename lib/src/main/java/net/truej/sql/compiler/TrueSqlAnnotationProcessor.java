@@ -707,12 +707,10 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                          AsGeneratedKeysColumnNames _,
                                          AsGeneratedKeysIndices _ -> {
 
-                                        if (fetchMethodName.equals("fetchNone"))
-                                            columns = List.of();
-                                        else {
-                                            // TODO: check that metadata != null
-                                            var rMetadata = stmt.getMetaData();
+                                        var rMetadata = stmt.getMetaData();
 
+                                        if (rMetadata == null) columns = List.of();
+                                        else {
                                             columns = IntStream.range(1, rMetadata.getColumnCount() + 1).mapToObj(i -> {
                                                 try {
                                                     return new ColumnMetadata(
@@ -721,11 +719,9 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                                 NullMode.EXACTLY_NOT_NULL;
                                                             case ResultSetMetaData.columnNullable ->
                                                                 NullMode.EXACTLY_NULLABLE;
-                                                            case
-                                                                ResultSetMetaData.columnNullableUnknown ->
+                                                            case ResultSetMetaData.columnNullableUnknown ->
                                                                 NullMode.DEFAULT_NOT_NULL;
-                                                            default ->
-                                                                throw new IllegalStateException("unreachable");
+                                                            default -> throw new IllegalStateException("unreachable");
                                                         },
                                                         rMetadata.getColumnType(i),
                                                         rMetadata.getColumnTypeName(i),

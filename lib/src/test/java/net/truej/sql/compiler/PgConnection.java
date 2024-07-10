@@ -13,7 +13,6 @@ import java.sql.Date;
     checks = @CompileTimeChecks(
         url = "jdbc:postgresql://localhost:5432/truesqldb",
         username = "sa",
-        password = "1234"
+        password = ""
     )
-) public record PgDataSource(DataSource w) implements DataSourceW {
-}
+) public record PgConnection(Connection w) implements ConnectionW { }

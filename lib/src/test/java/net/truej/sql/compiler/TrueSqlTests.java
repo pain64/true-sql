@@ -145,6 +145,12 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                                  update bill set discount = amount * 0.1 where date = datedisc;
                               end
                             """);
+
+                    initConn.createStatement().execute("""
+                        CREATE GLOBAL TEMPORARY TABLE names2(
+                                name varchar(100)
+                             );
+                        """);
                 }
             }};
 
@@ -266,6 +272,11 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                               end;
                             $$;
                             """);
+//                    initConn.createStatement().execute("""
+//                        CREATE GLOBAL TEMP TABLE names2(
+//                                name varchar(100)
+//                             ) ON COMMIT DELETE ROWS;
+//                        """);
                 }
             }};
 
@@ -345,7 +356,7 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
             var pgDs = new PGSimpleDataSource() {{
                 setURL("jdbc:postgresql://localhost:5432/truesqldb");
                 setUser("sa");
-                setPassword("");
+                setPassword("1234");
             }};
 
             var pType = parameterContext.getParameter().getType();
