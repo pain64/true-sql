@@ -155,10 +155,16 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
         //pg start
         try {
             new PGSimpleDataSource() {{
+                // create database truesqldb;
+                // create user sa;
+                // grant all privileges on database truesqldb to sa;
+                // \connect truesqldb;
+                // alter schema public owner to sa;
+
                 // "jdbc:postgresql://localhost:5432/uikit_sample", "uikit", "1234"
                 setURL("jdbc:postgresql://localhost:5432/truesqldb");
                 setUser("sa");
-                setPassword("");
+                setPassword("1234");
 
                 try (var initConn = this.getConnection()) {
                     initConn.createStatement().execute("""
