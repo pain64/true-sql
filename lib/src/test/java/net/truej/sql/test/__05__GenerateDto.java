@@ -83,8 +83,8 @@ import java.util.function.Supplier;
                         u.name as 		":t!       users.name"
                     from clinic c
                         left join clinic_users cu on cu.clinic_id = c.id
-                        left join users         u on u.id         = cu.user_id
-                    """).g.fetchList(Clinic.class)
+                        left join users         u on u.id         = cu.user_id"""
+                ).g.fetchList(Clinic.class)
             )
         );
     }
@@ -126,21 +126,21 @@ import java.util.function.Supplier;
                 } ]""",
             new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
                 cn.q("""
-                        select
-                            ci.name  as "      city                   ",
-                            cl.name  as "      clinic.                ",
-                            u.name   as "User3 users .name            ",
-                            u.info   as "      users .info            ",
-                            b.date   as "      users .Bill bills.date ",
-                            b.amount as "      users .     bills.amount"
-                        from city ci
-                                 join clinic       cl  on ci.id         = cl.city_id
-                            left join clinic_users clu on clu.clinic_id = cl.id
-                            left join users        u   on clu.user_id   = u.id
-                            left join user_bills   ub  on ub.user_id    = u.id
-                            left join bill         b   on b.id          = ub.bill_id
-                        order by ci.name, cl.name, u.name, u.info, b.date, b.amount
-                    """).g.fetchList(Clinic2.class)
+                    select
+                        ci.name  as "      city                   ",
+                        cl.name  as "      clinic.                ",
+                        u.name   as "User3 users .name            ",
+                        u.info   as "      users .info            ",
+                        b.date   as "      users .Bill bills.date ",
+                        b.amount as "      users .     bills.amount"
+                    from city ci
+                             join clinic       cl  on ci.id         = cl.city_id
+                        left join clinic_users clu on clu.clinic_id = cl.id
+                        left join users        u   on clu.user_id   = u.id
+                        left join user_bills   ub  on ub.user_id    = u.id
+                        left join bill         b   on b.id          = ub.bill_id
+                    order by ci.name, cl.name, u.name, u.info, b.date, b.amount"""
+                ).g.fetchList(Clinic2.class)
             )
         );
     }
