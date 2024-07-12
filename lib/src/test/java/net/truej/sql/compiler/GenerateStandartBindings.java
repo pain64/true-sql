@@ -101,7 +101,11 @@ public class GenerateStandartBindings {
         );
 
         for (var b : bindings)
-            if (!b.typeName.equals("Timestamp"))
+            if (
+                !b.typeName.equals("Timestamp") &&
+                !b.typeName.equals("Date") &&
+                !b.typeName.equals("Time")
+            )
                 write(b);
 
         var instances = bindings.stream().map(b ->

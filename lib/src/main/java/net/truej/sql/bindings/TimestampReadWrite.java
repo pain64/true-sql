@@ -23,7 +23,7 @@ public class TimestampReadWrite implements TypeReadWrite<java.sql.Timestamp> {
     ) throws SQLException {
         
         
-        stmt.setTimestamp(parameterIndex, value, Calendar.getInstance(UTC));
+        stmt.setTimestamp(parameterIndex, value);
     }
 
     @Override public java.sql.Timestamp get(
