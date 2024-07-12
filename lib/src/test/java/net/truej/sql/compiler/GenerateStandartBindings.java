@@ -100,7 +100,9 @@ public class GenerateStandartBindings {
             new Binding("Url", "java.net.URL", true, "URL", "VARCHAR")
         );
 
-        for (var b : bindings) write(b);
+        for (var b : bindings)
+            if (!b.typeName.equals("Timestamp"))
+                write(b);
 
         var instances = bindings.stream().map(b ->
             "new Binding(" +

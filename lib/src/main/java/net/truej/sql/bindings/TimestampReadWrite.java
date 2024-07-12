@@ -3,13 +3,16 @@ package net.truej.sql.bindings;
 import net.truej.sql.config.TypeReadWrite;
 
 import java.sql.*;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 public class TimestampReadWrite implements TypeReadWrite<java.sql.Timestamp> {
+    private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
     @Override public java.sql.Timestamp get(
         ResultSet rs, int columnIndex
     ) throws SQLException {
-        var value = rs.getTimestamp(columnIndex);
+        var value = rs.getTimestamp(columnIndex, Calendar.getInstance(UTC));
         if (rs.wasNull())
             return null;
         return value;
@@ -20,13 +23,13 @@ public class TimestampReadWrite implements TypeReadWrite<java.sql.Timestamp> {
     ) throws SQLException {
         
         
-        stmt.setTimestamp(parameterIndex, value);
+        stmt.setTimestamp(parameterIndex, value, Calendar.getInstance(UTC));
     }
 
     @Override public java.sql.Timestamp get(
         CallableStatement stmt, int parameterIndex
     ) throws SQLException {
-        var v = stmt.getTimestamp(parameterIndex);
+        var v = stmt.getTimestamp(parameterIndex, Calendar.getInstance(UTC));
         if (stmt.wasNull())
             return null;
 

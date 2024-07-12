@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 
+import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.TimeZone;
@@ -101,10 +102,10 @@ import java.util.function.Supplier;
                     "name" : "Joe",
                     "info" : null,
                     "bills" : [ {
-                      "date" : 1719813600000,
+                      "date" : 1719835200000,
                       "amount" : 2000.55
                     }, {
-                      "date" : 1719828000000,
+                      "date" : 1719849600000,
                       "amount" : 1000.20
                     } ]
                   } ]
@@ -115,13 +116,13 @@ import java.util.function.Supplier;
                     "name" : "Donald",
                     "info" : "Do not disturb",
                     "bills" : [ {
-                      "date" : 1722502800000,
+                      "date" : 1722524400000,
                       "amount" : 5000.00
                     }, {
-                      "date" : 1722502800000,
+                      "date" : 1722524400000,
                       "amount" : 7000.77
                     }, {
-                      "date" : 1725181200000,
+                      "date" : 1725202800000,
                       "amount" : 500.10
                     } ]
                   } ]
