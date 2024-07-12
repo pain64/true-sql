@@ -10,7 +10,9 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 
+import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 
 @ExtendWith(TrueSqlTests2.class)
@@ -124,24 +126,26 @@ import java.util.function.Supplier;
                     } ]
                   } ]
                 } ]""",
-            new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
-                cn.q("""
-                    select
-                        ci.name  as "      city                   ",
-                        cl.name  as "      clinic.                ",
-                        u.name   as "User3 users .name            ",
-                        u.info   as "      users .info            ",
-                        b.date   as "      users .Bill bills.date ",
-                        b.amount as "      users .     bills.amount"
-                    from city ci
-                             join clinic       cl  on ci.id         = cl.city_id
-                        left join clinic_users clu on clu.clinic_id = cl.id
-                        left join users        u   on clu.user_id   = u.id
-                        left join user_bills   ub  on ub.user_id    = u.id
-                        left join bill         b   on b.id          = ub.bill_id
-                    order by ci.name, cl.name, u.name, u.info, b.date, b.amount"""
-                ).g.fetchList(Clinic2.class)
-            )
+            new ObjectMapper()
+                .setTimeZone(TimeZone.getTimeZone("UTC"))
+                .writerWithDefaultPrettyPrinter().writeValueAsString(
+                    cn.q("""
+                        select
+                            ci.name  as "      city                   ",
+                            cl.name  as "      clinic.                ",
+                            u.name   as "User3 users .name            ",
+                            u.info   as "      users .info            ",
+                            b.date   as "      users .Bill bills.date ",
+                            b.amount as "      users .     bills.amount"
+                        from city ci
+                                 join clinic       cl  on ci.id         = cl.city_id
+                            left join clinic_users clu on clu.clinic_id = cl.id
+                            left join users        u   on clu.user_id   = u.id
+                            left join user_bills   ub  on ub.user_id    = u.id
+                            left join bill         b   on b.id          = ub.bill_id
+                        order by ci.name, cl.name, u.name, u.info, b.date, b.amount"""
+                    ).g.fetchList(Clinic2.class)
+                )
         );
     }
 }
