@@ -128,7 +128,6 @@ import java.util.function.Supplier;
                   } ]
                 } ]""",
             new ObjectMapper()
-                .setTimeZone(TimeZone.getTimeZone("UTC"))
                 .writerWithDefaultPrettyPrinter().writeValueAsString(
                     cn.q("""
                         select
