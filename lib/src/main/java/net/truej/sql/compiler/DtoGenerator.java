@@ -10,10 +10,9 @@ public class DtoGenerator {
 
     public static void generate(Out out, AggregatedType forType) {
         var declType = (Function<Field, String>) f -> switch (f.type()) {
-            case AggregatedType _ ->
-                f.type().javaClassName().startsWith("List<")
-                    ? f.type().javaClassName()
-                    : STR."List<\{f.type().javaClassName()}>";
+            case AggregatedType _ -> f.type().javaClassName().startsWith("List<")
+                ? f.type().javaClassName()
+                : STR."List<\{f.type().javaClassName()}>";
             case ScalarType _ -> f.type().javaClassName();
         };
 
@@ -30,9 +29,16 @@ public class DtoGenerator {
             return null;
         });
 
-        var fieldDefinitions = each(forType.fields(), "\n", (o, _, f) ->
-            o."public final \{declType.apply(f)} \{f.name()};"
-        );
+        var fieldDefinitions = each(forType.fields(), "\n", (o, _, f) -> {
+            var nullability = f.type() instanceof ScalarType st ?
+                switch (st.nullMode()) {
+                    case EXACTLY_NULLABLE -> "@Nullable ";
+                    case DEFAULT_NOT_NULL -> "";
+                    case EXACTLY_NOT_NULL -> "@NotNull ";
+                } : "";
+
+            return ((Out) o)."\{nullability}public final \{declType.apply(f)} \{f.name()};";
+        });
 
         var constructorParameters = each(forType.fields(), ",\n", (o, _, f) ->
             o."\{declType.apply(f)} \{f.name()}"

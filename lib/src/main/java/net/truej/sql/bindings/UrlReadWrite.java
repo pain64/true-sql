@@ -10,8 +10,8 @@ public class UrlReadWrite implements TypeReadWrite<java.net.URL> {
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getURL(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class UrlReadWrite implements TypeReadWrite<java.net.URL> {
     ) throws SQLException {
         var v = stmt.getURL(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

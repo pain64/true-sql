@@ -10,8 +10,8 @@ public class TimeReadWrite implements TypeReadWrite<java.sql.Time> {
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getTime(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class TimeReadWrite implements TypeReadWrite<java.sql.Time> {
     ) throws SQLException {
         var v = stmt.getTime(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

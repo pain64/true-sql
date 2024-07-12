@@ -16,7 +16,7 @@ public class StatementGeneratorTest {
                 
                 public static class User {
                     public final java.lang.Long id;
-                    public final java.lang.String name;
+                    @Nullable public final java.lang.String name;
                                 
                     public User(
                         java.lang.Long id,
@@ -120,10 +120,6 @@ public class StatementGeneratorTest {
                 false
             )
         );
-    }
-
-    interface ParameterExtractor<B, P, E extends Exception> {
-        P get(B element) throws E;
     }
 
     @Test void singleUnfold() {

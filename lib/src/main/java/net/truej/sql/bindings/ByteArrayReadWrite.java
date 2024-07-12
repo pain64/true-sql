@@ -10,8 +10,8 @@ public class ByteArrayReadWrite implements TypeReadWrite<byte[]> {
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getBytes(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class ByteArrayReadWrite implements TypeReadWrite<byte[]> {
     ) throws SQLException {
         var v = stmt.getBytes(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

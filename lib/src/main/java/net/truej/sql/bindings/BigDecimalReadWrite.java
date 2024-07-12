@@ -10,8 +10,8 @@ public class BigDecimalReadWrite implements TypeReadWrite<java.math.BigDecimal> 
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getBigDecimal(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class BigDecimalReadWrite implements TypeReadWrite<java.math.BigDecimal> 
     ) throws SQLException {
         var v = stmt.getBigDecimal(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

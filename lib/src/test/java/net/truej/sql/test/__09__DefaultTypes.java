@@ -1,11 +1,9 @@
 package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.PgDataSource;
-import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.compiler.*;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
@@ -13,8 +11,12 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-@ExtendWith(TrueSqlTests.class)
+import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+
+@ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __09__DefaultTypes {
+
     record DataTypes(
         BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
         Boolean boolean_type, @Nullable Boolean boolean_type_null,
@@ -29,7 +31,8 @@ import java.sql.Timestamp;
         Timestamp timestamp_type, @Nullable Timestamp timestamp_type_null
     ) {}
 
-    @Test public void test(PgDataSource ds) {
+    // FIXME: HSQLDB ???
+    @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) {
         ds.q("""
             insert into all_default_data_types 
             values(

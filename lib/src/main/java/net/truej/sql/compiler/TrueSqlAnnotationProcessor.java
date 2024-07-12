@@ -1127,6 +1127,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     out.write("import " + ParameterExtractor.class.getName() + ";\n");
                     out.write("import " + Parameters.class.getName() + ".*;\n");
                     out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
+                    out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
+                    out.write("import " + org.jetbrains.annotations.NotNull.class.getName() + ";\n");
                     out.write("import net.truej.sql.bindings.*;\n");
                     out.write("import java.util.List;\n");
                     out.write("import java.util.stream.Stream;\n");

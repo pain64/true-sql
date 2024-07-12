@@ -5,6 +5,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static net.truej.sql.compiler.StatementGenerator.*;
+
 public class MapperGenerator {
 
     private static List<GLangParser.ScalarType> flattenStartRow(List<GLangParser.Field> fields) {
@@ -17,7 +19,7 @@ public class MapperGenerator {
     }
 
     private static Void dtoForGroupKeys(
-        StatementGenerator.Out out, int level, int offset, List<GLangParser.Field> fields
+        Out out, int level, int offset, List<GLangParser.Field> fields
     ) {
         var next = fields.stream()
             .filter(f -> f.type() instanceof GLangParser.AggregatedType).toList();
@@ -26,7 +28,7 @@ public class MapperGenerator {
             var locals = fields.stream()
                 .filter(f -> f.type() instanceof GLangParser.ScalarType).toList();
 
-            var groupKeys = StatementGenerator.Out.each(locals, ",\n", (o, i, field) ->
+            var groupKeys = Out.each(locals, ",\n", (o, i, field) ->
                 o."\{field.type().javaClassName()} c\{offset + i + 1}"
             );
             var _ = out."""
@@ -51,27 +53,32 @@ public class MapperGenerator {
     }
 
     private static Void nextOperations(
-        StatementGenerator.Out out, int level, int offset,
+        Out out, int level, int offset,
         String dtoJavaClassName, List<GLangParser.Field> fields
     ) {
 
         var locals = fields.stream()
-            .filter(f -> f.type() instanceof GLangParser.ScalarType).toList();
+            .filter(f -> f.type() instanceof GLangParser.ScalarType)
+            .toList();
 
         var next = fields.stream()
             .filter(f -> f.type() instanceof GLangParser.AggregatedType).toList();
 
+        var getField = (BiFunction<String, GLangParser.ScalarType, String>) (expr, st) ->
+            STR."\{wrapWithActualNullCheck(expr, st.nullMode())}";
+
         if (next.isEmpty()) {
-            var dtoFilter = StatementGenerator.Out.each(locals, " ||\n", (o, i, _) ->
+            var dtoFilter = Out.each(locals, " ||\n", (o, i, _) ->
                 o."java.util.Objects.nonNull(r.c\{offset + i + 1})"
             );
 
-            var dtoFieldsMapper = StatementGenerator.Out.each(locals, ",\n", (o, i, _) ->
-                o."r.c\{offset + i + 1}"
-            );
+            var dtoFieldsMapper = Out.each(locals, ",\n", (o, i, f) -> {
+                var expr = STR."r.c\{offset + i + 1}";
+                return ((Out) o)."\{getField.apply(expr, ((GLangParser.ScalarType) f.type()))}";
+            });
 
             var dtoMapper = dtoJavaClassName.startsWith("List<")
-                ? dtoFieldsMapper : (StatementGenerator.WriteNext) o -> o."""
+                ? dtoFieldsMapper : (WriteNext) o -> o."""
                     new \{dtoJavaClassName}(
                         \{dtoFieldsMapper}
                     )""";
@@ -83,19 +90,22 @@ public class MapperGenerator {
                     \{dtoMapper}
                 ).distinct()""";
         } else {
-            var keysFilter = StatementGenerator.Out.each(locals, " ||\n", (o, i, _) ->
+            var keysFilter = Out.each(locals, " ||\n", (o, i, _) ->
                 o."java.util.Objects.nonNull(g\{level}.getKey().c\{offset + i + 1})"
             );
 
-            var keysMapper = StatementGenerator.Out.each(locals, ",\n", (o, i, _) ->
+            var keysMapper = Out.each(locals, ",\n", (o, i, _) ->
                 o."r.c\{offset + i + 1}"
             );
 
-            var dtoMapper = StatementGenerator.Out.each(locals, ",\n", (o, i, _) ->
-                o."g\{level}.getKey().c\{offset + i + 1}"
-            );
+            var dtoMapper = Out.each(locals, ",\n", (o, i, f) -> {
+                var expr = STR."g\{level}.getKey().c\{offset + i + 1}";
+                return
+                    ((Out) o)
+                        ."\{getField.apply(expr, ((GLangParser.ScalarType) f.type()))}";
+            });
 
-            var nextTransform = (StatementGenerator.WriteNext) o -> {
+            var nextTransform = (WriteNext) o -> {
                 var baseOffset = offset + locals.size();
 
 //                var line = each(next, ",", (o2, i, n) ->
@@ -144,8 +154,13 @@ public class MapperGenerator {
         return null;
     }
 
+    private static String wrapWithActualNullCheck(String expr, GLangParser.NullMode nullMode) {
+        return nullMode != GLangParser.NullMode.EXACTLY_NULLABLE ?
+            STR."EvenSoNullPointerException.check(\{expr})" : expr;
+    }
+
     public static void generate(
-        StatementGenerator.Out out, GLangParser.FieldType toType,
+        Out out, GLangParser.FieldType toType,
         int[] outParametersIndexes,
         Function<String, String> typeToRwClass
     ) {
@@ -154,18 +169,12 @@ public class MapperGenerator {
 
         var getField = (BiFunction<GLangParser.ScalarType, Integer, String>) (t, i) -> {
             var j = outParametersIndexes == null ? i : outParametersIndexes[i - 1];
-            var base = STR."new \{typeToRwClass.apply(t.javaClassName())}().get(\{from}, \{j}";
-
-            if (t.nullMode() != GLangParser.NullMode.EXACTLY_NULLABLE)
-                return STR."EvenSoNullPointerException.check(\{base})";
-            else
-                return base;
+            return STR."new \{typeToRwClass.apply(t.javaClassName())}().get(\{from}, \{j}";
         };
 
-
-        final StatementGenerator.WriteNext extraDto;
-        final StatementGenerator.WriteNext groupTransform;
-        final StatementGenerator.WriteNext mapFields;
+        final WriteNext extraDto;
+        final WriteNext groupTransform;
+        final WriteNext mapFields;
 
         switch (toType) {
             case GLangParser.AggregatedType at -> {
@@ -175,16 +184,17 @@ public class MapperGenerator {
                 var hasGrouping = at.fields().stream()
                     .anyMatch(f -> f.type() instanceof GLangParser.AggregatedType);
 
-                var eachField = StatementGenerator.Out.each(flattened, ",\n", (o, i, field) ->
-                    o."\{getField.apply(field, i + 1)})"
-                );
+                var eachField = Out.each(flattened, ",\n", (o, i, field) -> {
+                    var expr = getField.apply(field, i + 1);
+                    return ((Out) o)."\{hasGrouping ? expr : wrapWithActualNullCheck(expr, field.nullMode())})";
+                });
 
                 if (hasGrouping) {
-                    var rowFields = StatementGenerator.Out.each(flattened, ",\n", (o, i, field) ->
+                    var rowFields = Out.each(flattened, ",\n", (o, i, field) ->
                         o."\{field.javaClassName()} c\{i + 1}"
                     );
 
-                    var groupKeysDto = (StatementGenerator.WriteNext) o ->
+                    var groupKeysDto = (WriteNext) o ->
                         dtoForGroupKeys(o, 1, 0, at.fields());
 
                     toDto = "Row";
@@ -210,7 +220,7 @@ public class MapperGenerator {
             }
             case GLangParser.ScalarType st -> {
                 mapFields = o ->
-                    o."\{getField.apply(st, 1)})";
+                    o."\{wrapWithActualNullCheck(getField.apply(st, 1), st.nullMode())})";
                 extraDto = _ -> null;
                 groupTransform = _ -> null;
             }

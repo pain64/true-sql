@@ -24,6 +24,7 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.32")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    testImplementation("org.testcontainers:postgresql:1.19.8")
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

@@ -10,8 +10,8 @@ public class BooleanReadWrite implements TypeReadWrite<java.lang.Boolean> {
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getBoolean(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class BooleanReadWrite implements TypeReadWrite<java.lang.Boolean> {
     ) throws SQLException {
         var v = stmt.getBoolean(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

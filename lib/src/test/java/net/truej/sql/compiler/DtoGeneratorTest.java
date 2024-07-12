@@ -21,21 +21,21 @@ public class DtoGeneratorTest {
             """
                 
                 public static class A {
-                    public final java.lang.String f1;
-                            
+                    @NotNull public final java.lang.String f1;
+                                
                     public A(
                         java.lang.String f1
                     ) {
                         this.f1 = f1;
                     }
-                            
+                                
                     @Override public boolean equals(Object other) {
                         return this == other || (
                             other instanceof A o &&
                             java.util.Objects.equals(this.f1, o.f1)
                         );
                     }
-                            
+                                
                     @Override public int hashCode() {
                         int h = 1;
                         h = h * 59 + java.util.Objects.hashCode(this.f1);
@@ -64,7 +64,7 @@ public class DtoGeneratorTest {
             """
                 
                 public static class B {
-                    public final float f4;
+                    @NotNull public final float f4;
                                 
                     public B(
                         float f4
@@ -86,8 +86,8 @@ public class DtoGeneratorTest {
                     }
                 }
                 public static class A {
-                    public final java.lang.String f1;
-                    public final float f2;
+                    @NotNull public final java.lang.String f1;
+                    @NotNull public final float f2;
                     public final List<B> f3;
                                 
                     public A(

@@ -39,8 +39,8 @@ public class GenerateStandartBindings {
                     ResultSet rs, int columnIndex
                 ) throws SQLException {
                     var value = rs.get\{binding.accessorSuffix}(columnIndex);
-                    \{binding.mayBeNull ? "" : "if (rs.wasNull())"}
-                    \{binding.mayBeNull ? "" : "    throw new IllegalStateException(\"null not expected\");"}
+                    if (rs.wasNull())
+                        \{binding.mayBeNull ? "return null;" : "throw new IllegalStateException(\"null not expected\");"}
                     return value;
                 }
 
@@ -57,7 +57,7 @@ public class GenerateStandartBindings {
                 ) throws SQLException {
                     var v = stmt.get\{binding.accessorSuffix}(parameterIndex);
                     if (stmt.wasNull())
-                        throw new IllegalStateException("null not expected");
+                        \{binding.mayBeNull ? "return null;" : "throw new IllegalStateException(\"null not expected\");"}
 
                     return v;
                 }
@@ -70,30 +70,10 @@ public class GenerateStandartBindings {
             }
             """;
 
-        Files.write(
-            Paths.get(toFile),
-            code.getBytes()
-        );
+        Files.write(Paths.get(toFile), code.getBytes());
     }
 
-    // may be null?, sqlType
-    public interface EE<B> extends TypeReadWrite<B> { }
-
-    public class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
-    public class PgPointReadWriteX extends PgPointReadWrite { }
-    public class Int2DimArrayReadWrite extends AsObjectReadWrite<int[][]> { }
-
-
-
     @Test void bar() throws IOException {
-        var c = Int2DimArrayReadWrite.class;
-//        System.out.println("result = " + BoundTypeExtractor.extract(PgPointReadWriteX.class));
-//        System.out.println("result = " + BoundTypeExtractor.extract(Int2DimArrayReadWrite.class));
-
-        // ((ParameterizedType)
-        //        PgPointReadWrite.class.getGenericSuperclass())
-        //        .getActualTypeArguments()[0];
-
 
         var bindings = List.of(
             new Binding("PrimitiveBoolean", "java.lang.Boolean", false, "Boolean", "BOOLEAN"),

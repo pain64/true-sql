@@ -1,7 +1,7 @@
 package net.truej.sql.compiler;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.bindings.StringReadWrite;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

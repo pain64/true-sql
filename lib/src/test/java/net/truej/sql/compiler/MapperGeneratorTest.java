@@ -117,8 +117,8 @@ public class MapperGeneratorTest {
                     java.lang.Long c6,
                     java.lang.String c7
                 ) {}
-                  
-                  
+                                
+                                
                 var mapped = Stream.iterate(
                     rs, t -> {
                         try {
@@ -131,16 +131,16 @@ public class MapperGeneratorTest {
                     try {
                         return
                             new Row (
-                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 1)),
-                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 2)),
+                                new LongReadWrite().get(rs, 1),
+                                new StringReadWrite().get(rs, 2),
                                 new StringReadWrite().get(rs, 3),
-                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 4)),
-                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 5)),
-                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 6)),
-                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 7)),
-                                EvenSoNullPointerException.check(new LongReadWrite().get(rs, 8)),
-                                EvenSoNullPointerException.check(new StringReadWrite().get(rs, 9)),
-                                EvenSoNullPointerException.check(new BigDecimalReadWrite().get(rs, 10))
+                                new LongReadWrite().get(rs, 4),
+                                new StringReadWrite().get(rs, 5),
+                                new LongReadWrite().get(rs, 6),
+                                new StringReadWrite().get(rs, 7),
+                                new LongReadWrite().get(rs, 8),
+                                new StringReadWrite().get(rs, 9),
+                                new BigDecimalReadWrite().get(rs, 10)
                             );
                     } catch (SQLException e) {
                         throw source.mapException(e);
@@ -159,8 +159,8 @@ public class MapperGeneratorTest {
                     java.util.Objects.nonNull(g1.getKey().c2)
                 ).map(g1 ->
                     new Clinic(
-                        g1.getKey().c1,
-                        g1.getKey().c2,
+                        EvenSoNullPointerException.check(g1.getKey().c1),
+                        EvenSoNullPointerException.check(g1.getKey().c2),
                         g1.getValue().stream().filter(r ->
                             java.util.Objects.nonNull(r.c3)
                         ).map(r ->
@@ -171,8 +171,8 @@ public class MapperGeneratorTest {
                             java.util.Objects.nonNull(r.c5)
                         ).map(r ->
                             new Doctor(
-                                r.c4,
-                                r.c5
+                                EvenSoNullPointerException.check(r.c4),
+                                EvenSoNullPointerException.check(r.c5)
                             )
                         ).distinct().toList(),
                         g1.getValue().stream().collect(
@@ -188,17 +188,17 @@ public class MapperGeneratorTest {
                             java.util.Objects.nonNull(g2.getKey().c7)
                         ).map(g2 ->
                             new Patient(
-                                g2.getKey().c6,
-                                g2.getKey().c7,
+                                EvenSoNullPointerException.check(g2.getKey().c6),
+                                EvenSoNullPointerException.check(g2.getKey().c7),
                                 g2.getValue().stream().filter(r ->
                                     java.util.Objects.nonNull(r.c8) ||
                                     java.util.Objects.nonNull(r.c9) ||
                                     java.util.Objects.nonNull(r.c10)
                                 ).map(r ->
                                     new Bill(
-                                        r.c8,
-                                        r.c9,
-                                        r.c10
+                                        EvenSoNullPointerException.check(r.c8),
+                                        EvenSoNullPointerException.check(r.c9),
+                                        EvenSoNullPointerException.check(r.c10)
                                     )
                                 ).distinct().toList()
                             )

@@ -10,8 +10,8 @@ public class IntegerReadWrite implements TypeReadWrite<java.lang.Integer> {
         ResultSet rs, int columnIndex
     ) throws SQLException {
         var value = rs.getInt(columnIndex);
-        
-        
+        if (rs.wasNull())
+            return null;
         return value;
     }
 
@@ -28,7 +28,7 @@ public class IntegerReadWrite implements TypeReadWrite<java.lang.Integer> {
     ) throws SQLException {
         var v = stmt.getInt(parameterIndex);
         if (stmt.wasNull())
-            throw new IllegalStateException("null not expected");
+            return null;
 
         return v;
     }

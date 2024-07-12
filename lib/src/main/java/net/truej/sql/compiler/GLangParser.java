@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -69,12 +70,20 @@ public class GLangParser {
     ) { }
     public record Line(NullMode nullMode, @Nullable String javaClassName, Chain chain) { }
 
+    private static NullMode markToNullMode(NullabilityMark m) {
+        return switch (m) {
+            case ExclamationMark _ -> NullMode.EXACTLY_NOT_NULL;
+            case QuestionMark _ -> NullMode.EXACTLY_NULLABLE;
+        };
+    }
+
     public static Line parse(
         BindColumn bindColumn, ColumnMetadata column, int columnIndex, List<Lexeme> input
     ) {
 
         final NullMode nullMode;
         final @Nullable String javaClassNameHint;
+        final int next;
 
         if (input.get(0) instanceof Colon) {
             if (!input.get(1).equals(new Text("t")))
@@ -82,19 +91,20 @@ public class GLangParser {
 
             switch (input.get(2)) {
                 case NullabilityMark m -> {
-                    nullMode = switch (m) {
-                        case ExclamationMark _ -> NullMode.EXACTLY_NOT_NULL;
-                        case QuestionMark _ -> NullMode.EXACTLY_NULLABLE;
-                    };
-
-                    if (input.get(3) instanceof Text text)
-                        javaClassNameHint = text.t;
-                    else
-                        javaClassNameHint = null;
+                    nullMode = markToNullMode(m);
+                    javaClassNameHint = null;
+                    next = 3;
                 }
                 case Text text -> {
-                    nullMode = NullMode.DEFAULT_NOT_NULL;
                     javaClassNameHint = text.t;
+
+                    if (input.get(3) instanceof NullabilityMark m) {
+                        nullMode = markToNullMode(m);
+                        next = 4;
+                    } else {
+                        nullMode = NullMode.DEFAULT_NOT_NULL;
+                        next = 3;
+                    }
                 }
                 default -> throw new RuntimeException(
                     STR."Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has \{input.get(2)}"
@@ -103,12 +113,13 @@ public class GLangParser {
         } else {
             nullMode = NullMode.DEFAULT_NOT_NULL;
             javaClassNameHint = null;
+            next = 0;
         }
 
         var bindResult = bindColumn.bind(column, columnIndex, javaClassNameHint, nullMode);
 
         return new Line(
-            bindResult.nullMode, bindResult.javaClassName, parseChain(input, 0)
+            bindResult.nullMode, bindResult.javaClassName, parseChain(input, next)
         );
     }
 
@@ -154,6 +165,14 @@ public class GLangParser {
 
     public record NumberedColumn(int n, Line line) { }
 
+    private static final Pattern SNAKE_TO_CAMEL_CASE_PATTERN = Pattern.compile("_(\\p{L})");
+
+    private static String makeFieldName(String columnName) {
+        return SNAKE_TO_CAMEL_CASE_PATTERN
+            .matcher(columnName.toLowerCase())
+            .replaceAll(m -> m.group(1).toUpperCase());
+    }
+
     private static List<Field> buildGroup(List<NumberedColumn> lines) {
         // FIXME: check that at least one local ???
         var locals = lines.stream()
@@ -178,7 +197,7 @@ public class GLangParser {
                 new ScalarType(
                     nl.line.nullMode, nl.line.javaClassName
                 ),
-                nl.line.chain.fieldName
+                makeFieldName(nl.line.chain.fieldName)
             );
         });
 
@@ -197,6 +216,8 @@ public class GLangParser {
                 )
             ).entrySet().stream().map(group -> {
                 var groupLines = group.getValue();
+                var groupFieldName = makeFieldName(group.getKey());
+
                 if (groupLines.size() == 1) {
                     var numbered = groupLines.getFirst();
                     if (numbered.line.chain.fieldClassName != null)
@@ -219,7 +240,7 @@ public class GLangParser {
                                 ), ""
                             ))
                         ),
-                        group.getKey()
+                        groupFieldName
                     );
                 } else {
                     var aggregatedTypeName =
@@ -234,7 +255,7 @@ public class GLangParser {
                                 nl.n, new Line(nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next)
                             )).toList()
                         )),
-                        group.getKey()
+                        groupFieldName
                     );
                 }
             });
