@@ -76,11 +76,11 @@ insert into clinic(id, name, city_id) values (1, 'Paris Neurology Hospital', 2);
 insert into clinic(id, name, city_id) values (2, 'London Heart Hospital', 1);
 insert into clinic(id, name, city_id) values (3, 'Diagnostic center', 1);
 
-insert into bill(id, amount, discount, date) values (1, 2000.55, null, cast('2024-07-01 12:00:00' as datetime));
-insert into bill(id, amount, discount, date) values (2, 1000.20, null, cast('2024-07-01 16:00:00' as datetime));
-insert into bill(id, amount, discount, date) values (3, 5000, null, cast('2024-08-01 15:00:00' as datetime));
-insert into bill(id, amount, discount, date) values (4, 7000.77, null, cast('2024-08-01 15:00:00' as datetime));
-insert into bill(id, amount, discount, date) values (5, 500.10, null, cast('2024-09-01 15:00:00' as datetime));
+insert into bill(id, amount, discount, date) values(1, 2000.55, null, to_timestamp('2024-07-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+insert into bill(id, amount, discount, date) values(2, 1000.20, null, to_timestamp('2024-07-01 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+insert into bill(id, amount, discount, date) values(3, 5000, null,    to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+insert into bill(id, amount, discount, date) values(4, 7000.77, null, to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+insert into bill(id, amount, discount, date) values(5, 500.10, null,  to_timestamp('2024-09-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
 insert into clinic_users values(1, 2);
 insert into clinic_users values(2, 1);
