@@ -7,9 +7,9 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
@@ -20,48 +20,47 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
     record DataTypes(
         BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
         Boolean boolean_type, @Nullable Boolean boolean_type_null,
-        Date date_type, @Nullable Date date_type_null,
+        LocalDate date_type, @Nullable LocalDate date_type_null,
         Integer integer_type, @Nullable Integer integer_type_null,
         Long long_type, @Nullable Long long_type_null,
         String string_type, @Nullable String string_type_null,
         //почему не short???
         //Short short_type, @Nullable Short short_type_null,
         Integer short_type, @Nullable Integer short_type_null,
-        Time time_type, @Nullable Time time_type_null,
-        Timestamp timestamp_type, @Nullable Timestamp timestamp_type_null
-    ) {}
+        LocalTime time_type, @Nullable LocalTime time_type_null,
+        LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
+    ) { }
 
     // FIXME: HSQLDB ???
     @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) {
         ds.q("""
-            insert into all_default_data_types 
-            values(
-                ?, ?,
-                ?, ?,
-                
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?)
-            """,
+                insert into all_default_data_types values(
+                    ?, ?,
+                    ?, ?,
+
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?)
+                """,
             new BigDecimal("100.24124"), null,
             Boolean.valueOf(true), null,
             //new byte[] {1}, null,
-            new Date(System.currentTimeMillis()), null,
+            LocalDate.of(2024, 7, 1), null,
             Integer.valueOf(100), null,
             Long.valueOf(99L), null,
             "hello", null,
             Short.valueOf("255"), null,
-            Time.valueOf("23:59:59"), null,
-            Timestamp.valueOf("1984-01-01 23:59:59"), null
-            ).fetchNone();
+            LocalTime.of(23, 59, 59), null,
+            LocalDateTime.of(1984, 1, 1, 23, 59, 59), null
+        ).fetchNone();
 
 
         ds.q("""
-            select 
+            select
                 bigdecimal_type, bigdecimal_type_null ,
                 boolean_type, boolean_type_null,
                 --bytearray_type bytea NOT NULL,

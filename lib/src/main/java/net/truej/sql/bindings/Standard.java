@@ -2,6 +2,7 @@ package net.truej.sql.bindings;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.Types;
 import java.util.List;
 
 public class Standard {
@@ -22,9 +23,15 @@ public class Standard {
         new Binding("long", "net.truej.sql.bindings.PrimitiveLongReadWrite", false, null, null),
         new Binding("java.lang.Long", "net.truej.sql.bindings.LongReadWrite", true, null, null),
         new Binding("java.lang.String", "net.truej.sql.bindings.StringReadWrite", true, null, null),
-        new Binding("java.sql.Date", "net.truej.sql.bindings.DateReadWrite", true, null, null),
-        new Binding("java.sql.Time", "net.truej.sql.bindings.TimeReadWrite", true, null, null),
-        new Binding("java.sql.Timestamp", "net.truej.sql.bindings.TimestampReadWrite", true, null, null),
+
+        new Binding("java.time.LocalDate", "net.truej.sql.bindings.LocalDateReadWrite", true, Types.DATE, null),
+        new Binding("java.time.LocalTime", "net.truej.sql.bindings.LocalTimeReadWrite", true, Types.TIME, null),
+        new Binding("java.time.LocalDateTime", "net.truej.sql.bindings.LocalDateTimeReadWrite", true, Types.TIMESTAMP, null),
+
+        new Binding("java.time.OffsetDateTime", "net.truej.sql.bindings.OffsetDateTimeReadWrite", true, Types.TIMESTAMP_WITH_TIMEZONE, null),
+        new Binding("java.time.OffsetTime", "net.truej.sql.bindings.OffsetTimeReadWrite", true, Types.TIME_WITH_TIMEZONE, null),
+        new Binding("java.time.ZonedDateTime", "net.truej.sql.bindings.ZonedDateTimeReadWrite", true, Types.TIMESTAMP_WITH_TIMEZONE, null),
+
         new Binding("java.math.BigDecimal", "net.truej.sql.bindings.BigDecimalReadWrite", true, null, null),
         new Binding("byte[]", "net.truej.sql.bindings.ByteArrayReadWrite", true, null, null),
         new Binding("java.net.URL", "net.truej.sql.bindings.UrlReadWrite", true, null, null)

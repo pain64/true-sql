@@ -9,10 +9,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.DriverManager;
-import java.sql.ParameterMetaData;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -25,6 +22,7 @@ import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
 
 import com.sun.source.util.Trees;
+import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Name;
@@ -50,6 +48,7 @@ import static com.sun.tools.javac.tree.JCTree.*;
 import static net.truej.sql.compiler.ExistingDtoParser.*;
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
+import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
 import static net.truej.sql.config.Configuration.INT_NOT_DEFINED;
 import static net.truej.sql.config.Configuration.STRING_NOT_DEFINED;
 
@@ -256,7 +255,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     }
 
     List<SafeFetchInvocation> findFetchInvocations(
-        Names names, Symtab symtab, JCCompilationUnit cu, JCTree tree, String generatedClassName
+        Context context, Names names, Symtab symtab, JCCompilationUnit cu, JCTree tree, String generatedClassName
     ) {
         var invocations = new ArrayList<SafeFetchInvocation>();
 
@@ -636,6 +635,11 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                         var checkTypeCompatibility = (CheckTypeCompatibility) (columnIndex, fieldName, binding, column) -> {
                             if (
+                                binding.className().equals("java.time.OffsetDateTime") &&
+                                column.sqlTypeName().equals("timestamptz") // postgresql
+                            ) return;
+
+                            if (
                                 binding.compatibleSqlType() == null &&
                                 binding.compatibleSqlTypeName() == null
                             ) {
@@ -683,6 +687,12 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                 })
                                 .collect(Collectors.joining());
 
+                            try {
+                                Class.forName("org.postgresql.Driver");
+                            } catch (ClassNotFoundException e) {
+                                throw new RuntimeException(e);
+                            }
+
                             try (
                                 var connection = DriverManager.getConnection(
                                     parsedConfig.url, parsedConfig.username, parsedConfig.password
@@ -719,9 +729,11 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                                 NullMode.EXACTLY_NOT_NULL;
                                                             case ResultSetMetaData.columnNullable ->
                                                                 NullMode.EXACTLY_NULLABLE;
-                                                            case ResultSetMetaData.columnNullableUnknown ->
+                                                            case
+                                                                ResultSetMetaData.columnNullableUnknown ->
                                                                 NullMode.DEFAULT_NOT_NULL;
-                                                            default -> throw new IllegalStateException("unreachable");
+                                                            default ->
+                                                                throw new IllegalStateException("unreachable");
                                                         },
                                                         rMetadata.getColumnType(i),
                                                         rMetadata.getColumnTypeName(i),
@@ -871,7 +883,26 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                                                 // FIXME: deduplicate
 
                                                 var binding = getBindingForClass.apply(
-                                                    javaClassNameHint != null ? javaClassNameHint : column.javaClassName(),
+                                                    javaClassNameHint != null ? javaClassNameHint : (
+                                                        switch (column.sqlType()) {
+                                                            case java.sql.Types.DATE ->
+                                                                "java.time.LocalDate";
+                                                            case java.sql.Types.TIME ->
+                                                                "java.time.LocalTime";
+                                                            case java.sql.Types.TIMESTAMP ->
+                                                                column.sqlTypeName().equals("timestamptz") // postgresql
+                                                                    ? "java.time.OffsetDateTime"
+                                                                    : "java.time.LocalDateTime";
+                                                            case
+                                                                java.sql.Types.TIME_WITH_TIMEZONE ->
+                                                                "java.time.OffsetTime";
+                                                            case
+                                                                java.sql.Types.TIMESTAMP_WITH_TIMEZONE ->
+                                                                column.javaClassName().equals("java.time.ZonedDateTime")
+                                                                    ? column.javaClassName() : "java.time.OffsetDateTime";
+                                                            default -> column.javaClassName();
+                                                        }
+                                                    ),
                                                     dtoNullMode
                                                 );
 
@@ -962,12 +993,22 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                             isWithUpdateCount
                         );
 
-                        patchParametersTrees
+                        if (context.get(HashMap.class) == null)
+                            context.put(HashMap.class, new HashMap());
+
+                        ((HashMap<JCCompilationUnit, HashMap<JCMethodInvocation, Object>>) context.get(HashMap.class))
                             .computeIfAbsent(cu, _ -> new HashMap<>())
-                            .put(forPrepare.tree, new TrueSqlPlugin.Invocation(
+                            .put(forPrepare.tree, doofyEncode(new TrueSqlPlugin.Invocation(
                                 parsedConfig.typeBindings, generatedClassName, fetchMethodName, lineNumber,
                                 sourceExpression, forPrepare.queryMode, null
-                            ));
+                            )));
+//
+//                        patchParametersTrees
+//                            .computeIfAbsent(cu, _ -> new HashMap<>())
+//                            .put(forPrepare.tree, new TrueSqlPlugin.Invocation(
+//                                parsedConfig.typeBindings, generatedClassName, fetchMethodName, lineNumber,
+//                                sourceExpression, forPrepare.queryMode, null
+//                            ));
 
                         invocations.add(new SafeFetchInvocation(
                             // FIXME
@@ -1104,8 +1145,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             var cu = found.snd;
             var elementSymbol = (Symbol.ClassSymbol) element;
 
-            var generatedClassName = (elementSymbol).getQualifiedName() + "TrueSql";
-            var invocations = findFetchInvocations(names, symtab, cu, tree, generatedClassName);
+            var generatedClassName = (elementSymbol).getQualifiedName() + "TrueSql"; // FIXME: + "G" ?
+            var invocations = findFetchInvocations(context, names, symtab, cu, tree, generatedClassName);
 
             try {
                 var builderFile = env.getFiler().createSourceFile(
@@ -1135,6 +1176,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     out.write("import java.util.stream.Collectors;\n");
                     out.write("import java.util.Objects;\n");
                     out.write("import java.sql.SQLException;\n");
+                    // FIXME: uncomment, set isolating mode for annotation processor
                     // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
                     // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
                     out.write("class %sTrueSql { \n".formatted(elementSymbol.getSimpleName()));

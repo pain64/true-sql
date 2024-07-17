@@ -36,7 +36,9 @@ public class DtoTypesTest {
                 
                 
                 @TrueSql class Test {
-                  public static class PgPointReadWrite extends AsObjectReadWrite<PGpoint> { }
+                  public static class PgPointReadWrite extends AsObjectReadWrite<PGpoint> {
+                      @Override public Class<PGpoint> aClass() { return PGpoint.class; }
+                  }
                 
                   @Configuration(
                       typeBindings = {

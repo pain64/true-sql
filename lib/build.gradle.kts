@@ -23,7 +23,10 @@ dependencies {
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
     implementation("org.projectlombok:lombok:1.18.32")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
+
     testImplementation("org.testcontainers:postgresql:1.19.8")
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
@@ -90,7 +93,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("net.truej", "sql", "0.0.2")
+    coordinates("net.truej", "sql", "0.0.3")
 
     pom {
         name.set("TrueSql")

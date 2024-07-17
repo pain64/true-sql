@@ -46,7 +46,9 @@ public class __11__TypeBinding {
     }
 
     class PGpoint { } // in pg jdbc library
-    class PgPointRW extends AsObjectReadWrite<PGpoint> { }
+    class PgPointRW extends AsObjectReadWrite<PGpoint> {
+        @Override public Class<PGpoint> aClass() { return PGpoint.class; }
+    }
 
     @Configuration(
         typeBindings = {

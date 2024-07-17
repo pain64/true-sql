@@ -21,7 +21,7 @@ create table bill (
     id bigint primary key,
     amount decimal(15,2) not null,
     discount decimal(15,2),
-    date timestamp not null
+    date timestamp with time zone not null
 );
 create table clinic_users (
     clinic_id bigint not null,
@@ -72,11 +72,17 @@ insert into clinic(id, name, city_id) values(1, 'Paris Neurology Hospital', 2);
 insert into clinic(id, name, city_id) values(2, 'London Heart Hospital', 1);
 insert into clinic(id, name, city_id) values(3, 'Diagnostic center', 1);
 
-insert into bill(id, amount, discount, date) values(1, 2000.55, null, to_timestamp('2024-07-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-insert into bill(id, amount, discount, date) values(2, 1000.20, null, to_timestamp('2024-07-01 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-insert into bill(id, amount, discount, date) values(3, 5000, null,    to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-insert into bill(id, amount, discount, date) values(4, 7000.77, null, to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-insert into bill(id, amount, discount, date) values(5, 500.10, null,  to_timestamp('2024-09-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+--insert into bill(id, amount, discount, date) values(1, 2000.55, null, to_timestamp('2024-07-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+--insert into bill(id, amount, discount, date) values(2, 1000.20, null, to_timestamp('2024-07-01 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+--insert into bill(id, amount, discount, date) values(3, 5000, null,    to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+--insert into bill(id, amount, discount, date) values(4, 7000.77, null, to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+--insert into bill(id, amount, discount, date) values(5, 500.10, null,  to_timestamp('2024-09-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+insert into bill(id, amount, discount, date) values(1, 2000.55, null, '2024-07-01T12:00:00Z'::timestamptz);
+insert into bill(id, amount, discount, date) values(2, 1000.20, null, '2024-07-01T16:00:00Z'::timestamptz);
+insert into bill(id, amount, discount, date) values(3, 5000, null,    '2024-08-01T15:00:00Z'::timestamptz);
+insert into bill(id, amount, discount, date) values(4, 7000.77, null, '2024-08-01T15:00:00Z'::timestamptz);
+insert into bill(id, amount, discount, date) values(5, 500.10, null,  '2024-09-01T15:00:00Z'::timestamptz);
 
 insert into clinic_users values(1, 2);
 insert into clinic_users values(2, 1);

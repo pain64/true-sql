@@ -11,7 +11,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
@@ -60,11 +60,11 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         );
 
 
-        record DateDiscount(Timestamp date, BigDecimal discount) { }
+        record DateDiscount(LocalDate date, BigDecimal discount) { }
 
         var discounts = List.of(
-            new DateDiscount(Timestamp.valueOf("2024-07-01 00:00:00"), new BigDecimal("0.2")),
-            new DateDiscount(Timestamp.valueOf("2024-08-01 00:00:00"), new BigDecimal("0.15"))
+            new DateDiscount(LocalDate.of(2024, 7, 1), new BigDecimal("0.2")),
+            new DateDiscount(LocalDate.of(2024, 8, 1), new BigDecimal("0.15"))
         );
 
         var expected2 = List.of(
@@ -76,9 +76,9 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 
         var actual2 = ds.q(
                 discounts, """
-                    update bill
+                    update bill b
                     set discount = 100 * ?
-                    where date::date = ?::date""",
+                    where cast(b.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
             .asGeneratedKeys("id", "discount")
@@ -100,9 +100,9 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 
         var actual3 = ds.q(
                 discounts, """
-                    update bill
+                    update bill b
                     set discount = 100 * ?
-                    where date::date = ?::date""",
+                    where cast(b.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
             .asGeneratedKeys("id", "discount").withUpdateCount

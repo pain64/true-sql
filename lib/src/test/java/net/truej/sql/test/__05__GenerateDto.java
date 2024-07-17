@@ -2,6 +2,9 @@ package net.truej.sql.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.JSR310DateTimeDeserializerBase;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests2;
@@ -10,10 +13,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 
-import java.sql.Timestamp;
-import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.TimeZone;
 import java.util.function.Supplier;
 
 @ExtendWith(TrueSqlTests2.class)
@@ -102,10 +102,10 @@ import java.util.function.Supplier;
                     "name" : "Joe",
                     "info" : null,
                     "bills" : [ {
-                      "date" : 1719835200000,
+                      "date" : 1719835200.000000000,
                       "amount" : 2000.55
                     }, {
-                      "date" : 1719849600000,
+                      "date" : 1719849600.000000000,
                       "amount" : 1000.20
                     } ]
                   } ]
@@ -116,18 +116,19 @@ import java.util.function.Supplier;
                     "name" : "Donald",
                     "info" : "Do not disturb",
                     "bills" : [ {
-                      "date" : 1722524400000,
+                      "date" : 1722524400.000000000,
                       "amount" : 5000.00
                     }, {
-                      "date" : 1722524400000,
+                      "date" : 1722524400.000000000,
                       "amount" : 7000.77
                     }, {
-                      "date" : 1725202800000,
+                      "date" : 1725202800.000000000,
                       "amount" : 500.10
                     } ]
                   } ]
                 } ]""",
             new ObjectMapper()
+                .registerModule(new JavaTimeModule())
                 .writerWithDefaultPrettyPrinter().writeValueAsString(
                     cn.q("""
                         select

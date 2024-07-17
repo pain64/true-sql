@@ -19,8 +19,10 @@ public class StatementGenerator {
     }
     public record BatchedQuery(
         JCTree.JCExpression listDataExpression,
-        JCTree.JCLambda expressionLambda, List<QueryPart> parts
+        JCTree.JCLambda expressionLambda,
+        List<QueryPart> parts
     ) implements QueryMode { }
+
     public record SingleQuery(List<QueryPart> parts) implements QueryMode { }
 
     public sealed interface StatementMode { }

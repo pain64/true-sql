@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -27,11 +28,11 @@ import java.util.TimeZone;
             ).withUpdateCount.fetchNone()
         );
 
-        record DateDiscount(Date date, BigDecimal discount) { }
+        record DateDiscount(LocalDate date, BigDecimal discount) { }
 
         var discounts = List.of(
-            new DateDiscount(Date.valueOf("2024-07-01"), new BigDecimal("0.2")),
-            new DateDiscount(Date.valueOf("2024-08-01"), new BigDecimal("0.15"))
+            new DateDiscount(LocalDate.of(2024, 7, 1), new BigDecimal("0.2")),
+            new DateDiscount(LocalDate.of(2024, 8, 1), new BigDecimal("0.15"))
         );
 
         Assertions.assertArrayEquals(

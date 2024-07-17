@@ -8,6 +8,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
@@ -33,8 +34,8 @@ import static net.truej.sql.source.Parameters.*;
         Assertions.assertNull(
             cn.q(
                 List.of(
-                    Timestamp.valueOf("2024-07-01 00:00:00"),
-                    Timestamp.valueOf("2024-08-01 00:00:00")
+                    LocalDateTime.of(2024, 7, 1, 0, 0, 0),
+                    LocalDateTime.of(2024, 8, 1, 0, 0, 0)
                 ),
                 "{call discount_bill(?)}",
                 d -> new Object[]{d}

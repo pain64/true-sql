@@ -12,10 +12,15 @@ import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.api.BasicJavacTask;
+import net.truej.sql.bindings.AsObjectReadWrite;
 import net.truej.sql.bindings.NullParameter;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.source.ParameterExtractor;
+import org.postgresql.geometric.PGpoint;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Function;
 
 import static net.truej.sql.compiler.GLangParser.*;
@@ -24,6 +29,67 @@ import static net.truej.sql.compiler.TrueSqlAnnotationProcessor.*;
 
 public class TrueSqlPlugin implements Plugin {
     public static final String NAME = "TrueSql";
+
+    // https://static1.srcdn.com/wordpress/wp-content/uploads/2021/05/scary-movie-doofy.jpg?q=50&fit=crop&w=1100&h=618&dpr=1.5
+
+    public static java.util.List<Object> doofyEncode(Object value) {
+        if (value == null) return null;
+
+        var cl = value.getClass();
+
+        if (java.util.List.class.isAssignableFrom(cl)) {
+            var result = new ArrayList<>();
+            result.add(cl.getName());
+            for (var obj : (java.util.List<Object>) value)
+                result.add(doofyEncode(obj));
+
+            return result;
+        } if (cl.isRecord()) {
+            var result = new ArrayList<>();
+            result.add(cl.getName());
+
+            for (var rc : cl.getRecordComponents())
+                try {
+                    result.add(doofyEncode(rc.getAccessor().invoke(value)));
+                } catch (InvocationTargetException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+
+            return result;
+        } else if (cl.isEnum())
+            return java.util.List.of(cl.getName(), ((Enum<?>) value).name());
+        else
+            return new ArrayList<>() {{
+                add(null);
+                add(value);
+            }};
+    }
+
+    private static Object doofyDecode(Object in) {
+        if (in == null) return null;
+        var value = (java.util.List<Object>) in;
+
+        try {
+            var className = value.get(0);
+            if (className == null) return value.get(1);
+
+            Class cl = Class.forName((String) className);
+
+            if (java.util.List.class.isAssignableFrom(cl))
+                return value.stream().skip(1).map(TrueSqlPlugin::doofyDecode).toList();
+            else if (cl.isEnum())
+                return Enum.valueOf(cl, (String) value.get(1));
+            else // isRecord
+                return cl.getConstructors()[0]
+                    .newInstance(value.stream().skip(1).map(TrueSqlPlugin::doofyDecode).toArray());
+
+        } catch (
+            ClassNotFoundException | InvocationTargetException |
+            InstantiationException | IllegalAccessException e
+        ) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public record Invocation(
         java.util.List<Standard.Binding> bindings,
@@ -65,14 +131,22 @@ public class TrueSqlPlugin implements Plugin {
                     var maker = TreeMaker.instance(context);
                     var elements = JavacElements.instance(context);
 
-                    var cuTrees = patchParametersTrees.get(e.getCompilationUnit());
+                    var dataFromAnnotationProcessor =
+                        (HashMap<JCTree.JCCompilationUnit, HashMap<JCTree.JCMethodInvocation, Object>>)
+                            context.get(HashMap.class);
+
+                    if (dataFromAnnotationProcessor == null) return;
+                    var cuTrees = dataFromAnnotationProcessor.get(e.getCompilationUnit());
+
+                    //var cuTrees = patchParametersTrees.get(e.getCompilationUnit());
 
                     if (cuTrees != null) {
                         // 1. getClass - by generated name
                         // 2. get method name + line number
                         // 3. need trees for parameters: batch vs single
                         // 4. check parameter types - parse parameter metadata ???
-                        cuTrees.forEach((tree, invocation) -> {
+                        cuTrees.forEach((tree, invEncoded) -> {
+                            var invocation = (Invocation) doofyDecode(invEncoded);
 
                             var clParameterExtractor = symtab.getClass(
                                 symtab.unnamedModule, names.fromString(

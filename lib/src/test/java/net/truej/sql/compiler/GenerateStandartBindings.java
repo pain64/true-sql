@@ -2,6 +2,7 @@ package net.truej.sql.compiler;
 
 import net.truej.sql.bindings.AsObjectReadWrite;
 import net.truej.sql.config.TypeReadWrite;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.postgresql.geometric.PGpoint;
 
@@ -73,6 +74,7 @@ public class GenerateStandartBindings {
         Files.write(Paths.get(toFile), code.getBytes());
     }
 
+    @Disabled
     @Test void bar() throws IOException {
 
         var bindings = List.of(
