@@ -194,7 +194,6 @@ public class TrueSqlTests2 implements
                 });
             }}.loadClass(className + "_");
 
-
             var instance = theClass.newInstance();
             return instance;
 

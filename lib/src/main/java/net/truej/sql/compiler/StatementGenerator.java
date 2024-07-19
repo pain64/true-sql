@@ -1,10 +1,13 @@
 package net.truej.sql.compiler;
 
 import com.sun.tools.javac.tree.JCTree;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -129,10 +132,20 @@ public class StatementGenerator {
             var _ = out."\n";
         }
 
-        var updateCountType =
-            query instanceof BatchedQuery ? "long[]" : "Long";
-        var wrapTypeWithUpdateCount = (Function<String, String>) t ->
-            STR."UpdateResult<\{updateCountType}, \{t}>";
+        var updateCountType = query instanceof BatchedQuery ? "long[]" : "Long";
+
+        var wrapTypeWithUpdateCount = (BiFunction<@Nullable String, String, String>) (collectionT, t) -> {
+            if (fetchAs instanceof FetchNone) return updateCountType;
+
+            var toCollectionType = (Supplier<String>) () ->
+                collectionT != null ? collectionT + "<" + t + ">" : t;
+
+            if (!withUpdateCount) return toCollectionType.get();
+
+            return fetchAs instanceof FetchStream
+                ? STR."UpdateResultStream<\{updateCountType}, \{t}>"
+            : STR."UpdateResult<\{updateCountType}, \{toCollectionType.get()}>";
+        };
 
         // FIXME: remove duplication with AnnotationProcessor
         var methodName = switch (fetchAs) {
@@ -143,19 +156,13 @@ public class StatementGenerator {
             case FetchStream _ -> "fetchStream";
         };
 
-        var fetcherResultType = switch (fetchAs) {
-            case FetchNone _ -> "Void";
-            case FetchList f -> STR."List<\{f.toType.javaClassName()}>";
-            case FetchOne f -> f.toType.javaClassName();
-            case FetchOneOrZero f -> f.toType.javaClassName(); // FIXME: nullable
-            case FetchStream f -> STR."Stream<\{f.toType.javaClassName()}>";
+        var resultType = switch (fetchAs) {
+            case FetchNone _ -> wrapTypeWithUpdateCount.apply(null, "Void");
+            case FetchList f -> wrapTypeWithUpdateCount.apply("List", f.toType.javaClassName());
+            case FetchOne f -> wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName());
+            case FetchOneOrZero f -> wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName()); // FIXME: nullable
+            case FetchStream f -> wrapTypeWithUpdateCount.apply("Stream", f.toType.javaClassName());
         };
-
-        var resultType = withUpdateCount ? (
-            fetchAs instanceof FetchNone
-                ? updateCountType
-                : wrapTypeWithUpdateCount.apply(fetcherResultType)
-        ) : fetcherResultType;
 
         final WriteNext typeParameters;
         final WriteNext parametersCode;
@@ -386,8 +393,10 @@ public class StatementGenerator {
                  AsGeneratedKeysIndices _ -> o."var rs = stmt.getGeneratedKeys();";
         };
 
-        var wrapResultWithUpdateCount = (Function<String, String>) result ->
-            withUpdateCount ? STR."new UpdateResult<>(\{updateCount}, \{result})" : result;
+        var wrapResultWithUpdateCount = (Function<String, String>) result -> {
+            var wrapper = fetchAs instanceof FetchStream ? "UpdateResultStream" : "UpdateResult";
+            return withUpdateCount ? STR."new \{wrapper}<>(\{updateCount}, \{result})" : result;
+        };
 
         var doFetch = (WriteNext) o -> switch (fetchAs) {
             case FetchNone _ -> withUpdateCount
