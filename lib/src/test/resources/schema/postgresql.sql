@@ -1,11 +1,12 @@
 drop schema if exists public cascade;
 create SCHEMA PUBLIC;
 ---
-
+create type enum_user_sex as enum('MALE', 'FEMALE');
 create table users (
     id bigint not null, --primary key,
     name varchar(100) not null,
     info varchar(200),
+    sex enum_user_sex,
     constraint users_pk primary key (id)
 );
 --alter table users
@@ -65,8 +66,8 @@ alter table user_bills   add constraint user_bills_fk0   foreign key (user_id)  
 alter table user_bills   add constraint user_bills_fk1   foreign key (bill_id)   references bill(id);
 ---
 
-insert into users(id, name, info) values(1, 'Joe', null);
-insert into users(id, name, info) values(2, 'Donald', 'Do not disturb');
+insert into users(id, name, info, sex) values(1, 'Joe', null, 'MALE');
+insert into users(id, name, info, sex) values(2, 'Donald', 'Do not disturb', 'MALE');
 
 insert into city(id, name) values(1, 'London');
 insert into city(id, name) values(2, 'Paris');

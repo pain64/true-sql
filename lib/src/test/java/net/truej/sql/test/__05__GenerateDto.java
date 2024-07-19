@@ -32,12 +32,12 @@ import java.util.function.Supplier;
                   "info" : "Do not disturb"
                 } ]""",
             new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
-                cn.q("select * from users").g.fetchList(User.class)
+                cn.q("select id, name, info from users").g.fetchList(User.class)
             )
         );
 
         var getUser = (Supplier<Object>) () ->
-            cn.q("select * from users where id = 1").g.fetchOne(User1.class);
+            cn.q("select id, name, info from users where id = 1").g.fetchOne(User1.class);
 
         var u1 = getUser.get();
         var u2 = getUser.get();

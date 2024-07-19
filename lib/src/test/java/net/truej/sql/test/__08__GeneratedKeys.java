@@ -29,6 +29,13 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
                 .asGeneratedKeys("id").fetchOne(Long.class)
         );
 
+        //TODO: когда-то надо включить этот тест
+//        Assertions.assertEquals(
+//            4L,
+//            ds.q("insert into users values(?, ?, ?)", 4L, "Boris", null)
+//                .asGeneratedKeys(0).fetchOne(Long.class)
+//        );
+
         Assertions.assertEquals(
             List.of(
                 new Discount(1L, new BigDecimal("400.11")),

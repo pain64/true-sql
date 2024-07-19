@@ -224,7 +224,7 @@ public class GLangParser {
                     if (numbered.line.chain.fieldClassName != null)
                         throw new ValidationException(
                             "Dto class name not allowed for group with one element - " +
-                            "thees groups converts to List<single group element class name> "
+                            "thees groups converts to List<single group element class name>"
                         );
 
                     if (numbered.line.chain.next != null && numbered.line.chain.next.next != null)

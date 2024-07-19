@@ -14,6 +14,6 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 @TrueSql public class __02__DtoFieldCountMismatch {
 
     @TestTemplate public void test(MainConnection cn) {
-        cn.q("select * from users").fetchOne(String.class);
+        cn.q("select id, name, info from users").fetchOne(String.class);
     }
 }

@@ -29,6 +29,11 @@ import java.sql.Types;
             compatibleSqlType = Types.OTHER,
             compatibleSqlTypeName = "point",
             rw = PgPointRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlType = Types.VARCHAR,
+            compatibleSqlTypeName = "enum_user_sex",
+            rw = PgUserSexRW.class
         )
     }
 ) public record MainDataSource(DataSource w) implements DataSourceW {
