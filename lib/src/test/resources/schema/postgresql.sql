@@ -3,10 +3,13 @@ create SCHEMA PUBLIC;
 ---
 
 create table users (
-    id bigint primary key,
+    id bigint not null, --primary key,
     name varchar(100) not null,
-    info varchar(200)
+    info varchar(200),
+    constraint users_pk primary key (id)
 );
+--alter table users
+--add constraint users_pk primary key (id);
 create table clinic (
     id bigint primary key,
     name varchar(100) not null,
