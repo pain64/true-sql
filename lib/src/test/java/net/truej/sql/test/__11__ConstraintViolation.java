@@ -3,18 +3,14 @@ package net.truej.sql.test;
 import net.truej.sql.Constraint;
 import net.truej.sql.ConstraintViolationException;
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.openjdk.jmh.Main;
 
 import java.util.function.Supplier;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(TrueSqlTests2.class)
