@@ -57,14 +57,14 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
     }
 
     //bug
-    @Disabled
-    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB)
-    public void withGeneratedKeys(MainConnection cn) {
-        //TODO: fetch stream with g?
-        try (var result = cn.q("insert into users values(4, 'Mike', null)")
-            .asGeneratedKeys("id").withUpdateCount.fetchStream(Long.class)) {
-            //System.out.println(result);
-        }
-
-    }
+//    @Disabled
+//    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB)
+//    public void withGeneratedKeys(MainConnection cn) {
+//        //TODO: fetch stream with g?
+//        try (var result = cn.q("insert into users values(4, 'Mike', null)")
+//            .asGeneratedKeys("id").withUpdateCount.fetchStream(Long.class)) {
+//            //System.out.println(result);
+//        }
+//
+//    }
 }
