@@ -55,4 +55,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
             }).get(), false
         );
     }
+
+    @TestTemplate public void notCatch(MainDataSource ds) {
+        assertThrows(ConstraintViolationException.class, () -> {
+            try {
+                ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+            } catch (ConstraintViolationException ex) {
+                ex.when(
+
+                );
+            }
+        });
+    }
 }
