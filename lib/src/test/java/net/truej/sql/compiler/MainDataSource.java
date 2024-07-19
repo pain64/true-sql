@@ -1,12 +1,13 @@
 package net.truej.sql.compiler;
 
 import net.truej.sql.ConstraintViolationException;
+import net.truej.sql.bindings.AsObjectReadWrite;
 import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeBinding;
 import net.truej.sql.source.DataSourceW;
-import net.truej.sql.test.DataBindings;
 import org.hsqldb.HsqlException;
+import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PSQLException;
 
 import javax.sql.DataSource;
@@ -22,17 +23,16 @@ import java.sql.Types;
 //        url = "jdbc:postgresql://localhost:5432/uikit_sample",
 //        username = "uikit",
 //        password = "1234"
-//    ),
-//    typeBindings = {
-//        @TypeBinding(
-//            compatibleSqlType = Types.OTHER,
-//            compatibleSqlTypeName = "point",
-//            rw = DataBindings.PgPointRW.class
-//        )
-//    }
-    )
-    )
-public record MainDataSource(DataSource w) implements DataSourceW {
+    ),
+    typeBindings = {
+        @TypeBinding(
+            compatibleSqlType = Types.OTHER,
+            compatibleSqlTypeName = "point",
+            rw = PgPointRW.class
+        )
+    }
+) public record MainDataSource(DataSource w) implements DataSourceW {
+
     @Override
     public RuntimeException mapException(SQLException ex) {
         var x = 1;

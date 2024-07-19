@@ -58,36 +58,38 @@ public class ConfigurationParser {
             var bindings = new ArrayList<>(Standard.bindings);
 
             for (var tb : sourceConfig.typeBindings()) {
-                Type.ClassType rwClassType;
+                Symbol.ClassSymbol rwClassSym;
 
                 try {
-                    rwClassType =
-                        new Type.ClassType(
-                            null, com.sun.tools.javac.util.List.nil(),
-                            symtab.getClass(cu.modle, names.fromString(tb.rw().getName()))
-                        );
+                    rwClassSym = symtab.enterClass(cu.modle, names.fromString(tb.rw().getName()));
                 } catch (MirroredTypeException mte) {
-                    rwClassType = ((Type.ClassType) mte.getTypeMirror());
+                    rwClassSym = symtab.enterClass(
+                        cu.modle, ((Type.ClassType) mte.getTypeMirror()).tsym.flatName());
                 }
+
+                rwClassSym.complete(); // WTF?
 
                 var bound = BoundTypeExtractor.extract(
                     symtab.getClass(cu.modle, names.fromString(TypeReadWrite.class.getName())),
-                    rwClassType
+                    rwClassSym
                 );
 
-                var emptyArgsConstructor = ((Symbol.ClassSymbol) rwClassType.tsym).members_field.getSymbols(sym ->
-                    sym instanceof Symbol.MethodSymbol m && m.name.equals(names.fromString("<init>")) && m.params.isEmpty()
-                ).iterator();
+                var emptyArgsConstructor = (rwClassSym)
+                    .members_field.getSymbols(sym ->
+                        sym instanceof Symbol.MethodSymbol m &&
+                        m.name.equals(names.fromString("<init>")) &&
+                        m.params.isEmpty()
+                    ).iterator();
 
                 if (!emptyArgsConstructor.hasNext())
                     throw new RuntimeException(
-                        "rw class " + rwClassType.tsym.flatName().toString() + " has no no-arg constructor"
+                        "rw class " + rwClassSym.flatName().toString() + " has no no-arg constructor"
                     );
 
 
                 bindings.add(new Standard.Binding(
                     bound.tsym.flatName().toString(),
-                    rwClassType.tsym.flatName().toString(),
+                    rwClassSym.flatName().toString(),
                     tb.mayBeNullable(),
                     tb.compatibleSqlType() != INT_NOT_DEFINED ? tb.compatibleSqlType() : null,
                     !tb.compatibleSqlTypeName().equals(STRING_NOT_DEFINED) ? tb.compatibleSqlTypeName() : null
