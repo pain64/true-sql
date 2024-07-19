@@ -49,7 +49,7 @@ public class InvocationsFinder {
 
     sealed interface DtoMode { }
 
-    static class ValidationException extends RuntimeException {
+    public static class ValidationException extends RuntimeException {
         public ValidationException(String message) { super(message); }
     }
 

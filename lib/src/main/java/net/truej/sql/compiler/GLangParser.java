@@ -1,5 +1,6 @@
 package net.truej.sql.compiler;
 
+import net.truej.sql.compiler.InvocationsFinder.ValidationException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class GLangParser {
 
         if (input.get(0) instanceof Colon) {
             if (!input.get(1).equals(new Text("t")))
-                throw new RuntimeException(STR."Expected t but has\{input.get(1)}");
+                throw new ValidationException(STR."Expected t but has\{input.get(1)}");
 
             switch (input.get(2)) {
                 case NullabilityMark m -> {
@@ -106,7 +107,7 @@ public class GLangParser {
                         next = 3;
                     }
                 }
-                default -> throw new RuntimeException(
+                default -> throw new ValidationException(
                     STR."Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has \{input.get(2)}"
                 );
             }
@@ -132,15 +133,15 @@ public class GLangParser {
                 case Text t2 -> switch (input.get(i + 2)) {
                     case End _ -> new Chain(t1.t, t2.t, null);
                     case Dot _ -> new Chain(t1.t, t2.t, parseChain(input, i + 3));
-                    default -> throw new RuntimeException(
+                    default -> throw new ValidationException(
                         STR."expected END or DOT but has \{input.get(i + 2)}"
                     );
                 };
-                default -> throw new RuntimeException(
+                default -> throw new ValidationException(
                     STR."expected END or DOT or TEXT but has \{input.get(i + 1)}"
                 );
             };
-            default -> throw new RuntimeException(
+            default -> throw new ValidationException(
                 STR."expected END or TEXT but has \{input.get(i)}"
             );
         };
@@ -181,17 +182,17 @@ public class GLangParser {
         var baseNumber = locals.getFirst().n;
         for (var i = 0; i < locals.size(); i++) {
             if (baseNumber + i != locals.get(i).n)
-                throw new RuntimeException(
+                throw new ValidationException(
                     "The declarations of the members of the group should run consecutively"
                 );
         }
 
         var localsChecked = locals.stream().map(nl -> {
             if (nl.line.chain.fieldName == null)
-                throw new RuntimeException("Field name required");
+                throw new ValidationException("Field name required");
 
             if (nl.line.chain.fieldClassName != null)
-                throw new RuntimeException("Aggregated java class name not expected here");
+                throw new ValidationException("Aggregated java class name not expected here");
 
             return new Field(
                 new ScalarType(
@@ -208,7 +209,7 @@ public class GLangParser {
                     nl -> {
                         var javaFieldName = nl.line.chain.fieldName;
                         if (javaFieldName == null)
-                            throw new RuntimeException("Field name required");
+                            throw new ValidationException("Field name required");
 
                         return javaFieldName;
                     },
@@ -221,13 +222,13 @@ public class GLangParser {
                 if (groupLines.size() == 1) {
                     var numbered = groupLines.getFirst();
                     if (numbered.line.chain.fieldClassName != null)
-                        throw new RuntimeException(
+                        throw new ValidationException(
                             "Dto class name not allowed for group with one element - " +
                             "thees groups converts to List<single group element class name> "
                         );
 
                     if (numbered.line.chain.next != null && numbered.line.chain.next.next != null)
-                        throw new RuntimeException(
+                        throw new ValidationException(
                             "Inner groups not allowed for group with one element"
                         );
 
@@ -247,7 +248,7 @@ public class GLangParser {
                         groupLines.getFirst().line.chain.fieldClassName;
 
                     if (aggregatedTypeName == null)
-                        throw new RuntimeException("Aggregated java class name required");
+                        throw new ValidationException("Aggregated java class name required");
 
                     return new Field(
                         new AggregatedType(aggregatedTypeName, buildGroup(

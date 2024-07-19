@@ -2,6 +2,7 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.util.Name;
+import net.truej.sql.compiler.InvocationsFinder.ValidationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +27,7 @@ public class ExistingDtoParser {
             return new ScalarType(nullMode, dtoSymbol.className());
         else {
             if (nullMode != NullMode.DEFAULT_NOT_NULL)
-                throw new RuntimeException(
+                throw new ValidationException(
                     "Nullable or NotNull hint not allowed for aggregated DTO"
                 );
 
@@ -36,12 +37,12 @@ public class ExistingDtoParser {
             ).iterator();
 
             if (!allConstructors.hasNext())
-                throw new RuntimeException("non-empty args constructor not found");
+                throw new ValidationException("non-empty args constructor not found");
 
             var constructor = (Symbol.MethodSymbol) allConstructors.next();
 
             if (allConstructors.hasNext())
-                throw new RuntimeException("has more then one non-empty args constructor");
+                throw new ValidationException("has more then one non-empty args constructor");
 
             var fields = constructor.params.stream().map(p -> {
                 if (p.type.tsym instanceof Symbol.ClassSymbol cSym) {
@@ -74,11 +75,11 @@ public class ExistingDtoParser {
                             new ScalarType(fieldNullMode, className), p.name.toString()
                         );
                     } else
-                        throw new RuntimeException(
+                        throw new ValidationException(
                             "has no type binding for " + className
                         );
                 } else
-                    throw new RuntimeException(
+                    throw new ValidationException(
                         "unexpected constructor parameter of kind: " + p.type.tsym.kind
                     );
             }).toList();
