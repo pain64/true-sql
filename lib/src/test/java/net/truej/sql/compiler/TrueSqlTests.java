@@ -106,7 +106,7 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
                 }
             );
 
-            var compiled = TestCompiler2.compile(compilationUnits);
+            var compiled = TestCompiler2.compile(compilationUnits, List.of());
 
             //var bytes = r.data.toByteArray();
 

@@ -7,7 +7,6 @@ import java.util.List;
 
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
-import static net.truej.sql.compiler.TrueSqlAnnotationProcessor.*;
 
 public class StatementGeneratorTest {
     @Test void batch() {
@@ -104,9 +103,9 @@ public class StatementGeneratorTest {
                 12,
                 SourceMode.CONNECTION,
                 new BatchedQuery(null, null, List.of(
-                    new TextPart("select id, name from users where id = "),
-                    new SimpleParameter(null),
-                    new TextPart("")
+                    new InvocationsFinder.TextPart("select id, name from users where id = "),
+                    new InvocationsFinder.SimpleParameter(null),
+                    new InvocationsFinder.TextPart("")
                 )),
                 new AsDefault(),
                 new FetchList(
@@ -200,11 +199,11 @@ public class StatementGeneratorTest {
                 12,
                 SourceMode.DATASOURCE,
                 new SingleQuery(List.of(
-                    new TextPart("select name from users where id = "),
-                    new SimpleParameter(null),
-                    new TextPart("and (name, age) in ("),
-                    new UnfoldParameter(2, null),
-                    new TextPart(")")
+                    new InvocationsFinder.TextPart("select name from users where id = "),
+                    new InvocationsFinder.SimpleParameter(null),
+                    new InvocationsFinder.TextPart("and (name, age) in ("),
+                    new InvocationsFinder.UnfoldParameter(2, null),
+                    new InvocationsFinder.TextPart(")")
                 )),
                 new AsDefault(),
                 new FetchList(new ScalarType(NullMode.DEFAULT_NOT_NULL, "java.lang.String")),

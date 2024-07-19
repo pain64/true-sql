@@ -8,9 +8,11 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
+import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.URI;
@@ -23,6 +25,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TrueSqlTests2 implements
@@ -98,6 +101,16 @@ public class TrueSqlTests2 implements
         Database[] value() default {};
     }
 
+    @Repeatable(Messages.class)
+    @Retention(RetentionPolicy.RUNTIME) public @interface Message {
+        Diagnostic.Kind kind();
+        String text();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME) public @interface Messages {
+        Message[] value() default {};
+    }
+
     @Override public boolean supportsTestTemplate(ExtensionContext extensionContext) {
         return true;
     }
@@ -106,6 +119,7 @@ public class TrueSqlTests2 implements
         TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext
     ) throws TestInstantiationException {
 
+        var classPackage = factoryContext.getTestClass().getPackage().getName();
         var className = factoryContext.getTestClass().getName();
         var simpleClassName = factoryContext.getTestClass().getSimpleName();
         var classFile = className.replace(".", "/");
@@ -115,6 +129,7 @@ public class TrueSqlTests2 implements
                 STR."file://\{System.getProperty("user.dir")}/src/test/java/" +
                 className.replace(".", "/") + "_.java"
             );
+
             var code = Files.readString(
                 Paths.get(
                     STR."\{System.getProperty("user.dir")}/src/test/java/\{classFile}.java"
@@ -134,12 +149,46 @@ public class TrueSqlTests2 implements
                 }
             );
 
-            var compiled = TestCompiler2.compile(compilationUnits);
+            var expectedMessages = Arrays.stream(
+                    factoryContext.getTestClass().getAnnotationsByType(Message.class)
+                )
+                .map(m -> new TestCompiler2.Message(m.kind(), m.text())).toList();
+
+            var expectCompilationError = expectedMessages
+                .stream().anyMatch(m -> m.kind() == Diagnostic.Kind.ERROR);
+
+            var compiled = TestCompiler2.compile(compilationUnits, expectedMessages);
+
+            var forDefine = expectCompilationError ?
+                TestCompiler2.compile(List.of( // empty test class stub
+                    new SimpleJavaFileObject(uri, JavaFileObject.Kind.SOURCE) {
+                        @Override public CharSequence getCharContent(
+                            boolean ignoreEncodingErrors
+                        ) {
+                            var methods = Arrays.stream(factoryContext.getTestClass().getDeclaredMethods())
+                                .filter(m -> m.getName().equals("test"))
+                                .map(mt -> {
+                                    var parameters = Arrays.stream(mt.getParameters())
+                                        .map(p -> p.getType().getName() + " " + p.getName())
+                                        .collect(Collectors.joining(","));
+
+                                    return "@TestTemplate public void " + mt.getName() + "(" + parameters + "){}";
+                                })
+                                .collect(Collectors.joining("\n"));
+
+                            return
+                                "package " + classPackage + ";\n" +
+                                "import org.junit.jupiter.api.TestTemplate;\n" +
+                                "public class " + simpleClassName + "_ extends " + className + "{" +
+                                methods + "}";
+                        }
+                    }
+                ), List.of()) : compiled;
 
             var theClass = new URLClassLoader(
                 new URL[]{}, this.getClass().getClassLoader()
             ) {{
-                compiled.forEach((compClassName, r) -> {
+                forDefine.forEach((compClassName, r) -> {
                     var bytes = r.data.toByteArray();
                     defineClass(compClassName, bytes, 0, bytes.length);
                 });

@@ -17,7 +17,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation("org.apiguardian:apiguardian-api:1.1.2")
-    testImplementation("org.hsqldb:hsqldb:2.7.2")
+    testImplementation("org.hsqldb:hsqldb:2.7.3")
     implementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.openjdk.jmh:jmh-core:1.37")
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
