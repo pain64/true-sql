@@ -7,7 +7,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.JSR310DateTimeDeserializerBase;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
+import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.UserSex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -146,6 +148,25 @@ import java.util.function.Supplier;
                             left join bill         b   on b.id          = ub.bill_id
                         order by ci.name, cl.name, u.name, u.info, b.date, b.amount"""
                     ).g.fetchList(Clinic2.class)
+                )
+        );
+    }
+    @TestTemplate public void test4(MainDataSource ds) throws JsonProcessingException {
+        Assertions.assertEquals(
+            """
+                [ {
+                  "name" : "Joe",
+                  "info" : null
+                }, {
+                  "name" : "Donald",
+                  "info" : "Do not disturb"
+                } ]""",
+            new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .writerWithDefaultPrettyPrinter().writeValueAsString(
+                    ds.q("""
+                        select name, info as ":t? info" from users"""
+                    ).g.fetchList(User4.class)
                 )
         );
     }

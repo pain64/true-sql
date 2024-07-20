@@ -31,5 +31,6 @@ import static net.truej.sql.source.Parameters.Nullable;
             expected2,
             ds.q("select sex from users where id = 1").fetchOne(Nullable, UserSex.class)
         );
+
     }
 }

@@ -84,16 +84,6 @@ import static net.truej.sql.source.Parameters.Nullable;
                 """).fetchList(Clinic.class)
         );
 
-//        Assertions.assertEquals(
-//            clinicsAndCities,
-//            cn.q("""
-//                select
-//                    cl.name,
-//                    ci.name as city
-//                from clinic cl join city ci on cl.city_id = ci.id
-//                """).fetchStream(Clinic.class).toList()
-//        );
-
         try (
             var result = cn.q("select name from clinic")
                 .fetchStream(String.class)
