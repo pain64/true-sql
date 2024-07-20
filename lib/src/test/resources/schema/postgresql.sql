@@ -2,6 +2,7 @@ drop schema if exists public cascade;
 create SCHEMA PUBLIC;
 ---
 create type enum_user_sex as enum('MALE', 'FEMALE');
+create type point_nullable as (a int, b int);
 create table users (
     id bigint not null, --primary key,
     name varchar(100) not null,

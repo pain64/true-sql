@@ -1,13 +1,12 @@
 package net.truej.sql.bindings;
-
 import net.truej.sql.config.TypeReadWrite;
 
 import java.sql.*;
 
 public abstract class AsObjectReadWrite<A> implements TypeReadWrite<A> {
     public abstract Class<A> aClass();
-    boolean mayBeNull() { return true; }
-    int sqlType() { return Types.OTHER; }
+    public boolean mayBeNull() { return true; }
+    public int sqlType() { return Types.OTHER; }
 
     @Override public A get(
         ResultSet rs, int columnIndex
@@ -32,4 +31,5 @@ public abstract class AsObjectReadWrite<A> implements TypeReadWrite<A> {
     ) throws SQLException {
         stmt.registerOutParameter(parameterIndex, sqlType());
     }
+
 }

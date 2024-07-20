@@ -12,7 +12,7 @@ import org.postgresql.geometric.PGpoint;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.source.Parameters.Nullable;
+import static net.truej.sql.source.Parameters.*;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __12__TypeBindings {
@@ -31,6 +31,5 @@ import static net.truej.sql.source.Parameters.Nullable;
             expected2,
             ds.q("select sex from users where id = 1").fetchOne(Nullable, UserSex.class)
         );
-
     }
 }

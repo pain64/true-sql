@@ -1,0 +1,24 @@
+package net.truej.sql.test.negative;
+
+import net.truej.sql.TrueSql;
+import net.truej.sql.compiler.MainConnection;
+import net.truej.sql.compiler.TrueSqlTests2;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
+import static net.truej.sql.source.Parameters.inout;
+import static net.truej.sql.source.Parameters.out;
+
+@ExtendWith(TrueSqlTests2.class)
+@TrueSqlTests2.Message(
+    kind = ERROR, text = "For parameter 1 mode mismatch. Expected INOUT but has IN"
+)
+@TrueSql public class __24__INOUTButHas {
+    @TestTemplate
+    @TrueSqlTests2.DisabledOn(POSTGRESQL)
+    public void test(MainConnection cn) {
+        cn.q("{ call digit_magic(?, ?, ?) }", inout(2), out(Integer.class), 3L).asCall().fetchNone();
+    }
+}

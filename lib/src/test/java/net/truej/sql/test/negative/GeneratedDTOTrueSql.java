@@ -6,4 +6,6 @@ public class GeneratedDTOTrueSql {
     class User2 {}
     class Name2 {}
     class Name {}
+    class PointSome {}
+    class TestSome {}
 }
