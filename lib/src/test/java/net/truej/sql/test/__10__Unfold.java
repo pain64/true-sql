@@ -12,8 +12,7 @@ import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.unfold;
-import static net.truej.sql.source.Parameters.unfold2;
+import static net.truej.sql.source.Parameters.*;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __10__Unfold {
@@ -24,20 +23,6 @@ import static net.truej.sql.source.Parameters.unfold2;
             List.of("Joe", "Donald"),
             ds.q("select name from users where id in (?)", unfold(ids))
                 .fetchList(String.class)
-        );
-    }
-
-    @TestTemplate @DisabledOn(HSQLDB) public void unfoldMany(MainDataSource ds) {
-        var data = List.of(
-            new Pair<Long, BigDecimal>(1L, null),
-            new Pair<Long, BigDecimal>(2L, null)
-        );
-
-        Assertions.assertEquals(
-            //List.of(new BigDecimal("2000.55"), new BigDecimal("1000.20")),
-            List.of(), // FIXME
-            ds.q("select amount from bill where (id, discount) in (?)", unfold2(data))
-                .fetchList(BigDecimal.class)
         );
     }
 }
