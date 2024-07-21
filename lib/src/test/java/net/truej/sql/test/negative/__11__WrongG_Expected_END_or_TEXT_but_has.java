@@ -11,9 +11,9 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSqlTests2.Message(
-    kind = ERROR, text = "expected END or TEXT but has Dot[]"
+    kind = ERROR, text = "expected END or TEXT but has DOT"
 )
-@TrueSql public class __11__WrongG_ExpectedEndOrTextButHasDot {
+@TrueSql public class __11__WrongG_Expected_END_or_TEXT_but_has {
     @TestTemplate public void test(MainConnection cn) {
         cn.q("""
                     select

@@ -1,25 +1,34 @@
 package net.truej.sql.compiler;
 
 import com.sun.source.util.*;
+import com.sun.tools.javac.api.Messages;
+import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Types;
-import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.model.JavacElements;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
+import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.api.BasicJavacTask;
+import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.NullParameter;
 import net.truej.sql.bindings.Standard;
+import net.truej.sql.dsl.As;
+import net.truej.sql.dsl.NoUpdateCount;
+import net.truej.sql.dsl.Q;
+import net.truej.sql.dsl.UpdateCount;
 import net.truej.sql.source.ParameterExtractor;
+import net.truej.sql.source.Parameters;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Function;
 
 import static net.truej.sql.compiler.GLangParser.*;
@@ -101,12 +110,6 @@ public class TrueSqlPlugin implements Plugin {
         String javaClassName, String sqlTypeName, int sqlType,
         ParameterMode mode, NullMode nullMode
     ) { }
-
-    // in     - pass as is + rw
-    // inout  - pass as is + rw
-    // out    - rw
-    // unfold - list + rw for each component
-    // unfold{2..4}
 
     @Override public String getName() { return NAME; }
 
@@ -266,7 +269,181 @@ public class TrueSqlPlugin implements Plugin {
         tree.args = tree.args.append(invocation.sourceExpression);
     }
 
+    static class TrueSqlApiCalls {
+        final Symtab symtab;
+        final Names names;
+
+        HashSet<Symbol.MethodSymbol> all = new HashSet<>();
+        HashSet<Symbol.MethodSymbol> q = new HashSet<>();
+        HashSet<Symbol.MethodSymbol> fetch = new HashSet<>();
+
+        @SafeVarargs final void addClass(Class<?> aClass, HashSet<Symbol.MethodSymbol>... to) {
+            symtab.enterClass(
+                symtab.unnamedModule, names.fromString(aClass.getName())
+            ).members().getSymbols().forEach(sym -> {
+                if (sym instanceof Symbol.MethodSymbol mt)
+                    for (var set : to) set.add(mt);
+            });
+        }
+
+        public TrueSqlApiCalls(Symtab symtab, Names names) {
+            this.symtab = symtab;
+            this.names = names;
+
+            addClass(Q.class, all, q);
+            addClass(As.class, all);
+
+            addClass(UpdateCount.None.class, all, fetch);
+            addClass(UpdateCount.One.class, all, fetch);
+            addClass(UpdateCount.OneG.class, all, fetch);
+            addClass(UpdateCount.OneOrZero.class, all, fetch);
+            addClass(UpdateCount.OneOrZeroG.class, all, fetch);
+            addClass(UpdateCount.List_.class, all, fetch);
+            addClass(UpdateCount.ListG.class, all, fetch);
+            addClass(UpdateCount.Stream_.class, all, fetch);
+            addClass(UpdateCount.StreamG.class, all, fetch);
+
+            addClass(NoUpdateCount.None.class, all, fetch);
+            addClass(NoUpdateCount.One.class, all, fetch);
+            addClass(NoUpdateCount.OneG.class, all, fetch);
+            addClass(NoUpdateCount.OneOrZero.class, all, fetch);
+            addClass(NoUpdateCount.OneOrZeroG.class, all, fetch);
+            addClass(NoUpdateCount.List_.class, all, fetch);
+            addClass(NoUpdateCount.ListG.class, all, fetch);
+            addClass(NoUpdateCount.Stream_.class, all, fetch);
+            addClass(NoUpdateCount.StreamG.class, all, fetch);
+
+            addClass(Parameters.class, all);
+        }
+    }
+
+    TrueSqlApiCalls apiCalls = null;
+
+    static class BadApiUsageException extends RuntimeException {
+        final JCTree tree;
+
+        BadApiUsageException(JCTree tree, String message) {
+            super(message);
+            this.tree = tree;
+        }
+    }
+
+    void assertHasNowDanglingTrueSqlCalls(
+        Symtab symtab, Names names, Trees trees, JCTree.JCCompilationUnit cu
+    ) {
+        if (apiCalls == null)
+            apiCalls = new TrueSqlApiCalls(symtab, names);
+
+        var hasTrueSqlAnnotation = new boolean[]{false};
+
+        cu.accept(new TreeScanner() {
+            @Override public void visitClassDef(JCTree.JCClassDecl tree) {
+                if (tree.type.tsym.getAnnotation(TrueSql.class) != null) {
+                    hasTrueSqlAnnotation[0] = true;
+                    if (tree.type.tsym.getAnnotation(Processed.class) == null)
+                        throw new BadApiUsageException(
+                            tree, "TrueSql annotation processor not enabled. Check out your " +
+                                  "build tool configuration (Gradle, Maven, ...)"
+                        );
+                }
+
+                super.visitClassDef(tree);
+            }
+        });
+
+        cu.accept(new TreeScanner() {
+            @Override public void visitApply(JCTree.JCMethodInvocation tree) {
+                super.visitApply(tree);
+
+                final Symbol symbol;
+
+                if (tree.meth instanceof JCTree.JCIdent id)
+                    symbol = id.sym;
+                else if (tree.meth instanceof JCTree.JCFieldAccess fa)
+                    symbol = fa.sym;
+                else
+                    return;
+
+                if (apiCalls.all.contains(symbol)) {
+                    if (!hasTrueSqlAnnotation[0])
+                        throw new BadApiUsageException(
+                            tree, "TrueSql DSL used but class not annotated with @TrueSql"
+                        );
+
+                    if (
+                        tree.meth instanceof JCTree.JCFieldAccess fa &&
+                        apiCalls.q.contains(symbol)
+                    ) {
+                        if (!(fa.selected instanceof JCTree.JCIdent))
+                            throw new BadApiUsageException(
+                                tree, "Expected identifier for source for `.q`"
+                            );
+
+                        var idSym = ((JCTree.JCIdent) fa.selected).sym;
+                        var idTree = trees.getTree(idSym);
+
+                        if (!(
+                            idSym.owner instanceof Symbol.ClassSymbol ||
+                            (
+                                idSym.owner instanceof Symbol.MethodSymbol &&
+                                (idSym.flags() & Flags.PARAMETER) != 0L
+                            ) ||
+                            (
+                                idSym.owner instanceof Symbol.MethodSymbol &&
+                                idTree instanceof JCTree.JCVariableDecl varDecl &&
+                                varDecl.init instanceof JCTree.JCNewClass
+                            )
+                        ))
+                            throw new BadApiUsageException(
+                                tree, "Source identifier may be method parameter, class field or " +
+                                      "local variable initialized by new (var ds = new MySourceW(...)). " +
+                                      "Type of source identifier cannot be generic parameter"
+                            );
+
+                        if (!(
+                            (
+                                tree.args.get(0) instanceof JCTree.JCLiteral lit1 &&
+                                lit1.getValue() instanceof String
+                            ) || (
+                                tree.args.length() == 3 &&
+                                tree.args.get(1) instanceof JCTree.JCLiteral lit2 &&
+                                lit2.getValue() instanceof String
+                            )
+                        ))
+                            throw new BadApiUsageException(tree, "Query text must be a string literal");
+
+                        if (tree.args.length() == 3) // batch
+                            if (!(
+                                tree.args.get(2) instanceof JCTree.JCLambda lmb &&
+                                lmb.body instanceof JCTree.JCExpression body &&
+                                body instanceof JCTree.JCNewArray newArray &&
+                                newArray.elemtype instanceof JCTree.JCIdent elemTypeId &&
+                                elemTypeId.sym == symtab.objectType.tsym
+                            ))
+                                throw new BadApiUsageException(
+                                    tree, "Batch parameter extractor must be lambda literal returning " +
+                                          "object array literal (e.g. `b -> new Object[]{b.f1, b.f2}`)"
+                                );
+                    }
+
+                    if (apiCalls.fetch.contains(symbol) && !tree.args.isEmpty())
+                        if (!(
+                            tree.args.getLast() instanceof JCTree.JCFieldAccess fa
+                        ))
+                            throw new BadApiUsageException(
+                                tree, "Incorrect TrueSql DSL usage - dangling call"
+                            );
+
+                    throw new BadApiUsageException(
+                        tree, "Incorrect TrueSql DSL usage - dangling call"
+                    );
+                }
+            }
+        });
+    }
+
     @Override public void init(JavacTask task, String... args) {
+
         task.addTaskListener(new TaskListener() {
             @Override public void started(TaskEvent e) {
                 if (e.getKind() == TaskEvent.Kind.ANNOTATION_PROCESSING_ROUND) {
@@ -278,38 +455,46 @@ public class TrueSqlPlugin implements Plugin {
                 if (e.getKind() == TaskEvent.Kind.ANALYZE) {
 
                     var context = ((BasicJavacTask) task).getContext();
-                    var types = Types.instance(context);
                     var symtab = Symtab.instance(context);
-                    var resolve = Resolve.instance(context);
                     var names = Names.instance(context);
                     var maker = TreeMaker.instance(context);
-                    var elements = JavacElements.instance(context);
+                    var env = JavacProcessingEnvironment.instance(context);
+                    var trees = Trees.instance(env);
                     var messages = new CompilerMessages(context);
+
+                    var cu = (JCTree.JCCompilationUnit) e.getCompilationUnit();
 
                     var dataFromAnnotationProcessor =
                         (HashMap<JCTree.JCCompilationUnit, HashMap<JCTree.JCMethodInvocation, Object>>)
                             context.get(HashMap.class);
 
-                    if (dataFromAnnotationProcessor == null) return;
-                    var cuTrees = dataFromAnnotationProcessor.get(e.getCompilationUnit());
+                    if (dataFromAnnotationProcessor != null) {
+                        var cuTrees = dataFromAnnotationProcessor.get(cu);
 
-                    //var cuTrees = patchParametersTrees.get(e.getCompilationUnit());
-
-                    if (cuTrees != null) {
-                        // 4. check parameter types - parse parameter metadata ???
-                        cuTrees.forEach((tree, invEncoded) -> {
-                            var invocation = (Invocation) doofyDecode(invEncoded);
-                            try {
-                                handle(symtab, names, maker, tree, invocation);
-                            } catch (InvocationsFinder.ValidationException ex) {
-                                messages.write(
-                                    (JCTree.JCCompilationUnit) e.getCompilationUnit(),
-                                    tree, JCDiagnostic.DiagnosticType.ERROR, ex.getMessage()
-                                );
-                            }
-                        });
+                        if (cuTrees != null) {
+                            // 4. check parameter types - parse parameter metadata ???
+                            cuTrees.forEach((tree, invEncoded) -> {
+                                var invocation = (Invocation) doofyDecode(invEncoded);
+                                try {
+                                    handle(symtab, names, maker, tree, invocation);
+                                } catch (InvocationsFinder.ValidationException ex) {
+                                    messages.write(
+                                        (JCTree.JCCompilationUnit) e.getCompilationUnit(),
+                                        tree, JCDiagnostic.DiagnosticType.ERROR, ex.getMessage()
+                                    );
+                                }
+                            });
+                        }
 
                         var xxx = 1;
+                    }
+
+                    try {
+                        assertHasNowDanglingTrueSqlCalls(symtab, names, trees, cu);
+                    } catch (BadApiUsageException ex) {
+                        messages.write(
+                            cu, ex.tree, JCDiagnostic.DiagnosticType.ERROR, ex.getMessage()
+                        );
                     }
                 }
             }

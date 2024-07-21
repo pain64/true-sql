@@ -18,8 +18,7 @@ import static net.truej.sql.source.Parameters.NotNull;
 import static net.truej.sql.source.Parameters.Nullable;
 
 
-// FIXME: add @TrueSql annotation automaticly ???
-@ExtendWith(TrueSqlTests2.class)
+@org.junit.jupiter.api.extension.ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __01__Fetch {
 
     record User(Long id, String name, @Nullable String info) { }

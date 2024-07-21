@@ -11,7 +11,7 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSqlTests2.Message(
-    kind = ERROR, text = "Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has Dot[]"
+    kind = ERROR, text = "Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has DOT"
 )
 @TrueSql public class __10__WrongGLex_after_t {
     @TestTemplate

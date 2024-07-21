@@ -1,6 +1,5 @@
 package net.truej.sql.source;
 
-import net.truej.sql.Constraint;
 import net.truej.sql.SqlExceptionR;
 
 import java.sql.SQLException;

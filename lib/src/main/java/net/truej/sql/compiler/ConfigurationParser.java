@@ -67,7 +67,7 @@ public class ConfigurationParser {
                         cu.modle, ((Type.ClassType) mte.getTypeMirror()).tsym.flatName());
                 }
 
-                rwClassSym.complete(); // WTF?
+                rwClassSym.complete();
 
                 var bound = BoundTypeExtractor.extract(
                     symtab.getClass(cu.modle, names.fromString(TypeReadWrite.class.getName())),

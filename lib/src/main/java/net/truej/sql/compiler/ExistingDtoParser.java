@@ -23,6 +23,12 @@ public class ExistingDtoParser {
         Symbol.ClassSymbol dtoSymbol
     ) {
 
+        if (dtoSymbol.isInterface())
+            throw new ValidationException("To Dto class cannot be interface");
+
+        if (!dtoSymbol.getTypeParameters().isEmpty())
+            throw new ValidationException("To Dto class cannot be generic");
+
         if (hasTypeBinding.apply(dtoSymbol.className()))
             return new ScalarType(nullMode, dtoSymbol.className());
         else {

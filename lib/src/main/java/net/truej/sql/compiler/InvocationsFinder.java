@@ -161,10 +161,16 @@ public class InvocationsFinder {
                         if (tree.init instanceof JCTree.JCNewClass cl)
                             varTypes.put(tree.name, TypeFinder.find(symtab, cu, cl.clazz));
                     }
-                } else if (tree.sym.owner instanceof Symbol.MethodSymbol)
-                    varTypes.put(tree.name, (Symbol.ClassSymbol) tree.sym.type.tsym);
-                else if (tree.sym.owner instanceof Symbol.ClassSymbol)
-                    varTypes.put(tree.name, (Symbol.ClassSymbol) tree.sym.type.tsym);
+                } else if (
+                    tree.sym.owner instanceof Symbol.MethodSymbol &&
+                    tree.sym.type.tsym instanceof Symbol.ClassSymbol vTypeSym
+                )
+                    varTypes.put(tree.name, vTypeSym);
+                else if (
+                    tree.sym.owner instanceof Symbol.ClassSymbol &&
+                    tree.sym.type.tsym instanceof Symbol.ClassSymbol vTypeSym
+                )
+                    varTypes.put(tree.name, vTypeSym);
 
                 super.visitVarDef(tree);
             }
@@ -331,6 +337,7 @@ public class InvocationsFinder {
                             if (inv.meth instanceof JCTree.JCFieldAccess fa) {
                                 if (fa.name.equals(names.fromString("q"))) {
                                     var tryAsQuery = (Function<Integer, @Nullable String>) i ->
+                                        i < inv.args.length() &&
                                         inv.args.get(i) instanceof JCTree.JCLiteral lit &&
                                         lit.getValue() instanceof String text ? text : null;
 
@@ -349,7 +356,9 @@ public class InvocationsFinder {
 
                                             if (
                                                 inv.args.get(2) instanceof JCTree.JCLambda lmb &&
-                                                lmb.body instanceof JCTree.JCNewArray array
+                                                lmb.body instanceof JCTree.JCNewArray array &&
+                                                array.elemtype instanceof JCTree.JCIdent elementTypeId &&
+                                                elementTypeId.name.equals(names.fromString("Object"))
                                             )
                                                 queryMode = parseQuery(
                                                     symtab, cu, names, inv.args.head, lmb, queryText, array.elems

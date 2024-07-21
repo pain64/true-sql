@@ -1,15 +1,14 @@
 package net.truej.sql.source;
 
-import net.truej.sql.fetch.UpdateResult;
-import net.truej.sql.source.Parameters.*;
-import org.jetbrains.annotations.Nullable;
+import net.truej.sql.dsl.*;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 
-public non-sealed interface DataSourceW extends Source {
+public non-sealed interface DataSourceW extends
+    Source, Q<DataSourceW.Single, DataSourceW.Batched> {
+
     DataSource w();
 
     interface WithConnectionAction<T, E extends Exception> {
@@ -48,128 +47,110 @@ public non-sealed interface DataSourceW extends Source {
         );
     }
 
-    interface FetchCallG {
-        default <T> T delegated() { throw new RuntimeException("delegated"); }
+    class AsCall implements
+        NoUpdateCount.None, NoUpdateCount.One {
 
-        default Void fetchNone() { return delegated(); }
+        public static class WithUpdateCount implements
+            UpdateCount.None<long[]>, UpdateCount.One<long[]> {
 
-        default <T> T fetchOne(Class<T> toClass) { return delegated(); }
-    }
+            public static class G implements
+                UpdateCount.None<long[]>, UpdateCount.One<long[]> { }
 
-    interface FetchCall extends FetchCallG {
-        default <T> @Nullable T fetchOne(AsNullable asNullable, Class<T> toClass) { return delegated(); }
-
-        default <T> T fetchOne(AsNotNull asNotNull, Class<T> toClass) { return delegated(); }
-    }
-
-    interface FetchStatementG extends FetchCallG {
-
-        default <T> @Nullable T fetchOneOrZero(Class<T> toClass) { return delegated(); }
-
-        default <T> List<T> fetchList(Class<T> elementClass) { return delegated(); }
-    }
-
-    interface FetchStatement extends FetchCall, FetchStatementG {
-
-        default <T> @Nullable T fetchOneOrZero(AsNullable asNullable, Class<T> toClass) { return delegated(); }
-
-        default <T> @Nullable T fetchOneOrZero(AsNotNull asNotNull, Class<T> toClass) { return delegated(); }
-
-
-        default <T> List<@Nullable T> fetchList(AsNullable asNullable, Class<T> elementClass) { return delegated(); }
-
-        default <T> List<T> fetchList(AsNotNull asNotNull, Class<T> elementClass) { return delegated(); }
-    }
-
-    interface FetchCallWithUpdateCount<U> {
-        default <T> T delegated() { throw new RuntimeException("delegated"); }
-
-        default U fetchNone() { return delegated(); }
-
-        default <T> UpdateResult<U, T> fetchOne(Class<T> toClass) { return delegated(); }
-    }
-
-    interface FetchStatementWithUpdateCountG<U> extends FetchCallWithUpdateCount<U> {
-
-        default <T> UpdateResult<U, @Nullable T> fetchOneOrZero(Class<T> toClass) { return delegated(); }
-
-        default <T> UpdateResult<U, List<T>> fetchList(Class<T> elementClass) { return delegated(); }
-    }
-
-    interface FetchStatementWithUpdateCount<U> extends FetchStatementWithUpdateCountG<U> {
-
-        default <T> UpdateResult<U, @Nullable T> fetchOne(AsNullable asNullable, Class<T> toClass) { return delegated(); }
-
-        default <T> UpdateResult<U, T> fetchOne(AsNotNull asNotNull, Class<T> toClass) { return delegated(); }
-
-
-        default <T> UpdateResult<U, @Nullable T> fetchOneOrZero(AsNullable asNullable, Class<T> toClass) { return delegated(); }
-
-        default <T> UpdateResult<U, @Nullable T> fetchOneOrZero(AsNotNull asNotNull, Class<T> toClass) { return delegated(); }
-
-
-        default <T> UpdateResult<U, List<@Nullable T>> fetchList(AsNullable asNullable, Class<T> elementClass) { return delegated(); }
-
-        default <T> UpdateResult<U, List<T>> fetchList(AsNotNull asNotNull, Class<T> elementClass) { return delegated(); }
-    }
-
-    class Single implements FetchStatement {
-
-        public static class WithUpdateCount implements FetchStatementWithUpdateCount<Long> {
-            public final FetchStatementWithUpdateCountG<Long> g = this;
+            public final G g = new G();
         }
 
-        public static class AsCall implements FetchCall {
-            // FIXME
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchCallG g = this;
+        public static class G implements
+            NoUpdateCount.None, NoUpdateCount.OneG { }
+
+        public final WithUpdateCount withUpdateCount = new WithUpdateCount();
+        public final G g = new G();
+    }
+
+    class Single implements
+        As<AsCall, Single.AsGeneratedKeys>,
+        NoUpdateCount.None, NoUpdateCount.One,
+        NoUpdateCount.OneOrZero, NoUpdateCount.List_ {
+
+        public static class G implements
+            NoUpdateCount.None, NoUpdateCount.OneG,
+            NoUpdateCount.OneOrZeroG, NoUpdateCount.ListG {}
+
+        public static class WithUpdateCount implements
+            UpdateCount.None<Long>, UpdateCount.One<Long>,
+            UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long> {
+
+            public static class G implements
+                UpdateCount.None<Long>, UpdateCount.OneG<Long>,
+                UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long> { }
+
+            public final G g = new G();
         }
 
-        public static class AsGeneratedKeys implements ConnectionW.FetchStatement {
+        public static class AsGeneratedKeys implements
+            NoUpdateCount.None, NoUpdateCount.One,
+            NoUpdateCount.OneOrZero, NoUpdateCount.List_ {
+
+            public static class WithUpdateCount implements
+                UpdateCount.None<Long>, UpdateCount.One<Long>,
+                UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long> {
+
+                public static class G implements
+                    UpdateCount.None<Long>, UpdateCount.OneG<Long>,
+                    UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long> { }
+
+                public final G g = new G();
+            }
+
+            public static class G implements
+                NoUpdateCount.None, NoUpdateCount.OneG,
+                NoUpdateCount.OneOrZero, NoUpdateCount.List_ { }
+
             public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchStatementG g = this;
+            public final G g = new G();
         }
 
         public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-        public final FetchStatementG g = this;
-
-        public AsCall asCall() { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(String... columnNames) { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(int... columnIndexes) { return delegated(); }
+        public final G g = new G();
     }
 
-    class Batched implements FetchStatement {
-        public static class WithUpdateCount implements FetchStatementWithUpdateCount<long[]> {
-            public final FetchStatementWithUpdateCountG<long[]> g = this;
+    class Batched implements
+        As<AsCall, Batched.AsGeneratedKeys>,
+        NoUpdateCount.None, NoUpdateCount.List_ {
+
+        public static class AsGeneratedKeys implements
+            NoUpdateCount.None, NoUpdateCount.List_ {
+
+            public static class WithUpdateCount implements
+                UpdateCount.None<long[]>, UpdateCount.List_<long[]> {
+
+                public static class G implements
+                    UpdateCount.None<long[]>, UpdateCount.ListG<long[]> { }
+
+                public final G g = new G();
+            }
+
+            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
+
+            public static class G implements
+                NoUpdateCount.None, NoUpdateCount.OneG { }
+
+            public final G g = new G();
         }
 
-        public static class AsCall implements FetchCall {
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchCallG g = this;
-        }
+        public static class WithUpdateCount implements
+            UpdateCount.None<long[]>, UpdateCount.List_<long[]> {
 
-        public static class AsGeneratedKeys implements ConnectionW.FetchStatement {
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final ConnectionW.FetchStatement g = this;
+            public static class G implements
+                UpdateCount.None<long[]>, UpdateCount.ListG<long[]> { }
+
+            public final G g = new G();
         }
 
         public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-        public final FetchStatementG g = this;
 
-        public AsCall asCall() { return delegated(); }
+        public static class G implements
+            NoUpdateCount.None, NoUpdateCount.ListG {}
 
-        public AsGeneratedKeys asGeneratedKeys(String... columnNames) { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(int... columnIndexes) { return delegated(); }
-    }
-
-    default Single q(String query, Object... args) {
-        throw new RuntimeException("delegated");
-    }
-
-    default <T> Batched q(List<T> batch, String query, BatchArgumentsExtractor<T> arguments) {
-        throw new RuntimeException("delegated");
+        public final G g = new G();
     }
 }

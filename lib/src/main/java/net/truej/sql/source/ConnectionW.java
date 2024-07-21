@@ -1,15 +1,16 @@
 package net.truej.sql.source;
 
-import net.truej.sql.fetch.UpdateResultStream;
-import net.truej.sql.source.Parameters.*;
-import org.jetbrains.annotations.Nullable;
+import net.truej.sql.dsl.As;
+import net.truej.sql.dsl.NoUpdateCount;
+import net.truej.sql.dsl.Q;
+import net.truej.sql.dsl.UpdateCount;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.stream.Stream;
 
-public non-sealed interface ConnectionW extends Source {
+public non-sealed interface ConnectionW extends
+    Source, Q<ConnectionW.Single, ConnectionW.Batched> {
+
     Connection w();
 
     interface InTransactionAction<T, E extends Exception> {
@@ -38,99 +39,52 @@ public non-sealed interface ConnectionW extends Source {
         }
     }
 
-    interface FetchStatementG extends DataSourceW.FetchStatement {
-        default <T> Stream<T> fetchStream(Class<T> elementClass) { return delegated(); }
-    }
+    class Single implements
+        As<DataSourceW.AsCall, Single.AsGeneratedKeys>,
+        NoUpdateCount.None, NoUpdateCount.One,
+        NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ {
 
-    interface FetchStatement extends FetchStatementG {
+        public static class G implements
+            NoUpdateCount.None, NoUpdateCount.OneG,
+            NoUpdateCount.OneOrZeroG, NoUpdateCount.ListG, NoUpdateCount.StreamG {}
 
-        default <T> Stream<@Nullable T> fetchStream(AsNullable asNullable, Class<T> elementClass) { return delegated(); }
+        public static class WithUpdateCount implements
+            UpdateCount.None<Long>, UpdateCount.One<Long>,
+            UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long>, UpdateCount.Stream_<Long> {
 
-        default <T> Stream<T> fetchStream(AsNotNull asNotNull, Class<T> elementClass) { return delegated(); }
-    }
+            public static class G implements
+                UpdateCount.None<Long>, UpdateCount.OneG<Long>,
+                UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long>, UpdateCount.StreamG<Long> { }
 
-    interface FetchWithUpdateCountG<U> extends DataSourceW.FetchStatementWithUpdateCount<U> {
-        default <T> UpdateResultStream<U, Stream<T>> fetchStream(Class<T> elementClass) { return delegated(); }
-    }
-
-    interface FetchStatementWithUpdateCount<U> extends FetchWithUpdateCountG<U> {
-
-        default <T> UpdateResultStream<U, Stream<@Nullable T>> fetchStream(AsNullable asNullable, Class<T> elementClass) { return delegated(); }
-
-        default <T> UpdateResultStream<U, Stream<T>> fetchStream(AsNotNull asNotNull, Class<T> elementClass) { return delegated(); }
-    }
-
-    class Single implements FetchStatement {
-
-        public static class WithUpdateCount implements FetchStatementWithUpdateCount<Long> {
-            public final FetchWithUpdateCountG<Long> g = this;
+            public final G g = new G();
         }
 
-        public static class AsCall implements DataSourceW.FetchCall {
-            // FIXME - make custom update count ???
-            // FIXME - make all as abstract classes ???
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final DataSourceW.FetchCallG g = this;
-        }
+        public static class AsGeneratedKeys implements
+            NoUpdateCount.None, NoUpdateCount.One,
+            NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ {
 
-        public static class AsGeneratedKeys implements FetchStatement {
+            public static class WithUpdateCount implements
+                UpdateCount.None<Long>, UpdateCount.One<Long>,
+                UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long>, UpdateCount.Stream_<Long> {
+
+                public static class G implements
+                    UpdateCount.None<Long>, UpdateCount.OneG<Long>,
+                    UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long>, UpdateCount.StreamG<Long> { }
+
+                public final G g = new G();
+            }
+
+            public static class G implements
+                NoUpdateCount.None, NoUpdateCount.OneG,
+                NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ { }
+
             public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchStatementG g = this;
+            public final G g = new G();
         }
 
         public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-        public final FetchStatementG g = this;
-
-        public AsCall asCall() { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(String... columnNames) { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(int... columnIndexes) { return delegated(); }
+        public final G g = new G();
     }
 
-    class Batched implements FetchStatement {
-        public static class WithUpdateCount implements FetchStatementWithUpdateCount<long[]> {
-            public final FetchWithUpdateCountG<long[]> g = this;
-        }
-
-        public static class AsCall implements FetchStatement {
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchStatementG g = this;
-        }
-
-        public static class AsGeneratedKeys implements FetchStatement {
-            public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-            public final FetchStatementG g = this;
-        }
-
-        public final WithUpdateCount withUpdateCount = new WithUpdateCount();
-        public final FetchStatementG g = this;
-
-        public AsCall asCall() { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(String... columnNames) { return delegated(); }
-
-        public AsGeneratedKeys asGeneratedKeys(int... columnIndexes) { return delegated(); }
-    }
-
-    default Single q(String query, Object... args) {
-        throw new RuntimeException("delegated");
-    }
-
-    default <T> Batched q(List<T> batch, String query, BatchArgumentsExtractor<T> arguments) {
-        throw new RuntimeException("delegated");
-    }
-
-// TO BE DONE
-//    interface BatchTemplateExtractor<T> {
-//        StringTemplate extract(T one);
-//    }
-//
-//    default void q(StringTemplate query) {
-//        throw new RuntimeException("delegated");
-//    }
-//
-//    default <T> void q(List<T> batch, BatchTemplateExtractor<T> query) {
-//        throw new RuntimeException("delegated");
-//    }
+    class Batched extends DataSourceW.Batched {}
 }

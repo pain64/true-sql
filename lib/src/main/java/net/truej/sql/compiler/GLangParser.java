@@ -14,13 +14,27 @@ import java.util.stream.Stream;
 
 public class GLangParser {
     public sealed interface Lexeme { }
-    public record Text(String t) implements Lexeme { }
-    public record Colon() implements Lexeme { }
-    public record Dot() implements Lexeme { }
+    public record Text(String t) implements Lexeme {
+        @Override public String toString() { return "TEXT(" + t + ")"; }
+    }
+    public record Colon() implements Lexeme {
+        @Override public String toString() { return "COLON"; }
+    }
+    public record Dot() implements Lexeme {
+        @Override public String toString() { return "DOT"; }
+    }
+
     public sealed interface NullabilityMark extends Lexeme { }
-    public record QuestionMark() implements NullabilityMark { }
-    public record ExclamationMark() implements NullabilityMark { }
-    public record End() implements Lexeme { }
+    public record QuestionMark() implements NullabilityMark {
+        @Override public String toString() { return "QUESTION_MARK"; }
+    }
+    public record ExclamationMark() implements NullabilityMark {
+        @Override public String toString() { return "EXCLAMATION_MARK"; }
+    }
+
+    public record End() implements Lexeme {
+        @Override public String toString() { return "END"; }
+    }
 
     public static List<Lexeme> lex(String input) {
         var result = new ArrayList<Lexeme>();
@@ -88,7 +102,7 @@ public class GLangParser {
 
         if (input.get(0) instanceof Colon) {
             if (!input.get(1).equals(new Text("t")))
-                throw new ValidationException(STR."Expected t but has\{input.get(1)}");
+                throw new ValidationException(STR."Expected t but has \{input.get(1)}");
 
             switch (input.get(2)) {
                 case NullabilityMark m -> {

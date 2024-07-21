@@ -11,7 +11,7 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSqlTests2.Message(
-    kind = ERROR, text = "Expected t but hasText[t=v]"
+    kind = ERROR, text = "Expected t but has TEXT(v)"
 )
 @TrueSql public class __09__WrongGLex_t {
     @TestTemplate public void test(MainConnection cn) {
