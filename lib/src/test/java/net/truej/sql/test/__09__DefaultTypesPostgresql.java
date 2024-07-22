@@ -15,7 +15,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 @ExtendWith(TrueSqlTests2.class)
-@TrueSql public class __09__DefaultTypes {
+@TrueSql public class __09__DefaultTypesPostgresql {
 
     record DataTypes(
         BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
@@ -24,8 +24,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         Integer integer_type, @Nullable Integer integer_type_null,
         Long long_type, @Nullable Long long_type_null,
         String string_type, @Nullable String string_type_null,
-        //почему не short???
-        //Short short_type, @Nullable Short short_type_null,
+        //Byte []  bytes_type, @Nullable Byte [] bytes_type_null,
         Integer short_type, @Nullable Integer short_type_null,
         LocalTime time_type, @Nullable LocalTime time_type_null,
         LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null

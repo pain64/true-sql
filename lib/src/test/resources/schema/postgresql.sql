@@ -41,8 +41,6 @@ create table all_default_data_types(
     bigdecimal_type_null decimal(15,3),
     boolean_type boolean not null,
     boolean_type_null boolean,
-    --bytearray_type bytea not null,
-    --bytearray_type_null bytea,
     date_type date not null,
     date_type_null date,
     integer_type integer not null,

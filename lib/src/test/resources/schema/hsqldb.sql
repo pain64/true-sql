@@ -36,30 +36,7 @@ create table user_bills (
 create global temporary table names2(
     name varchar(100)
 );
-create table all_default_data_types(
-    bigdecimal_type decimal(15,3) not null,
-    bigdecimal_type_null decimal(15,3),
-    boolean_type boolean not null,
-    boolean_type_null boolean,
-    --bytearray_type bytea not null,
-    --bytearray_type_null bytea,
-    date_type date not null,
-    date_type_null date,
-    integer_type integer not null,
-    integer_type_null integer,
-    long_type bigint not null,
-    long_type_null bigint,
-    string_type varchar(200) not null,
-    string_type_null varchar(200),
-    short_type smallint not null,
-    short_type_null smallint,
-    time_type time not null,
-    time_type_null time,
-    timestamp_type timestamp not null,
-    timestamp_type_null timestamp,
-    --url_type boolean not null,
-    url_type_null boolean
-);
+
 ---
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);
@@ -110,9 +87,42 @@ create procedure bill_zero()
 modifies sql data
     begin atomic
         update bill set amount = 0;
-    end
+    end;
 create procedure discount_bill(in datedisc datetime)
 modifies sql data
     begin atomic
         update bill set discount = amount * 0.1 where date = datedisc;
-    end
+    end;
+
+create table all_default_data_types(
+    byte_type tinyint not null,
+    byte_type_null tinyint
+)
+
+create procedure test_types_procedure(
+        inout bigdecimal_type decimal(15,3),
+        out bigdecimal_type_null decimal(15,3),
+        inout boolean_type boolean,
+        out boolean_type_null boolean,
+        --bytearray_type bytea not null,
+        --bytearray_type_null bytea,
+        inout date_type date,
+        out date_type_null date,
+        inout integer_type integer,
+        out integer_type_null integer,
+        inout long_type bigint,
+        out long_type_null bigint,
+        inout string_type varchar(200),
+        out string_type_null varchar(200),
+        inout short_type smallint,
+        out short_type_null smallint,
+        inout byte_type tinyint,
+        out byte_type_null tinyint,
+        inout time_type time,
+        out time_type_null time,
+        inout timestamp_type timestamp,
+        out timestamp_type_null timestamp)
+    begin atomic
+        declare b boolean;
+        set b = true;
+    end;
