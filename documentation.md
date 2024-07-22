@@ -370,13 +370,11 @@ In case you want pin connection
 
 ```java
 ds.withConnection(cn -> {
-	cn.q("""
-	create temp table temp_table as
-	with t(s) as (values (‘a’), (‘b’))
-    """).fetchNone();
+        cn.q("set time zone 'America/New_York'").fetchNone();
 
-    return cn.q("select * from temp_table").fetchList(String.class);
-})
+        return cn.q("select current_setting('TIMEZONE')").fetchOne(String.class);
+    }
+)
 ```
 
 In case you need transaction mode
