@@ -70,7 +70,7 @@ public class TrueSqlTests2 implements
             Database.HSQLDB, new DatabaseInstance() {
                 @Override public DataSource getDataSource() {
                     return new JDBCDataSource() {{
-                        setURL("jdbc:hsqldb:mem:db");
+                        setURL("jdbc:hsqldb:mem:test");
                         setUser("SA");
                         setPassword("");
                         runInitScript(this, "/schema/hsqldb.sql", url, user, password);

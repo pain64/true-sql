@@ -97,7 +97,9 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             );
 
             var generatedClassName = (elementSymbol).getQualifiedName() + "TrueSql"; // FIXME: + "G" ?
-            var invocations = InvocationsFinder.find(env, context, symtab, names, messages, cu, tree, generatedClassName);
+            var invocations = InvocationsFinder.find(
+                env, context, symtab, names, maker, messages, cu, tree, generatedClassName
+            );
 
             try {
                 var builderFile = env.getFiler().createSourceFile(

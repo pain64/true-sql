@@ -103,6 +103,7 @@ public class Fixture {
                 var constraintAndTable = parts[parts.length - 1].split("table:");
 
                 return new ConstraintViolationException(
+                    null, null,
                     constraintAndTable[1].trim(),
                     constraintAndTable[0].trim()
                 );

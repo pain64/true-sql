@@ -52,6 +52,7 @@ import java.sql.Types;
             var constraintAndTable = parts[parts.length - 1].split("table:");
 
             return new ConstraintViolationException(
+                null, null,
                 constraintAndTable[1].trim(),
                 constraintAndTable[0].trim()
             );
@@ -61,6 +62,8 @@ import java.sql.Types;
         if (pgUniqueConstraintCode.equals(ex.getSQLState()) &&
             ex instanceof PSQLException pex) {
             return new ConstraintViolationException(
+                null,
+                pex.getServerErrorMessage().getSchema(),
                 pex.getServerErrorMessage().getTable(),
                 pex.getServerErrorMessage().getConstraint()
             );
