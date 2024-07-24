@@ -45,7 +45,6 @@ import java.sql.Types;
 
     @Override
     public RuntimeException mapException(SQLException ex) {
-        var x = 1;
         if (ex instanceof SQLIntegrityConstraintViolationException &&
             ex.getCause() instanceof HsqlException hex) {
             var parts = hex.getMessage().split(";");
