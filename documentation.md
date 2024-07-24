@@ -142,7 +142,7 @@ ds.q("""
 ).fetchList(Report.class)
 ```
 
-###### NB: DTO with all null fields in ResultSet will be droped.
+###### NB: Group with all null fields will be droped.
 
 All possibilities of grouped object-tree demonstrated below.
 
@@ -323,7 +323,7 @@ var user = ds.q("select id, info as ":t? info" from users")
 ```
 
 <details>
-    <summary>generated User</summary>
+    <summary>generated UserG</summary>
 
 ```java
 record UserG(Long id, @Nullable String name) { }
@@ -337,7 +337,7 @@ var user = ds.q("select id, name as ":t! name" from users")
 ```
 
 <details>
-    <summary>generated User</summary>
+    <summary>generated UserG</summary>
 
 ```java
 record UserG(Long id, String name) { }
@@ -450,7 +450,7 @@ ds.q("select v from t1 where (id, v) in = (?)", unfold2(params))
 Nowadays bind custom types is a casual need. TrueSql provides two ways to bind parameters. 
 
 ### JDBC as object binding
-If DTO supports asObject binding
+If bound type may be mapped as preparedStatement.getObject()/setObject()
 
 ```java
 import com.truej.sql.v3.bindings.AsObjectReadWrite;
