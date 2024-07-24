@@ -5,7 +5,6 @@ import java.sql.*;
 
 public abstract class AsObjectReadWrite<A> implements TypeReadWrite<A> {
     public abstract Class<A> aClass();
-    public boolean mayBeNull() { return true; }
     public int sqlType() { return Types.OTHER; }
 
     @Override public A get(
@@ -31,5 +30,4 @@ public abstract class AsObjectReadWrite<A> implements TypeReadWrite<A> {
     ) throws SQLException {
         stmt.registerOutParameter(parameterIndex, sqlType());
     }
-
 }

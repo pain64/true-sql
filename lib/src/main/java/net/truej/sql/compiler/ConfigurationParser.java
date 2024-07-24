@@ -90,7 +90,7 @@ public class ConfigurationParser {
                 bindings.add(new Standard.Binding(
                     bound.tsym.flatName().toString(),
                     rwClassSym.flatName().toString(),
-                    tb.mayBeNullable(),
+                    true,
                     tb.compatibleSqlType() != INT_NOT_DEFINED ? tb.compatibleSqlType() : null,
                     !tb.compatibleSqlTypeName().equals(STRING_NOT_DEFINED) ? tb.compatibleSqlTypeName() : null
                 ));

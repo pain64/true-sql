@@ -12,24 +12,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __10__DefaultTypesHSQLDB {
     record DataTypes(
-        Integer byte_type, @Nullable Integer byte_null
+        byte byte_type, @Nullable Byte byte_null
     ) { }
 
     // FIXME: HSQLDB ???
-    @TestTemplate
-    @TrueSqlTests2.DisabledOn(POSTGRESQL) public void test(MainDataSource ds) {
+    @TestTemplate @DisabledOn(POSTGRESQL) public void test(MainDataSource ds) {
         ds.q("""
                 insert into all_default_data_types values(
                     ?, ?
                 )
                 """,
-            Byte.valueOf("8"), null
+            (byte) 8, (Byte) null
         ).fetchNone();
 
 

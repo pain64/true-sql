@@ -35,7 +35,19 @@ public class TypeFinder {
     ) {
         Predicate<Symbol> isClass = s -> s instanceof Symbol.ClassSymbol;
 
-        if (tree instanceof JCTree.JCIdent id) {
+        if (tree instanceof JCTree.JCPrimitiveTypeTree primitive) {
+           return (Symbol.ClassSymbol) switch (primitive.typetag) {
+               case BYTE -> symtab.byteType.tsym;
+               case CHAR -> symtab.charType.tsym;
+               case SHORT -> symtab.shortType.tsym;
+               case LONG -> symtab.longType.tsym;
+               case FLOAT -> symtab.floatType.tsym;
+               case INT -> symtab.intType.tsym;
+               case DOUBLE -> symtab.doubleType.tsym;
+               case BOOLEAN -> symtab.booleanType.tsym;
+               default -> null;
+           };
+        } if (tree instanceof JCTree.JCIdent id) {
             var found = new Symbol.ClassSymbol[]{null};
             found[0] = (Symbol.ClassSymbol) cu.toplevelScope.findFirst(id.name, isClass);
 

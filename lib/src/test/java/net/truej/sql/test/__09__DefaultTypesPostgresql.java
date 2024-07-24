@@ -19,18 +19,17 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
     record DataTypes(
         BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
-        Boolean boolean_type, @Nullable Boolean boolean_type_null,
+        boolean boolean_type, @Nullable Boolean boolean_type_null,
         LocalDate date_type, @Nullable LocalDate date_type_null,
-        Integer integer_type, @Nullable Integer integer_type_null,
-        Long long_type, @Nullable Long long_type_null,
+        int integer_type, @Nullable Integer integer_type_null,
+        long long_type, @Nullable Long long_type_null,
         String string_type, @Nullable String string_type_null,
         //Byte []  bytes_type, @Nullable Byte [] bytes_type_null,
-        Integer short_type, @Nullable Integer short_type_null,
+        short short_type, @Nullable Short short_type_null,
         LocalTime time_type, @Nullable LocalTime time_type_null,
         LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
     ) { }
 
-    // FIXME: HSQLDB ???
     @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) {
         ds.q("""
                 insert into all_default_data_types values(
@@ -46,13 +45,13 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                     ?, ?)
                 """,
             new BigDecimal("100.24124"), null,
-            Boolean.valueOf(true), null,
+            true, (Boolean) null,
             //new byte[] {1}, null,
             LocalDate.of(2024, 7, 1), null,
-            Integer.valueOf(100), null,
-            Long.valueOf(99L), null,
+            100, (Integer) null,
+            99L, (Long) null,
             "hello", null,
-            Short.valueOf("255"), null,
+            (short) 255, (Short) null,
             LocalTime.of(23, 59, 59), null,
             LocalDateTime.of(1984, 1, 1, 23, 59, 59), null
         ).fetchNone();

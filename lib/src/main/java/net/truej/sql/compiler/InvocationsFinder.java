@@ -20,6 +20,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -524,41 +525,124 @@ public class InvocationsFinder {
                         };
 
                         interface CheckTypeCompatibility {
-                            void check(int columnIndex, String fieldName, Standard.Binding binding, GLangParser.ColumnMetadata column);
+                            void check(
+                                int columnIndex,
+                                String fieldName,
+                                Standard.Binding binding,
+                                GLangParser.NullMode bindingNullMode,
+                                GLangParser.ColumnMetadata column
+                            );
                         }
 
-                        var checkTypeCompatibility = (CheckTypeCompatibility) (columnIndex, fieldName, binding, column) -> {
+                        var checkTypeCompatibility = (CheckTypeCompatibility) (
+                            columnIndex, fieldName, toBinding, bindingNullMode, fromColumn
+                        ) -> {
+
+                            // vendor-specific
                             if (
-                                binding.className().equals("java.time.OffsetDateTime") &&
-                                column.sqlTypeName().equals("timestamptz") // postgresql
+                                toBinding.className().equals("java.time.OffsetDateTime") &&
+                                fromColumn.sqlTypeName().equals("timestamptz") // postgresql
+                            ) return;
+
+                            // avoid JDBC 1.0 spec bug
+
+                            if (
+                                (toBinding.className().equals(Byte.class.getName()) &&
+                                 fromColumn.sqlType() == Types.TINYINT
+                                ) ||
+                                (toBinding.className().equals(Short.class.getName()) &&
+                                 fromColumn.sqlType() == Types.SMALLINT
+                                )
                             ) return;
 
                             if (
-                                binding.compatibleSqlType() == null &&
-                                binding.compatibleSqlTypeName() == null
+                                (
+                                    toBinding.className().equals(Integer.class.getName()) ||
+                                    toBinding.className().equals(int.class.getName())
+                                ) && fromColumn.javaClassName().equals(Integer.class.getName())
                             ) {
-                                if (!binding.className().equals(column.javaClassName()))
+
+                                if (fromColumn.sqlType() == Types.TINYINT)
                                     throw new ValidationException(
                                         "type mismatch for column " + (columnIndex + 1) +
                                         (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                        ". Expected " + binding.className() + " but has " + column.javaClassName()
+                                        ". Expected " + toBinding.className() + " but has java.lang.Byte"
+                                    );
+
+                                if (fromColumn.sqlType() == Types.SMALLINT)
+                                    throw new ValidationException(
+                                        "type mismatch for column " + (columnIndex + 1) +
+                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                        ". Expected " + toBinding.className() + " but has java.lang.Short"
+                                    );
+                            }
+
+                            if (
+                                (
+                                    bindingNullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
+                                    bindingNullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
+                                ) && (
+                                    (toBinding.className().equals(boolean.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Boolean.class.getName()) ||
+                                        fromColumn.sqlType() == Types.BOOLEAN
+                                    )) ||
+                                    (toBinding.className().equals(byte.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Byte.class.getName()) ||
+                                        fromColumn.sqlType() == Types.TINYINT
+                                    )) ||
+                                    (toBinding.className().equals(char.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Character.class.getName()) ||
+                                        fromColumn.sqlType() == Types.CHAR
+                                    )) ||
+                                    (toBinding.className().equals(short.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Short.class.getName()) ||
+                                        fromColumn.sqlType() == Types.SMALLINT
+                                    )) ||
+                                    (toBinding.className().equals(int.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Integer.class.getName()) ||
+                                        fromColumn.sqlType() == Types.INTEGER
+                                    )) ||
+                                    (toBinding.className().equals(long.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Long.class.getName()) ||
+                                        fromColumn.sqlType() == Types.BIGINT
+                                    )) ||
+                                    (toBinding.className().equals(float.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Float.class.getName()) ||
+                                        fromColumn.sqlType() == Types.FLOAT
+                                    )) ||
+                                    (toBinding.className().equals(double.class.getName()) && (
+                                        fromColumn.javaClassName().equals(Double.class.getName()) ||
+                                        fromColumn.sqlType() == Types.DOUBLE
+                                    ))
+                                )
+                            ) return;
+
+                            if (
+                                toBinding.compatibleSqlType() == null &&
+                                toBinding.compatibleSqlTypeName() == null
+                            ) {
+                                if (!toBinding.className().equals(fromColumn.javaClassName()))
+                                    throw new ValidationException(
+                                        "type mismatch for column " + (columnIndex + 1) +
+                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
+                                        ". Expected " + toBinding.className() + " but has " + fromColumn.javaClassName()
                                     );
                             } else {
-                                if (binding.compatibleSqlTypeName() != null) {
-                                    if (!binding.compatibleSqlTypeName().equals(column.sqlTypeName()))
+                                if (toBinding.compatibleSqlTypeName() != null) {
+                                    if (!toBinding.compatibleSqlTypeName().equals(fromColumn.sqlTypeName()))
                                         throw new ValidationException(
                                             "Sql type name mismatch for column " + (columnIndex + 1) +
                                             (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                            ". Expected " + binding.compatibleSqlTypeName() + " but has " + column.sqlTypeName()
+                                            ". Expected " + toBinding.compatibleSqlTypeName() + " but has " + fromColumn.sqlTypeName()
                                         );
                                 }
 
-                                if (binding.compatibleSqlType() != null) {
-                                    if (binding.compatibleSqlType() != column.sqlType())
+                                if (toBinding.compatibleSqlType() != null) {
+                                    if (toBinding.compatibleSqlType() != fromColumn.sqlType())
                                         throw new ValidationException(
                                             "Sql type id (java.sql.Types) mismatch for column " + (columnIndex + 1) +
                                             (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                            ". Expected " + binding.compatibleSqlType() + " but has " + column.sqlType()
+                                            ". Expected " + toBinding.compatibleSqlType() + " but has " + fromColumn.sqlType()
                                         );
                                 }
                             }
@@ -767,7 +851,7 @@ public class InvocationsFinder {
                                             );
 
                                             checkTypeCompatibility.check(
-                                                i, field.name(), binding, column
+                                                i, field.name(), binding, field.st().nullMode(), column
                                             );
                                         }
 
@@ -777,11 +861,81 @@ public class InvocationsFinder {
                                         var fields = parseResultSetColumns(
                                             columns, (column, columnIndex, javaClassNameHint, dtoNullMode) -> {
 
-                                                // FIXME: deduplicate
+                                                final GLangParser.NullMode nullMode;
+                                                if (dtoNullMode != GLangParser.NullMode.DEFAULT_NOT_NULL) {
+                                                    checkNullability.check(
+                                                        column.columnName(), dtoNullMode, columnIndex, column
+                                                    );
+                                                    nullMode = dtoNullMode;
+                                                } else
+                                                    nullMode = column.nullMode();
 
-                                                var binding = getBindingForClass.apply(
-                                                    javaClassNameHint != null ? javaClassNameHint : (
-                                                        switch (column.sqlType()) {
+                                                final Standard.Binding binding;
+                                                if (javaClassNameHint != null) {
+                                                    binding = getBindingForClass.apply(
+                                                        javaClassNameHint, nullMode
+                                                    );
+                                                    checkTypeCompatibility.check(
+                                                        columnIndex, column.columnName(), binding, nullMode, column
+                                                    );
+                                                } else {
+                                                    var inferType = (Supplier<String>) () -> {
+                                                        if (
+                                                            nullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
+                                                            nullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
+                                                        ) {
+                                                            if (
+                                                                column.javaClassName().equals(Boolean.class.getName()) ||
+                                                                column.sqlType() == Types.BOOLEAN
+                                                            )
+                                                                return boolean.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Byte.class.getName()) ||
+                                                                column.sqlType() == Types.TINYINT
+                                                            )
+                                                                return byte.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Character.class.getName()) ||
+                                                                column.sqlType() == Types.CHAR
+                                                            )
+                                                                return char.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Short.class.getName()) ||
+                                                                column.sqlType() == Types.SMALLINT
+                                                            )
+                                                                return short.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Integer.class.getName()) ||
+                                                                column.sqlType() == Types.INTEGER
+                                                            )
+                                                                return int.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Long.class.getName()) ||
+                                                                column.sqlType() == Types.BIGINT
+                                                            )
+                                                                return long.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Float.class.getName()) ||
+                                                                column.sqlType() == Types.FLOAT
+                                                            )
+                                                                return float.class.getName();
+
+                                                            if (
+                                                                column.javaClassName().equals(Double.class.getName()) ||
+                                                                column.sqlType() == Types.DOUBLE
+                                                            )
+                                                                return double.class.getName();
+                                                        }
+
+                                                        // vendor-specific
+
+                                                        return switch (column.sqlType()) {
                                                             case java.sql.Types.DATE ->
                                                                 "java.time.LocalDate";
                                                             case java.sql.Types.TIME ->
@@ -799,23 +953,13 @@ public class InvocationsFinder {
                                                                 column.javaClassName().equals("java.time.ZonedDateTime")
                                                                     ? column.javaClassName() : "java.time.OffsetDateTime";
                                                             default -> column.javaClassName();
-                                                        }
-                                                    ),
-                                                    dtoNullMode
-                                                );
+                                                        };
+                                                    };
 
-                                                final GLangParser.NullMode nullMode;
-                                                if (dtoNullMode != GLangParser.NullMode.DEFAULT_NOT_NULL) {
-                                                    checkNullability.check(
-                                                        column.columnName(), dtoNullMode, columnIndex, column
+                                                    binding = getBindingForClass.apply(
+                                                        inferType.get(), nullMode
                                                     );
-                                                    nullMode = dtoNullMode;
-                                                } else
-                                                    nullMode = column.nullMode();
-
-                                                checkTypeCompatibility.check(
-                                                    columnIndex, column.columnName(), binding, column
-                                                );
+                                                }
 
                                                 return new GLangParser.BindColumn.Result(binding.className(), nullMode);
                                             }
@@ -1025,7 +1169,7 @@ public class InvocationsFinder {
                                                 .appendList(tree.args.tail);
 
                                         } else throw new RuntimeException("bad tree");
-                                    break;
+                                        break;
                                     case 5:
                                         if (
                                             tree.args.get(1) instanceof JCTree.JCLiteral l1 &&
@@ -1053,7 +1197,7 @@ public class InvocationsFinder {
                                                 .appendList(tree.args.tail);
 
                                         } else throw new RuntimeException("bad tree");
-                                    break;
+                                        break;
                                     default:  // 6
                                         if (
                                             tree.args.get(1) instanceof JCTree.JCLiteral l1 &&
@@ -1093,7 +1237,7 @@ public class InvocationsFinder {
                                             );
 
                                         } else throw new RuntimeException("bad tree");
-                                    break;
+                                        break;
                                 }
 
                                 var zz = 1;

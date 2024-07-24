@@ -18,9 +18,10 @@ public class LongReadWrite implements TypeReadWrite<java.lang.Long> {
     @Override public void set(
         PreparedStatement stmt, int parameterIndex, java.lang.Long value
     ) throws SQLException {
-        
-        
-        stmt.setLong(parameterIndex, value);
+        if (value == null)
+            stmt.setNull(parameterIndex, Types.BIGINT);
+        else
+            stmt.setLong(parameterIndex, value);
     }
 
     @Override public java.lang.Long get(

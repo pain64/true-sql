@@ -190,9 +190,21 @@ public class MapperGenerator {
                 });
 
                 if (hasGrouping) {
-                    var rowFields = Out.each(flattened, ",\n", (o, i, field) ->
-                        o."\{field.javaClassName()} c\{i + 1}"
-                    );
+                    var rowFields = Out.each(flattened, ",\n", (o, i, field) -> {
+                        var boxedClassName = switch (field.javaClassName()) {
+                            case "boolean" -> Boolean.class.getName();
+                            case "byte" -> Byte.class.getName();
+                            case "char" -> Character.class.getName();
+                            case "short" -> Short.class.getName();
+                            case "int" -> Integer.class.getName();
+                            case "long" -> Long.class.getName();
+                            case "float" -> Float.class.getName();
+                            case "double" -> Double.class.getName();
+                            default -> field.javaClassName();
+                        };
+
+                        return ((Out) o)."\{boxedClassName} c\{i + 1}";
+                    });
 
                     var groupKeysDto = (WriteNext) o ->
                         dtoForGroupKeys(o, 1, 0, at.fields());

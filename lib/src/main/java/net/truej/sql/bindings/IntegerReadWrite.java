@@ -18,9 +18,10 @@ public class IntegerReadWrite implements TypeReadWrite<java.lang.Integer> {
     @Override public void set(
         PreparedStatement stmt, int parameterIndex, java.lang.Integer value
     ) throws SQLException {
-        
-        
-        stmt.setInt(parameterIndex, value);
+        if (value == null)
+            stmt.setNull(parameterIndex, Types.INTEGER);
+        else
+            stmt.setInt(parameterIndex, value);
     }
 
     @Override public java.lang.Integer get(

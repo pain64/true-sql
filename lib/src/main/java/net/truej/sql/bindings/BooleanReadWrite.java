@@ -18,9 +18,10 @@ public class BooleanReadWrite implements TypeReadWrite<java.lang.Boolean> {
     @Override public void set(
         PreparedStatement stmt, int parameterIndex, java.lang.Boolean value
     ) throws SQLException {
-        
-        
-        stmt.setBoolean(parameterIndex, value);
+        if (value == null)
+            stmt.setNull(parameterIndex, Types.BOOLEAN);
+        else
+            stmt.setBoolean(parameterIndex, value);
     }
 
     @Override public java.lang.Boolean get(

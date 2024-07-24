@@ -18,9 +18,10 @@ public class ByteReadWrite implements TypeReadWrite<java.lang.Byte> {
     @Override public void set(
         PreparedStatement stmt, int parameterIndex, java.lang.Byte value
     ) throws SQLException {
-        
-        
-        stmt.setByte(parameterIndex, value);
+        if (value == null)
+            stmt.setNull(parameterIndex, Types.TINYINT);
+        else
+            stmt.setByte(parameterIndex, value);
     }
 
     @Override public java.lang.Byte get(

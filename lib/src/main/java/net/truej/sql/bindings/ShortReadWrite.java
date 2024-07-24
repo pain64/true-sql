@@ -18,9 +18,10 @@ public class ShortReadWrite implements TypeReadWrite<java.lang.Short> {
     @Override public void set(
         PreparedStatement stmt, int parameterIndex, java.lang.Short value
     ) throws SQLException {
-        
-        
-        stmt.setShort(parameterIndex, value);
+        if (value == null)
+            stmt.setNull(parameterIndex, Types.SMALLINT);
+        else
+            stmt.setShort(parameterIndex, value);
     }
 
     @Override public java.lang.Short get(

@@ -82,7 +82,7 @@ import java.util.function.Supplier;
             new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
                 cn.q("""
                     select
-                        c.id   as		"          id      ",
+                        c.id   as		"          id        ",
                         c.name as 		"          name      ",
                         u.id   as 		":t! User2 users.id  ",
                         u.name as 		":t!       users.name"
