@@ -170,11 +170,23 @@ public class TrueSqlPlugin implements Plugin {
         };
 
         var boxType = (Function<Type, Type>) t -> {
+            if (t == symtab.booleanType)
+                return symtab.getClass(symtab.java_base, names.fromString(Boolean.class.getName())).type;
+            if (t == symtab.byteType)
+                return symtab.getClass(symtab.java_base, names.fromString(Byte.class.getName())).type;
             if (t == symtab.charType)
                 return symtab.getClass(symtab.java_base, names.fromString(Character.class.getName())).type;
-            else if (t == symtab.longType)
+            if (t == symtab.shortType)
+                return symtab.getClass(symtab.java_base, names.fromString(Short.class.getName())).type;
+            if (t == symtab.intType)
+                return symtab.getClass(symtab.java_base, names.fromString(Integer.class.getName())).type;
+            if (t == symtab.longType)
                 return symtab.getClass(symtab.java_base, names.fromString(Long.class.getName())).type;
-            // TODO: all primitive types
+            if (t == symtab.floatType)
+                return symtab.getClass(symtab.java_base, names.fromString(Float.class.getName())).type;
+            if (t == symtab.doubleType)
+                return symtab.getClass(symtab.java_base, names.fromString(Double.class.getName())).type;
+
             return t;
         };
 
