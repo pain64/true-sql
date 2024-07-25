@@ -10,4 +10,5 @@ public class __05__GenerateDtoTrueSql {
     class User4 {}
     class User5 {}
     class User6 {}
+    class TypeTest {}
 }

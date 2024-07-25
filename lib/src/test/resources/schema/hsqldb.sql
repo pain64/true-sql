@@ -96,7 +96,21 @@ modifies sql data
 
 create table all_default_data_types(
     byte_type tinyint not null,
-    byte_type_null tinyint
+    byte_type_null tinyint,
+  time_offset_type time with time zone not null,
+  time_offset_type_null time with time zone
+)
+
+create table grouped_dto(
+    gg varchar(50) not null,
+    bool boolean not null,
+    byte tinyint not null,
+    c char not null,
+    short smallint not null,
+    intt int not null,
+    long bigint not null,
+    flo float not null,
+    doub double not null
 )
 
 create procedure test_types_procedure(
