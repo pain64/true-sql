@@ -14,11 +14,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.MYSQL;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 // FIXME: test for hsqldb without in no-checks mode
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL})
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL, MARIADB})
 @TrueSql public class __08__GeneratedKeysManyColumns {
 
     record Discount(Long id, @Nullable BigDecimal discount) { }

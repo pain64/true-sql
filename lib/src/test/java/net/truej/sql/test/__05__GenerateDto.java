@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(MYSQL)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
 // FIX test for enable on MySQL
 @TrueSql public class __05__GenerateDto {
 

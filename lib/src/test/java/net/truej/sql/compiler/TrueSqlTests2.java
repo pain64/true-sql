@@ -6,6 +6,7 @@ import net.truej.sql.util.TestCompiler2;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
@@ -59,9 +60,12 @@ public class TrueSqlTests2 implements
             .withReuse(true);
         var mysqlContainer = new MySQLContainer<>("mysql:9.0.1")
             .withReuse(true);
+        var mariaDbContainer = new MariaDBContainer<>("mariadb:11.4.2-ubi9")
+            .withReuse(true);
 
         pgContainer.start();
         mysqlContainer.start();
+        mariaDbContainer.start();
 
         instances = Map.of(
             Database.HSQLDB, new DatabaseInstance() {
@@ -99,6 +103,19 @@ public class TrueSqlTests2 implements
                         );
                     }};
                 }
+            },
+            Database.MARIADB, new DatabaseInstance() {
+                @Override public DataSource getDataSource() {
+                    return new MysqlDataSource() {{
+                        setURL(mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true");
+                        setUser(mysqlContainer.getUsername());
+                        setPassword(mysqlContainer.getPassword());
+                        runInitScript(
+                            this, "/schema/mysql.sql", mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
+                            mysqlContainer.getUsername(), mysqlContainer.getPassword()
+                        );
+                    }};
+                }
             }
         );
     }
@@ -124,7 +141,7 @@ public class TrueSqlTests2 implements
             : ConditionEvaluationResult.disabled("has no db to run");
     }
 
-    public enum Database {HSQLDB, POSTGRESQL, MYSQL /*, MARIADB, MSSQL, ORACLE, DB2 */}
+    public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB /*, MSSQL, ORACLE, DB2 */}
 
     interface DatabaseInstance {
         DataSource getDataSource();

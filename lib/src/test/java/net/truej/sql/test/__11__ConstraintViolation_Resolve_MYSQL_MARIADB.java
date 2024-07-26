@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // Enjoy https://bugs.mysql.com/bug.php?id=1956
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(MYSQL)
-@TrueSql public class __11__ConstraintViolation_Resolve_MYSQL {
+@ExtendWith(TrueSqlTests2.class) @EnableOn({MYSQL, MARIADB})
+@TrueSql public class __11__ConstraintViolation_Resolve_MYSQL_MARIADB {
     static class Handled extends Exception { }
 
     @TestTemplate public void implicit(MainDataSource ds) {

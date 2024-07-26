@@ -15,8 +15,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// TODO: adapt this test for foreign keys
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(MYSQL)
+// TODO: adapt this test for foreign keys. Remove @DisabledOn after
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
 @TrueSql public class __11__ConstraintViolation {
     static class Handled extends Exception { }
 
