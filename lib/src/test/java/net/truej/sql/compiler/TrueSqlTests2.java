@@ -1,10 +1,12 @@
 package net.truej.sql.compiler;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import net.truej.sql.Bench;
 import net.truej.sql.util.TestCompiler2;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
@@ -12,9 +14,7 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -29,10 +29,102 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TrueSqlTests2 implements
-    TestTemplateInvocationContextProvider,
-    TestInstanceFactory {
+    TestTemplateInvocationContextProvider, TestInstanceFactory, ExecutionCondition {
 
-    public enum Database {HSQLDB, POSTGRESQL /*, MYSQL, MARIADB, MSSQL, ORACLE, DB2 */}
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface DisabledOn {
+        Database[] value() default {};
+    }
+
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface EnableOn {
+        Database[] value() default {};
+    }
+
+    @Repeatable(Messages.class) @Retention(RetentionPolicy.RUNTIME)
+    public @interface Message {
+        Diagnostic.Kind kind();
+        String text();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface Messages {
+        Message[] value() default {};
+    }
+
+    private static final Map<Database, DatabaseInstance> instances;
+    static {
+
+        var pgContainer = new PostgreSQLContainer<>("postgres:16.3")
+            .withReuse(true);
+        var mysqlContainer = new MySQLContainer<>("mysql:9.0.1")
+            .withReuse(true);
+
+        pgContainer.start();
+        mysqlContainer.start();
+
+        instances = Map.of(
+            Database.HSQLDB, new DatabaseInstance() {
+                @Override public DataSource getDataSource() {
+                    return new JDBCDataSource() {{
+                        setURL("jdbc:hsqldb:mem:test");
+                        setUser("SA");
+                        setPassword("");
+                        runInitScript(this, "/schema/hsqldb.sql", url, user, password);
+                    }};
+                }
+            },
+            Database.POSTGRESQL, new DatabaseInstance() {
+                @Override public DataSource getDataSource() {
+                    return new PGSimpleDataSource() {{
+                        setURL(pgContainer.getJdbcUrl());
+                        setUser(pgContainer.getUsername());
+                        setPassword(pgContainer.getPassword());
+                        runInitScript(
+                            this, "/schema/postgresql.sql", pgContainer.getJdbcUrl(),
+                            pgContainer.getUsername(), pgContainer.getPassword()
+                        );
+                    }};
+                }
+            },
+            Database.MYSQL, new DatabaseInstance() {
+                @Override public DataSource getDataSource() {
+                    return new MysqlDataSource() {{
+                        setURL(mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true");
+                        setUser(mysqlContainer.getUsername());
+                        setPassword(mysqlContainer.getPassword());
+                        runInitScript(
+                            this, "/schema/mysql.sql", mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
+                            mysqlContainer.getUsername(), mysqlContainer.getPassword()
+                        );
+                    }};
+                }
+            }
+        );
+    }
+
+    List<Database> enabledDatabases(ExtensionContext extensionContext) {
+        return Arrays.stream(Database.values())
+            .filter(d -> {
+                var tm = extensionContext.getTestClass().get();
+                var enabled = tm.getAnnotation(EnableOn.class);
+                var disabled = tm.getAnnotation(DisabledOn.class);
+
+                return
+                    instances.containsKey(d) &&
+                    (enabled == null || Arrays.asList(enabled.value()).contains(d)) &&
+                    (disabled == null || !Arrays.asList(disabled.value()).contains(d));
+            }).toList();
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        return !enabledDatabases(context).isEmpty()
+            ? ConditionEvaluationResult.enabled("has at least one db to run")
+            : ConditionEvaluationResult.disabled("has no db to run");
+    }
+
+    public enum Database {HSQLDB, POSTGRESQL, MYSQL /*, MARIADB, MSSQL, ORACLE, DB2 */}
 
     interface DatabaseInstance {
         DataSource getDataSource();
@@ -58,57 +150,6 @@ public class TrueSqlTests2 implements
         } catch (IOException | SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static final Map<Database, DatabaseInstance> instances;
-    static {
-        var pgContainer = new PostgreSQLContainer<>("postgres:16.3");
-
-        pgContainer.start();
-
-        instances = Map.of(
-            Database.HSQLDB, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new JDBCDataSource() {{
-                        setURL("jdbc:hsqldb:mem:test");
-                        setUser("SA");
-                        setPassword("");
-                        runInitScript(this, "/schema/hsqldb.sql", url, user, password);
-                    }};
-                }
-            },
-            Database.POSTGRESQL, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new PGSimpleDataSource() {{
-                        setURL(pgContainer.getJdbcUrl());
-                        setUser(pgContainer.getUsername());
-                        setPassword(pgContainer.getPassword());
-                        runInitScript(
-                            this, "/schema/postgresql.sql", pgContainer.getJdbcUrl(),
-                            pgContainer.getUsername(), pgContainer.getPassword()
-                        );
-                    }};
-                }
-            }
-        );
-    }
-
-    @Retention(RetentionPolicy.RUNTIME) public @interface DisabledOn {
-        Database[] value() default {};
-    }
-
-    @Retention(RetentionPolicy.RUNTIME) public @interface EnableOn {
-        Database[] value() default {};
-    }
-
-    @Repeatable(Messages.class)
-    @Retention(RetentionPolicy.RUNTIME) public @interface Message {
-        Diagnostic.Kind kind();
-        String text();
-    }
-
-    @Retention(RetentionPolicy.RUNTIME) public @interface Messages {
-        Message[] value() default {};
     }
 
     @Override public boolean supportsTestTemplate(ExtensionContext extensionContext) {
@@ -205,16 +246,7 @@ public class TrueSqlTests2 implements
 
     @Override public Stream<TestTemplateInvocationContext>
     provideTestTemplateInvocationContexts(ExtensionContext extensionContext) {
-        return Arrays.stream(Database.values())
-            .filter(d -> {
-                var tm = extensionContext.getTestMethod().get();
-                var enabled = tm.getAnnotation(EnableOn.class);
-                var disabled = tm.getAnnotation(DisabledOn.class);
-
-                return
-                    (enabled == null || Arrays.asList(enabled.value()).contains(d)) &&
-                    (disabled == null || !Arrays.asList(disabled.value()).contains(d));
-            })
+        return enabledDatabases(extensionContext).stream()
             .map(this::invocationContext);
     }
 

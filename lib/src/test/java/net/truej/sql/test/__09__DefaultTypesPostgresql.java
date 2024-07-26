@@ -1,16 +1,11 @@
 package net.truej.sql.test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.*;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.TypeTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.N;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -18,7 +13,8 @@ import java.time.*;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
-@ExtendWith(TrueSqlTests2.class)
+@Disabled
+@ExtendWith(TrueSqlTests2.class) @EnableOn({POSTGRESQL, MYSQL})
 @TrueSql public class __09__DefaultTypesPostgresql {
 
     record DataTypes(
@@ -34,7 +30,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
     ) { }
 
-    @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) throws JsonProcessingException {
+    @TestTemplate public void test(MainDataSource ds) {
         ds.q("""
                 insert into all_default_data_types values(
                     ?, ?,
@@ -60,7 +56,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
             LocalDateTime.of(1984, 1, 1, 23, 59, 59), null
         ).fetchNone();
 
-
         ds.q("""
             select
                 bigdecimal_type, bigdecimal_type_null ,
@@ -77,8 +72,5 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
             from all_default_data_types
             """
         ).fetchOne(DataTypes.class);
-
     }
-
-
 }

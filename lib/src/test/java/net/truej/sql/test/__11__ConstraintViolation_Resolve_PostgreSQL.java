@@ -11,17 +11,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(Database.POSTGRESQL)
 @TrueSql public class __11__ConstraintViolation_Resolve_PostgreSQL {
     static class Handled extends Exception { }
 
-    @EnableOn(Database.POSTGRESQL) @TestTemplate public void schemaAndCatalog(MainDataSource ds) {
+    @TestTemplate public void schemaAndCatalog(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
                 ds.q("insert into users values(1, 'Joe', null)").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "test", "public", "users", "users_pk", () -> { throw new Handled(); })
+                    new Constraint<>(ds, "test", "public", "users", "users_pk", () -> {
+                        throw new Handled();
+                    })
                 );
             }
         });

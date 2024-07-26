@@ -27,7 +27,10 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
 
-    testImplementation("org.testcontainers:postgresql:1.19.8")
+    testImplementation("org.testcontainers:postgresql:1.20.0")
+
+    testImplementation("com.mysql:mysql-connector-j:9.0.0")
+    testImplementation("org.testcontainers:mysql:1.20.0")
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

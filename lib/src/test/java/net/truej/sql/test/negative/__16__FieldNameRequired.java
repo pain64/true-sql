@@ -14,8 +14,8 @@ import static javax.tools.Diagnostic.Kind.ERROR;
     kind = ERROR, text = "Field name required"
 )
 @TrueSql public class __16__FieldNameRequired {
-    @TestTemplate
-    public void test(MainConnection cn) {
+
+    @TestTemplate public void test(MainConnection cn) {
         cn.q("""
                     select
                         c.id   as		"        ",

@@ -12,13 +12,13 @@ import org.postgresql.geometric.PGpoint;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 import static net.truej.sql.source.Parameters.*;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __12__TypeBindings {
 
-    @TestTemplate @DisabledOn(HSQLDB)
-    public void testPointBind(MainDataSource ds) {
+    @TestTemplate public void testPointBind(MainDataSource ds) {
         var expected = new PGpoint(1, 1);
 
         Assertions.assertEquals(

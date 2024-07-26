@@ -4,7 +4,7 @@ create SCHEMA PUBLIC;
 create type enum_user_sex as enum('MALE', 'FEMALE');
 create type point_nullable as (a int, b int);
 create table users (
-    id bigint not null, --primary key,
+    id bigserial not null,
     name varchar(100) not null,
     info varchar(200),
     sex enum_user_sex,
@@ -65,8 +65,8 @@ alter table user_bills   add constraint user_bills_fk0   foreign key (user_id)  
 alter table user_bills   add constraint user_bills_fk1   foreign key (bill_id)   references bill(id);
 ---
 
-insert into users(id, name, info, sex) values(1, 'Joe', null, 'MALE');
-insert into users(id, name, info, sex) values(2, 'Donald', 'Do not disturb', 'MALE');
+insert into users(name, info, sex) values('Joe', null, 'MALE');
+insert into users(name, info, sex) values('Donald', 'Do not disturb', 'MALE');
 
 insert into city(id, name) values(1, 'London');
 insert into city(id, name) values(2, 'Paris');

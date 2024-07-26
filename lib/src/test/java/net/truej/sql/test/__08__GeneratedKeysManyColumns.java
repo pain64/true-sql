@@ -15,26 +15,15 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.MYSQL;
 
-@ExtendWith(TrueSqlTests2.class)
-@TrueSql public class __08__GeneratedKeys {
+// FIXME: test for hsqldb without in no-checks mode
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL})
+@TrueSql public class __08__GeneratedKeysManyColumns {
 
     record Discount(Long id, @Nullable BigDecimal discount) { }
 
-    @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) {
-
-        Assertions.assertEquals(
-            3L,
-            ds.q("insert into users values(?, ?, ?)", 3L, "Boris", null)
-                .asGeneratedKeys("id").fetchOne(Long.class)
-        );
-
-        //TODO: когда-то надо включить этот тест
-//        Assertions.assertEquals(
-//            4L,
-//            ds.q("insert into users values(?, ?, ?)", 4L, "Boris", null)
-//                .asGeneratedKeys(0).fetchOne(Long.class)
-//        );
+    @TestTemplate public void test(MainDataSource ds) {
 
         Assertions.assertEquals(
             List.of(

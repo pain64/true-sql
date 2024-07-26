@@ -12,12 +12,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
-@ExtendWith(TrueSqlTests2.class)
+// FIXME
+// Inverse this test and port to other databases (not HSQLDB)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __15__GenerateDtoWithTypeBinding {
-    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB)
-    public void test5(MainDataSource ds) throws JsonProcessingException {
+    @TestTemplate public void test5(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
             """
                 {
@@ -32,8 +35,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
                 )
         );
     }
-    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB)
-    public void test6(MainDataSource ds) throws JsonProcessingException {
+    @TestTemplate public void test6(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
             """
                 {

@@ -11,6 +11,8 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.Constraint;
 import net.truej.sql.bindings.Standard;
+import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
+import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.source.Parameters;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +34,8 @@ import static net.truej.sql.compiler.StatementGenerator.generate;
 import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
 
 public class InvocationsFinder {
+    private static final String MYSQL_DB_NAME = "MySQL";
+
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
     public record SimpleParameter(JCTree.JCExpression expression) implements QueryPart { }
@@ -282,7 +286,7 @@ public class InvocationsFinder {
                                                        al.getValue() instanceof Integer
                                             )) return;
 
-                                            statementMode = new StatementGenerator.AsGeneratedKeysIndices(
+                                            statementMode = new AsGeneratedKeysIndices(
 
                                                 inv.args.stream().mapToInt(arg ->
                                                     (Integer) ((JCTree.JCLiteral) arg).value
@@ -294,7 +298,7 @@ public class InvocationsFinder {
                                                 al.getValue() instanceof String
                                             )) return;
 
-                                            statementMode = new StatementGenerator.AsGeneratedKeysColumnNames(
+                                            statementMode = new AsGeneratedKeysColumnNames(
                                                 inv.args.stream().map(arg ->
                                                     (String) ((JCTree.JCLiteral) arg).value
                                                 ).toArray(String[]::new)
@@ -526,6 +530,7 @@ public class InvocationsFinder {
 
                         interface CheckTypeCompatibility {
                             void check(
+                                String onDatabase,
                                 int columnIndex,
                                 String fieldName,
                                 Standard.Binding binding,
@@ -535,8 +540,18 @@ public class InvocationsFinder {
                         }
 
                         var checkTypeCompatibility = (CheckTypeCompatibility) (
-                            columnIndex, fieldName, toBinding, bindingNullMode, fromColumn
+                            onDatabase, columnIndex, fieldName, toBinding, bindingNullMode, fromColumn
                         ) -> {
+
+
+                            if (onDatabase.equals(MYSQL_DB_NAME)) {
+                                if (
+                                    fromColumn.sqlType() == Types.BIGINT && (
+                                        toBinding.className().equals(Long.class.getName()) ||
+                                        toBinding.className().equals(long.class.getName())
+                                    )
+                                ) return;
+                            }
 
                             // vendor-specific
                             if (
@@ -680,25 +695,40 @@ public class InvocationsFinder {
                                         connection.prepareStatement(query);
                                     case StatementGenerator.AsCall _ ->
                                         connection.prepareCall(query);
-                                    case StatementGenerator.AsGeneratedKeysIndices gk ->
-                                        connection.prepareStatement(
-                                            query, gk.columnIndexes()
-                                        );
-                                    case StatementGenerator.AsGeneratedKeysColumnNames gk ->
+                                    case AsGeneratedKeysIndices gk -> connection.prepareStatement(
+                                        query, gk.columnIndexes()
+                                    );
+                                    case AsGeneratedKeysColumnNames gk ->
                                         connection.prepareStatement(
                                             query, gk.columnNames()
                                         );
                                 }
                             ) {
 
+                                var onDatabase = connection.getMetaData().getDatabaseProductName();
                                 List<GLangParser.ColumnMetadata> columns;
 
                                 switch (statementMode) {
                                     case StatementGenerator.AsDefault _,
-                                         StatementGenerator.AsGeneratedKeysColumnNames _,
-                                         StatementGenerator.AsGeneratedKeysIndices _ -> {
+                                         AsGeneratedKeysColumnNames _,
+                                         AsGeneratedKeysIndices _ -> {
 
-                                        var rMetadata = stmt.getMetaData();
+                                        var aMetadata = stmt.getMetaData();
+
+                                        var fixedColumnLabel = (Function<String, String>) label -> {
+                                            if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
+                                                return "";
+
+                                            return label;
+                                        };
+
+                                        if (onDatabase.equals(MYSQL_DB_NAME) && (
+                                            statementMode instanceof AsGeneratedKeysIndices ||
+                                            statementMode instanceof AsGeneratedKeysColumnNames
+                                        ))
+                                            aMetadata = stmt.getGeneratedKeys().getMetaData();
+
+                                        var rMetadata = aMetadata;
 
                                         if (rMetadata == null) columns = List.of();
                                         else {
@@ -719,7 +749,7 @@ public class InvocationsFinder {
                                                         rMetadata.getColumnType(i),
                                                         rMetadata.getColumnTypeName(i),
                                                         rMetadata.getColumnClassName(i),
-                                                        rMetadata.getColumnLabel(i)
+                                                        fixedColumnLabel.apply(rMetadata.getColumnLabel(i))
                                                     );
                                                 } catch (SQLException e) {
                                                     throw new RuntimeException(e);
@@ -851,7 +881,7 @@ public class InvocationsFinder {
                                             );
 
                                             checkTypeCompatibility.check(
-                                                i, field.name(), binding, field.st().nullMode(), column
+                                                onDatabase, i, field.name(), binding, field.st().nullMode(), column
                                             );
                                         }
 
@@ -876,7 +906,7 @@ public class InvocationsFinder {
                                                         javaClassNameHint, nullMode
                                                     );
                                                     checkTypeCompatibility.check(
-                                                        columnIndex, column.columnName(), binding, nullMode, column
+                                                        onDatabase, columnIndex, column.columnName(), binding, nullMode, column
                                                     );
                                                 } else {
                                                     var inferType = (Supplier<String>) () -> {
@@ -935,21 +965,23 @@ public class InvocationsFinder {
 
                                                         // vendor-specific
 
+                                                        if (onDatabase.equals(MYSQL_DB_NAME)) {
+                                                            var xxx = 1;
+                                                        }
+
                                                         return switch (column.sqlType()) {
-                                                            case java.sql.Types.DATE ->
+                                                            case Types.DATE ->
                                                                 "java.time.LocalDate";
-                                                            case java.sql.Types.TIME ->
+                                                            case Types.TIME ->
                                                                 "java.time.LocalTime";
-                                                            case java.sql.Types.TIMESTAMP ->
+                                                            case Types.TIMESTAMP ->
                                                                 // https://github.com/pgjdbc/pgjdbc/pull/3006
                                                                 column.sqlTypeName().equals("timestamptz") // postgresql
                                                                     ? "java.time.OffsetDateTime"
                                                                     : "java.time.LocalDateTime";
-                                                            case
-                                                                java.sql.Types.TIME_WITH_TIMEZONE ->
+                                                            case Types.TIME_WITH_TIMEZONE ->
                                                                 "java.time.OffsetTime";
-                                                            case
-                                                                java.sql.Types.TIMESTAMP_WITH_TIMEZONE ->
+                                                            case Types.TIMESTAMP_WITH_TIMEZONE ->
                                                                 column.javaClassName().equals("java.time.ZonedDateTime")
                                                                     ? column.javaClassName() : "java.time.OffsetDateTime";
                                                             default -> column.javaClassName();
@@ -1100,6 +1132,8 @@ public class InvocationsFinder {
                                     parsedConfig.url(), parsedConfig.username(), parsedConfig.password()
                                 )
                             ) {
+                                var onDatabase = connection.getMetaData().getDatabaseProductName();
+
                                 var findConstraint = (
                                     BiFunction<String, List<String>, CatalogAndSchema>
                                     ) (query, args) -> {
@@ -1110,7 +1144,8 @@ public class InvocationsFinder {
                                             stmt.setString(i + 1, args.get(i));
 
                                         var rs = stmt.executeQuery();
-                                        if (!rs.next()) throw new ValidationException(
+                                        if (!rs.next())
+                                            throw new ValidationException(
                                             "constraint not found"
                                         );
 
@@ -1138,6 +1173,17 @@ public class InvocationsFinder {
                                         upper(TABLE_NAME)      = upper(?) and
                                         upper(CONSTRAINT_NAME) = upper(?)""";
 
+                                if (onDatabase.equals(MYSQL_DB_NAME))
+                                    defaultQuery = """
+                                        select
+                                            '', ?
+                                        from information_schema.table_constraints
+                                        where
+                                            upper(TABLE_SCHEMA)    = upper(?) and
+                                            upper(TABLE_NAME)      = upper(?) and
+                                            upper(CONSTRAINT_NAME) = upper(?)
+                                        """;
+
                                 switch (tree.args.length()) {
                                     case 4:
                                         if (
@@ -1146,20 +1192,43 @@ public class InvocationsFinder {
                                             tree.args.get(2) instanceof JCTree.JCLiteral l2 &&
                                             l2.getValue() instanceof String constraintName
                                         ) {
-                                            final String realCatalog;
-                                            final String realSchema;
+                                            var rsToString = (Function<ResultSet, String>) rs ->
+                                                Stream.iterate(
+                                                    rs, t -> {
+                                                        try {
+                                                            return t.next();
+                                                        } catch (SQLException e) {
+                                                            throw new RuntimeException(e);
+                                                        }
+                                                    }, t -> t
+                                                ).map(r -> {
+                                                    try {
+                                                        var s = "";
+                                                        for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
+                                                            s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
+                                                        return s;
+
+                                                    } catch (SQLException e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                }).collect(Collectors.joining("\n"));
+
+                                            var realCatalog = connection.getCatalog();
+                                            var realSchema = connection.getSchema();
 
                                             // FIXME: correct resolve for PostgreSQL (search_path)
 
+                                            if (onDatabase.equals(MYSQL_DB_NAME)) {
+                                                realCatalog = "def";
+                                                realSchema = connection.getCatalog();
+                                            }
+
                                             var _ = findConstraint.apply(
                                                 defaultQuery, List.of(
-                                                    connection.getCatalog(), connection.getSchema(),
+                                                    realCatalog, realSchema,
                                                     tableName, constraintName
                                                 )
                                             );
-
-                                            realCatalog = connection.getCatalog();
-                                            realSchema = connection.getSchema();
 
                                             tree.args = com.sun.tools.javac.util.List.of(
                                                     tree.args.head
@@ -1168,7 +1237,8 @@ public class InvocationsFinder {
                                                 .append(maker.Literal(realSchema))
                                                 .appendList(tree.args.tail);
 
-                                        } else throw new RuntimeException("bad tree");
+                                        } else
+                                            throw new RuntimeException("bad tree");
                                         break;
                                     case 5:
                                         if (
@@ -1209,27 +1279,6 @@ public class InvocationsFinder {
                                             tree.args.get(4) instanceof JCTree.JCLiteral l4 &&
                                             l4.getValue() instanceof String constraintName
                                         ) {
-//                                            var rsToString = (Function<ResultSet, String>) rs ->
-//                                                Stream.iterate(
-//                                                    rs, t -> {
-//                                                        try {
-//                                                            return t.next();
-//                                                        } catch (SQLException e) {
-//                                                            throw new RuntimeException(e);
-//                                                        }
-//                                                    }, t -> t
-//                                                ).map(r -> {
-//                                                    try {
-//                                                        var s = "";
-//                                                        for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
-//                                                            s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
-//                                                        return s;
-//
-//                                                    } catch (SQLException e) {
-//                                                        throw new RuntimeException(e);
-//                                                    }
-//                                                }).collect(Collectors.joining("\n"));
-
                                             var _ = findConstraint.apply(
                                                 defaultQuery, List.of(
                                                     catalogName, schemaName, tableName, constraintName

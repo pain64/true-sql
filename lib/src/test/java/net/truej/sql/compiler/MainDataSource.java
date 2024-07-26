@@ -58,13 +58,29 @@ import java.sql.Types;
         }
 
         var pgUniqueConstraintCode = "23505";
-        if (pgUniqueConstraintCode.equals(ex.getSQLState()) &&
-            ex instanceof PSQLException pex) {
+        if (
+            pgUniqueConstraintCode.equals(ex.getSQLState()) &&
+            ex instanceof PSQLException pex
+        ) {
             return new ConstraintViolationException(
                 null,
                 pex.getServerErrorMessage().getSchema(),
                 pex.getServerErrorMessage().getTable(),
                 pex.getServerErrorMessage().getConstraint()
+            );
+        }
+
+        var mysqlConstraintCode = "23000";
+        if (mysqlConstraintCode.equals(ex.getSQLState()) &&
+            ex instanceof SQLIntegrityConstraintViolationException mySqlEx
+        ) {
+            var splitted = mySqlEx.getMessage().split("'");
+            var tableAndConstraint = splitted[splitted.length - 1].split("\\.");
+
+            return new ConstraintViolationException(
+                null, null,
+                tableAndConstraint[0],
+                tableAndConstraint[1]
             );
         }
 

@@ -39,4 +39,13 @@ public class ConstraintViolationException extends RuntimeException {
 
         throw this;
     }
+
+    @Override public String toString() {
+        return "ConstraintViolationException{" +
+               "catalogName='" + catalogName + '\'' +
+               ", schemaName='" + schemaName + '\'' +
+               ", tableName='" + tableName + '\'' +
+               ", constraintName='" + constraintName + '\'' +
+               '}';
+    }
 }

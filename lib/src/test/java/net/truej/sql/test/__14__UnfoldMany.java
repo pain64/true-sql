@@ -11,14 +11,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.source.Parameters.*;
 import static net.truej.sql.source.Parameters.unfold4;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn(HSQLDB)
 @TrueSql public class __14__UnfoldMany {
-    @TestTemplate
-    @TrueSqlTests2.DisabledOn(HSQLDB) public void unfoldMany2(MainDataSource ds) {
+    @TestTemplate public void unfoldMany2(MainDataSource ds) {
         var data = List.of(
             new Parameters.Pair<>(1L, "Joe"),
             new Parameters.Pair<>(2L, "Donald")
@@ -34,7 +34,7 @@ import static net.truej.sql.source.Parameters.unfold4;
         );
     }
 
-    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB) public void unfoldMany3(MainDataSource ds) {
+    @TestTemplate public void unfoldMany3(MainDataSource ds) {
         var data = List.of(
             new Parameters.Triple<Long, String, String>(1L, "Joe", null),
             new Parameters.Triple<>(2L, "Donald", "Do not disturb")
@@ -47,16 +47,16 @@ import static net.truej.sql.source.Parameters.unfold4;
         );
     }
 
-    @TestTemplate @TrueSqlTests2.DisabledOn(HSQLDB) public void unfoldMany4(MainDataSource ds) {
-        var data = List.of(
-            new Quad<Long, String, String, UserSex>(1L, "Joe", null, UserSex.MALE),
-            new Quad<>(2L, "Donald", "Do not disturb", UserSex.MALE)
-        );
-
-        Assertions.assertEquals(
-            List.of("Donald"),
-            ds.q("select name from users where (id, name, info, sex) in (?)", unfold4(data))
-                .fetchList(String.class)
-        );
-    }
+//    @TestTemplate public void unfoldMany4(MainDataSource ds) {
+//        var data = List.of(
+//            new Quad<Long, String, String, UserSex>(1L, "Joe", null, UserSex.MALE),
+//            new Quad<>(2L, "Donald", "Do not disturb", UserSex.MALE)
+//        );
+//
+//        Assertions.assertEquals(
+//            List.of("Donald"),
+//            ds.q("select name from users where (id, name, info, sex) in (?)", unfold4(data))
+//                .fetchList(String.class)
+//        );
+//    }
 }

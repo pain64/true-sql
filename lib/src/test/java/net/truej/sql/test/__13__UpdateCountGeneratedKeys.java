@@ -13,15 +13,19 @@ import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
+import static net.truej.sql.source.Parameters.NotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn(HSQLDB)
 @TrueSql public class __13__UpdateCountGeneratedKeys {
 
-    @TestTemplate @DisabledOn(HSQLDB)
-    public void withGeneratedKeys(MainConnection cn) {
+    @TestTemplate public void withGeneratedKeys(MainConnection cn) {
         //TODO: fetch stream with g?
-        try (var result = cn.q("insert into users values(4, 'Mike', null)")
-            .asGeneratedKeys("id").withUpdateCount.fetchStream(Long.class)) {
+        try (var result = cn.q("insert into users(name, info) values('Mike', null)")
+            .asGeneratedKeys("id").withUpdateCount.fetchStream(NotNull, Long.class)) {
+
+            assertEquals(1L, result.updateCount);
+            assertEquals(List.of(3L), result.value.toList());
 
             System.out.println(result);
         }

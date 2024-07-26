@@ -21,15 +21,14 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @Disabled
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __10__DefaultTypesHSQLDB {
     record DataTypes(
         byte byte_type, @Nullable Byte byte_null,
         OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNullable
     ) { }
 
-    // FIXME: HSQLDB ???
-    @TestTemplate @DisabledOn(POSTGRESQL) public void test(MainDataSource ds) {
+    @TestTemplate public void test(MainDataSource ds) {
         ds.q("""
                 insert into all_default_data_types values(
                     ?, ?,
@@ -51,7 +50,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
     }
 
 
-    @TestTemplate @DisabledOn(POSTGRESQL) public void test2(MainDataSource ds) throws JsonProcessingException {
+    @TestTemplate public void test2(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
             "",
             new ObjectMapper()

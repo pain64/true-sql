@@ -3,6 +3,7 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,22 +19,22 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 import static net.truej.sql.source.Parameters.inout;
 import static net.truej.sql.source.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn(POSTGRESQL)
 @TrueSql public class __17__TypeBindingsStoredProcedures {
     record DataTypes(
-        BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
-        boolean boolean_type, @Nullable Boolean boolean_type_null,
-        LocalDate date_type, @Nullable LocalDate date_type_null,
-        int integer_type, @Nullable Integer integer_type_null,
-        long long_type, @Nullable Long long_type_null,
-        String string_type, @Nullable String string_type_null,
-        short short_type, @Nullable Short short_type_null,
-        byte byte_type, @Nullable Byte byte_type_null,
-        LocalTime time_type, @Nullable LocalTime time_type_null,
-        LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
+        @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
+        @NotNull boolean boolean_type, @Nullable Boolean boolean_type_null,
+        @NotNull LocalDate date_type, @Nullable LocalDate date_type_null,
+        @NotNull int integer_type, @Nullable Integer integer_type_null,
+        @NotNull long long_type, @Nullable Long long_type_null,
+        @NotNull String string_type, @Nullable String string_type_null,
+        @NotNull short short_type, @Nullable Short short_type_null,
+        @NotNull byte byte_type, @Nullable Byte byte_type_null,
+        @NotNull LocalTime time_type, @Nullable LocalTime time_type_null,
+        @NotNull LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
     ) { }
 
-    @TestTemplate @DisabledOn(POSTGRESQL) public void test(MainDataSource ds) {
+    @TestTemplate public void test(MainDataSource ds) {
         ds.q("""
                 {call test_types_procedure(
                     ?,?,

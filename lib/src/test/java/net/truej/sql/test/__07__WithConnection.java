@@ -9,18 +9,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.source.Parameters.NotNull;
 
-@ExtendWith(TrueSqlTests2.class)
+// FIXME: migrate this test to HSQLDB
+@ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __07__WithConnection {
 
-    @TestTemplate @DisabledOn(HSQLDB) public void test(MainDataSource ds) {
+    @TestTemplate public void test(MainDataSource ds) {
         var expectedTimeZone = "America/New_York";
         Assertions.assertEquals(
-            expectedTimeZone,
-            ds.withConnection(cn -> {
+            expectedTimeZone, ds.withConnection(cn -> {
                     cn.q("set time zone 'America/New_York'").fetchNone();
 
-                    return cn.q("select current_setting('TIMEZONE')").fetchOne(String.class);
+                    return cn.q("select current_setting('TIMEZONE')")
+                        .fetchOne(NotNull, String.class);
                 }
             )
         );

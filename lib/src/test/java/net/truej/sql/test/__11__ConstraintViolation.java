@@ -11,9 +11,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TrueSqlTests2.class)
+// TODO: adapt this test for foreign keys
+@ExtendWith(TrueSqlTests2.class) @DisabledOn(MYSQL)
 @TrueSql public class __11__ConstraintViolation {
     static class Handled extends Exception { }
 

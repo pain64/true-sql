@@ -3,6 +3,7 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests2;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
@@ -17,7 +18,7 @@ import java.util.List;
     record City(Long id, String name) { }
     record CityClinics(String city, List<String> clinics) { }
 
-    record User(String name, @Nullable String info, BigDecimal amount) { }
+    record User(String name, @Nullable String info, @NotNull BigDecimal amount) { }
     record Report(String city, List<String> clinics, List<User> users) { }
     record User2(@Nullable String name, @Nullable String info, @Nullable BigDecimal amount) { }
     record Report2(String city, List<String> clinics, List<User2> users) { }
@@ -70,7 +71,8 @@ import java.util.List;
                     join users u on clu.user_id = u.id
                     join user_bills ub on ub.user_id = u.id
                     join bill b on b.id = ub.bill_id
-                group by ci.name, cl.name, u.name, u.info"""
+                group by ci.name, cl.name, u.name, u.info
+                order by city, clinic, user, info, amount"""
             ).fetchList(Report.class)
         );
 

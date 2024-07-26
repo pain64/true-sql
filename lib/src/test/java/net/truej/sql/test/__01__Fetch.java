@@ -2,12 +2,10 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.compiler.TrueSqlTests2;
 import net.truej.sql.fetch.EvenSoNullPointerException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -18,7 +16,7 @@ import static net.truej.sql.source.Parameters.NotNull;
 import static net.truej.sql.source.Parameters.Nullable;
 
 
-@org.junit.jupiter.api.extension.ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __01__Fetch {
 
     record User(Long id, String name, @Nullable String info) { }

@@ -18,7 +18,11 @@ import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-@ExtendWith(TrueSqlTests2.class)
+import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+
+@ExtendWith(TrueSqlTests2.class) @DisabledOn(MYSQL)
+// FIX test for enable on MySQL
 @TrueSql public class __05__GenerateDto {
 
     @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {

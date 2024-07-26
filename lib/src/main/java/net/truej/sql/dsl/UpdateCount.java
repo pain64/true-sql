@@ -44,11 +44,11 @@ public interface UpdateCount {
     }
 
     interface StreamG<U> {
-        default <T> UpdateResultStream<U, Stream<T>> fetchStream(Class<T> elementClass) { return raise(); }
+        default <T> UpdateResultStream<U, T> fetchStream(Class<T> elementClass) { return raise(); }
     }
 
     interface Stream_<U> extends StreamG<U> {
-        default <T> UpdateResultStream<U, Stream<@Nullable T>> fetchStream(AsNullable asNullable, Class<T> elementClass) { return raise(); }
-        default <T> UpdateResultStream<U, Stream<T>> fetchStream(AsNotNull asNotNull, Class<T> elementClass) { return raise(); }
+        default <T> UpdateResultStream<U, @Nullable T> fetchStream(AsNullable asNullable, Class<T> elementClass) { return raise(); }
+        default <T> UpdateResultStream<U, T> fetchStream(AsNotNull asNotNull, Class<T> elementClass) { return raise(); }
     }
 }
