@@ -58,7 +58,7 @@ public class TrueSqlTests2 implements
         Message[] value() default {};
     }
 
-    private static final Map<Database, DataSource> instances;
+    private static final Map<Database, TestDataSource> instances;
     static {
 
         var pgContainer = new PostgreSQLContainer<>("postgres:16.3")
@@ -127,54 +127,6 @@ public class TrueSqlTests2 implements
     }
 
     public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB, MSSQL /*, ORACLE, DB2 */}
-
-    interface DatabaseInstance {
-        DataSource getDataSource();
-    }
-
-    static void runInitScript(
-        DataSource ds, String fileName, String url, String username, String password
-    ) {
-
-        for (var cl : List.of(MainDataSource.class, MainConnection.class)) {
-            System.setProperty("truesql." + cl.getName() + ".url", url);
-            System.setProperty("truesql." + cl.getName() + ".username", username);
-            System.setProperty("truesql." + cl.getName() + ".password", password);
-        }
-
-        var rsToString = (Function<ResultSet, String>) rs ->
-            Stream.iterate(
-                rs, t -> {
-                    try {
-                        return t.next();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }, t -> t
-            ).map(r -> {
-                try {
-                    var s = "";
-                    for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
-                        s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
-                    return s;
-
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }).collect(Collectors.joining("\n"));
-
-        try (var initConn = ds.getConnection()) {
-            var sql = new String(
-                TrueSqlTests2.class.getResourceAsStream(fileName).readAllBytes()
-            );
-
-            for (var part : sql.split("---"))
-                initConn.createStatement().execute(part);
-            var xx = 1;
-        } catch (IOException | SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override public boolean supportsTestTemplate(ExtensionContext extensionContext) {
         return true;
@@ -280,12 +232,7 @@ public class TrueSqlTests2 implements
 
         return new TestTemplateInvocationContext() {
             @Override public String getDisplayName(int invocationIndex) {
-                // publish schema for the compiler
-                try (var cn = instance.getConnection()) {
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-
+                instance.publishProperties();
                 return database.name().toLowerCase();
             }
 

@@ -19,18 +19,24 @@ drop table if exists clinic_users;
 drop table if exists user_bills;
 drop table if exists all_default_data_types;
 
+drop sequence if exists users_id_seq;
+
 drop procedure if exists digit_magic;
 drop procedure if exists bill_zero;
 drop procedure if exists discount_bill;
 drop procedure if exists test_types_procedure;
 ---
 
+CREATE SEQUENCE users_id_seq
+AS bigint START WITH 1 INCREMENT BY 1;
+
 create table users (
-    id bigint not null IDENTITY(1, 1),
+    id bigint not null DEFAULT NEXT VALUE FOR users_id_seq,
     name varchar(100) not null,
     info varchar(200),
     constraint users_pk PRIMARY KEY(id)
 );
+
 ---
 create table city (
     id bigint not null PRIMARY KEY,

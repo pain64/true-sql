@@ -6,7 +6,7 @@ delete from city;
 delete from users;
 delete from all_default_data_types;
 
-DBCC CHECKIDENT ('master.dbo.users', RESEED, 0)
+alter sequence users_id_seq restart with 1;
 
 insert into users(name, info) values ('Joe', null);
 insert into users(name, info) values ('Donald', 'Do not disturb');

@@ -52,25 +52,29 @@ public record TestDataSource(
         }
     }
 
-    @Override public Connection getConnection() throws SQLException {
-
+    public void publishProperties() {
         for (var cl : List.of(MainDataSource.class, MainConnection.class)) {
             System.setProperty("truesql." + cl.getName() + ".url", jdbcUrl);
             System.setProperty("truesql." + cl.getName() + ".username", username);
             System.setProperty("truesql." + cl.getName() + ".password", password);
         }
+    }
+
+    @Override public Connection getConnection() throws SQLException {
 
         var connection =  DriverManager.getConnection(jdbcUrl, username, password);
         try {
-            connection.createStatement().execute(
-                new String(
-                    TestDataSource.class.getResourceAsStream(
-                        "/schema/" + databaseName + ".cleanup.sql"
-                    ).readAllBytes()
-                ));
+            var sql = new String(
+                TestDataSource.class.getResourceAsStream(
+                    "/schema/" + databaseName + ".cleanup.sql"
+                ).readAllBytes()
+            );
+
+            connection.createStatement().execute(sql);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         return connection;
     }
 
