@@ -35,6 +35,9 @@ dependencies {
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.4.1")
     testImplementation("org.testcontainers:mariadb:1.20.0")
 
+    testImplementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
+    testImplementation("org.testcontainers:mssqlserver:1.20.0")
+
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

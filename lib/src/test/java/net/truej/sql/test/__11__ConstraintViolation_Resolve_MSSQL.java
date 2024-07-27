@@ -10,22 +10,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// Enjoy https://bugs.mysql.com/bug.php?id=1956
-
-// FIXME: mariadb
-@ExtendWith(TrueSqlTests2.class) @EnableOn({MYSQL})
-@TrueSql public class __11__ConstraintViolation_Resolve_MYSQL_MARIADB {
+@ExtendWith(TrueSqlTests2.class) @EnableOn(MSSQL)
+@TrueSql public class __11__ConstraintViolation_Resolve_MSSQL {
     static class Handled extends Exception { }
 
     @TestTemplate public void implicit(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
-                ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+                ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "users", "primary", () -> { throw new Handled(); })
+                    new Constraint<>(ds, "clinic", "clinic_fk2", () -> { throw new Handled(); })
                 );
             }
         });
@@ -34,10 +32,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     @TestTemplate public void schema(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
-                ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+                ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "test", "users", "primary", () -> { throw new Handled(); })
+                    new Constraint<>(ds, "dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
+                );
+            }
+        });
+    }
+
+    @TestTemplate public void catalog(MainDataSource ds) {
+        assertThrows(Handled.class, () -> {
+            try {
+                ds.q("delete from city").fetchNone();
+            } catch (ConstraintViolationException ex) {
+                ex.when(
+                    new Constraint<>(ds, "master", "dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
                 );
             }
         });

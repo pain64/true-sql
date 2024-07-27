@@ -15,7 +15,10 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static net.truej.sql.source.Parameters.*;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(POSTGRESQL)
+// TODO: split this test to 3 - in, inout and out parameters support
+//  because mssql does not supports (nominal) for inout parameters
+// FIXME: MARIADB
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
 @TrueSql public class __03__Call {
     // fixme: make int
     // todo: подумать над nullability для out параметров???

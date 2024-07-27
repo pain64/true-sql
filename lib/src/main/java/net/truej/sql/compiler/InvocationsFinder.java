@@ -35,6 +35,8 @@ import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
 
 public class InvocationsFinder {
     private static final String MYSQL_DB_NAME = "MySQL";
+    private static final String MARIA_DB_NAME = "MariaDB";
+    private static final String MSSQL_DB_NAME = "Microsoft SQL Server";
 
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
@@ -421,16 +423,6 @@ public class InvocationsFinder {
                             } else return;
                         } else return;
 
-
-                        System.out.println("sourceType = " + sourceType);
-                        System.out.println("parsedConfig = " + parsedConfig);
-                        System.out.println("dto = " + dtoMode);
-                        System.out.println("hasWithUpdateCount = " + isWithUpdateCount);
-                        System.out.println("destMode = " + statementMode);
-                        System.out.println("afterPrepare = " + afterPrepare);
-                        System.out.println("statement = " + forPrepare);
-                        System.out.println("#############");
-
                         var parseExistingDto = (Function<ExistingDto, GLangParser.FieldType>) existing ->
                             parse(
                                 existing.nullMode,
@@ -544,7 +536,10 @@ public class InvocationsFinder {
                         ) -> {
 
 
-                            if (onDatabase.equals(MYSQL_DB_NAME)) {
+                            if ((
+                                onDatabase.equals(MYSQL_DB_NAME) ||
+                                onDatabase.equals(MARIA_DB_NAME)
+                            )) {
                                 if (
                                     fromColumn.sqlType() == Types.BIGINT && (
                                         toBinding.className().equals(Long.class.getName()) ||
@@ -718,14 +713,22 @@ public class InvocationsFinder {
                                         var fixedColumnLabel = (Function<String, String>) label -> {
                                             if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
                                                 return "";
+                                            if (
+                                                onDatabase.equals(MSSQL_DB_NAME) &&
+                                                label.startsWith(":tnull")
+                                            ) return ":t?" + label.substring(6);
 
                                             return label;
                                         };
 
-                                        if (onDatabase.equals(MYSQL_DB_NAME) && (
-                                            statementMode instanceof AsGeneratedKeysIndices ||
-                                            statementMode instanceof AsGeneratedKeysColumnNames
-                                        ))
+                                        if (
+                                            (
+                                                onDatabase.equals(MYSQL_DB_NAME) ||
+                                                onDatabase.equals(MARIA_DB_NAME)
+                                            ) && (
+                                                statementMode instanceof AsGeneratedKeysIndices ||
+                                                statementMode instanceof AsGeneratedKeysColumnNames
+                                            ))
                                             aMetadata = stmt.getGeneratedKeys().getMetaData();
 
                                         var rMetadata = aMetadata;
@@ -965,8 +968,9 @@ public class InvocationsFinder {
 
                                                         // vendor-specific
 
-                                                        if (onDatabase.equals(MYSQL_DB_NAME)) {
-                                                            var xxx = 1;
+                                                        if (onDatabase.equals(MSSQL_DB_NAME)) {
+                                                            if (column.javaClassName().equals("microsoft.sql.DateTimeOffset"))
+                                                                return "java.time.OffsetDateTime";
                                                         }
 
                                                         return switch (column.sqlType()) {
@@ -1146,8 +1150,8 @@ public class InvocationsFinder {
                                         var rs = stmt.executeQuery();
                                         if (!rs.next())
                                             throw new ValidationException(
-                                            "constraint not found"
-                                        );
+                                                "constraint not found"
+                                            );
 
                                         var full = new CatalogAndSchema(
                                             rs.getString(1), rs.getString(2)

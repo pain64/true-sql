@@ -12,11 +12,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
 import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import static net.truej.sql.source.Parameters.NotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(HSQLDB)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MSSQL})
 @TrueSql public class __13__UpdateCountGeneratedKeys {
 
     @TestTemplate public void withGeneratedKeys(MainConnection cn) {

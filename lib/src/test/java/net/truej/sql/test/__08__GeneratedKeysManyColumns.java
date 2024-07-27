@@ -17,7 +17,9 @@ import java.util.List;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 // FIXME: test for hsqldb without in no-checks mode
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL, MARIADB})
+// FIXME: check MariaDB insert-returning
+// FIXME: check MsSQL output
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL, MARIADB, MSSQL})
 @TrueSql public class __08__GeneratedKeysManyColumns {
 
     record Discount(Long id, @Nullable BigDecimal discount) { }

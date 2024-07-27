@@ -13,10 +13,11 @@ import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
 import static net.truej.sql.source.Parameters.*;
 import static net.truej.sql.source.Parameters.unfold4;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(HSQLDB)
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MSSQL})
 @TrueSql public class __14__UnfoldMany {
     @TestTemplate public void unfoldMany2(MainDataSource ds) {
         var data = List.of(

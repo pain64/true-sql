@@ -457,11 +457,11 @@ public class TrueSqlPlugin implements Plugin {
     @Override public void init(JavacTask task, String... args) {
 
         task.addTaskListener(new TaskListener() {
-            @Override public void started(TaskEvent e) {
-                if (e.getKind() == TaskEvent.Kind.ANNOTATION_PROCESSING_ROUND) {
-                    System.out.println("Annotation processor round");
-                }
-            }
+//            @Override public void started(TaskEvent e) {
+//                if (e.getKind() == TaskEvent.Kind.ANNOTATION_PROCESSING_ROUND) {
+//                    System.out.println("Annotation processor round");
+//                }
+//            }
 
             @Override public void finished(TaskEvent e) {
                 if (e.getKind() == TaskEvent.Kind.ANALYZE) {

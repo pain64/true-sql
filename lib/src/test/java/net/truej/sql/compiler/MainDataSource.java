@@ -1,5 +1,6 @@
 package net.truej.sql.compiler;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import net.truej.sql.ConstraintViolationException;
 import net.truej.sql.bindings.AsObjectReadWrite;
 import net.truej.sql.config.CompileTimeChecks;
@@ -57,16 +58,30 @@ import java.sql.Types;
             );
         }
 
-        var pgUniqueConstraintCode = "23505";
         if (
-            pgUniqueConstraintCode.equals(ex.getSQLState()) &&
-            ex instanceof PSQLException pex
+            ex instanceof PSQLException pex &&
+            ex.getSQLState().startsWith("23")
         ) {
             return new ConstraintViolationException(
                 null,
                 pex.getServerErrorMessage().getSchema(),
                 pex.getServerErrorMessage().getTable(),
                 pex.getServerErrorMessage().getConstraint()
+            );
+        }
+
+        var mssqlUniqueConstraintCode = "23000";
+        if (
+            ex instanceof SQLServerException sex &&
+            sex.getSQLState().equals(mssqlUniqueConstraintCode)
+        ) {
+            var message = sex.getMessage();
+            var databaseName = message.replaceAll(".*database \"(\\S+)\".*", "$1");
+            var tableAndSchema = message.replaceAll(".*table \"(\\S+)\".*", "$1").split("\\.");
+            var constraintName = message.replaceAll(".*constraint \"(\\S+)\".*", "$1");
+
+            return new ConstraintViolationException(
+                databaseName, tableAndSchema[0], tableAndSchema[1], constraintName
             );
         }
 

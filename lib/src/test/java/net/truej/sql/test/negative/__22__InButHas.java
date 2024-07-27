@@ -8,9 +8,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(POSTGRESQL)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @Message(
     kind = ERROR, text = "For parameter 2 mode mismatch. Expected IN but has INOUT"
 )

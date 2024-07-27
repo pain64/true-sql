@@ -13,7 +13,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB, MSSQL})
 @TrueSql public class __11__ConstraintViolation_Resolve {
     static class Handled extends Exception { }
 

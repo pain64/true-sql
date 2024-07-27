@@ -100,13 +100,13 @@ import static net.truej.sql.source.Parameters.Nullable;
 
         Assertions.assertNull(
             cn.q(
-                "insert into users values(?, ?, ?)",
-                3L, "Mike", "Strong left hook"
+                "insert into users(name, info) values(?, ?)",
+                "Mike", "Strong left hook"
             ).fetchNone()
         );
 
         Assertions.assertNull(
-            cn.q("insert into users values(?, ?, ?)", 4L, "Ali", null).fetchNone()
+            cn.q("insert into users(name, info) values(?, ?)", "Ali", null).fetchNone()
         );
 
         Assertions.assertEquals(

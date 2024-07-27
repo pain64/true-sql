@@ -62,7 +62,7 @@ import java.util.List;
                 select
                     ci.name as city,
                     cl.name as clinic,
-                    u.name as user,
+                    u.name as "user",
                     u.info as info,
                     sum(b.amount) as amount
                 from city ci
@@ -91,7 +91,7 @@ import java.util.List;
                 select
                     ci.name as city,
                     cl.name as clinic,
-                    u.name as user,
+                    u.name as "user",
                     u.info as info,
                     sum(b.amount) as amount
                 from city ci

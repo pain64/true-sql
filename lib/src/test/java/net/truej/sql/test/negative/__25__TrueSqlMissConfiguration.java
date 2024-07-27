@@ -8,10 +8,7 @@ import java.util.List;
 
 import static net.truej.sql.source.Parameters.*;
 
-//@TrueSqlTests2.Message(
-//    kind = ERROR, text = "TrueSql compiler plugin not enabled. Check out your build tool configuration (Gradle, Maven, ...)"
-//)
-public class __25__DSLExceptions {
+public class __25__TrueSqlMissConfiguration {
     class A implements As {}
     class B implements NoUpdateCount, NoUpdateCount.None, NoUpdateCount.OneG,
         NoUpdateCount.One, NoUpdateCount.OneOrZero, NoUpdateCount.OneOrZeroG, NoUpdateCount.ListG,

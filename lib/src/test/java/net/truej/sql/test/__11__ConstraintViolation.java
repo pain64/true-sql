@@ -15,24 +15,24 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// TODO: adapt this test for foreign keys. Remove @DisabledOn after
+// TODO: report bug to mysql and mariadb drivers. table name, schema name not avail in exception
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
 @TrueSql public class __11__ConstraintViolation {
     static class Handled extends Exception { }
 
     @TestTemplate  public void unhandled(MainDataSource ds) {
         assertThrows(ConstraintViolationException.class, () ->
-            ds.q("insert into users values(1, 'Joe', null)").fetchNone()
+            ds.q("delete from city").fetchNone()
         );
     }
 
     @TestTemplate public void rethrow(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {
-                ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+                ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "users", "users_pk", () -> {
+                    new Constraint<>(ds, "clinic", "clinic_fk2", () -> {
                         throw new Handled();
                     })
                 );
@@ -44,11 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         Assertions.assertEquals(
             ((Supplier<Boolean>) () -> {
                 try {
-                    ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+                    ds.q("delete from city").fetchNone();
                     return true;
                 } catch (ConstraintViolationException ex) {
                     return ex.when(
-                        new Constraint<>(ds, "users", "users_pk", () -> false)
+                        new Constraint<>(ds, "clinic", "clinic_fk2", () -> false)
                     );
                 }
             }).get(), false
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     @TestTemplate public void notCatch(MainDataSource ds) {
         assertThrows(ConstraintViolationException.class, () -> {
             try {
-                ds.q("insert into users values(1, 'Joe', null)").fetchNone();
+                ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
 

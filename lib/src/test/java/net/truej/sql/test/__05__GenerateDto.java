@@ -22,7 +22,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
-// FIX test for enable on MySQL
+// FIX test for enable on MySQL: mysql has no OffsetDateTime
 @TrueSql public class __05__GenerateDto {
 
     @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {
@@ -155,6 +155,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 )
         );
     }
+
     @TestTemplate public void test4(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
             """

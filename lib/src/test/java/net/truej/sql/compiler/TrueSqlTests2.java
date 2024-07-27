@@ -1,11 +1,14 @@
 package net.truej.sql.compiler;
 
+import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import net.truej.sql.Bench;
 import net.truej.sql.util.TestCompiler2;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
+import org.mariadb.jdbc.MariaDbDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -22,10 +25,12 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,10 +67,14 @@ public class TrueSqlTests2 implements
             .withReuse(true);
         var mariaDbContainer = new MariaDBContainer<>("mariadb:11.4.2-ubi9")
             .withReuse(true);
+        var mssqlContainer = new MSSQLServerContainer<>("mcr.microsoft.com/mssql/server:2022-latest")
+            .acceptLicense()
+            .withReuse(true);
 
         pgContainer.start();
         mysqlContainer.start();
         mariaDbContainer.start();
+        mssqlContainer.start();
 
         instances = Map.of(
             Database.HSQLDB, new DatabaseInstance() {
@@ -106,13 +115,30 @@ public class TrueSqlTests2 implements
             },
             Database.MARIADB, new DatabaseInstance() {
                 @Override public DataSource getDataSource() {
-                    return new MysqlDataSource() {{
-                        setURL(mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true");
-                        setUser(mysqlContainer.getUsername());
-                        setPassword(mysqlContainer.getPassword());
+                    return new MariaDbDataSource() {{
+                        try {
+                            setUrl(mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true");
+                            setUser(mariaDbContainer.getUsername());
+                            setPassword(mariaDbContainer.getPassword());
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
                         runInitScript(
-                            this, "/schema/mysql.sql", mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
-                            mysqlContainer.getUsername(), mysqlContainer.getPassword()
+                            this, "/schema/mysql.sql", mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
+                            mariaDbContainer.getUsername(), mariaDbContainer.getPassword()
+                        );
+                    }};
+                }
+            },
+            Database.MSSQL, new DatabaseInstance() {
+                @Override public DataSource getDataSource() {
+                    return new SQLServerDataSource() {{
+                        setURL(mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE");
+                        setUser(mssqlContainer.getUsername());
+                        setPassword(mssqlContainer.getPassword());
+                        runInitScript(
+                            this, "/schema/mssql.sql", mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
+                            mssqlContainer.getUsername(), mssqlContainer.getPassword()
                         );
                     }};
                 }
@@ -141,7 +167,7 @@ public class TrueSqlTests2 implements
             : ConditionEvaluationResult.disabled("has no db to run");
     }
 
-    public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB /*, MSSQL, ORACLE, DB2 */}
+    public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB, MSSQL /*, ORACLE, DB2 */}
 
     interface DatabaseInstance {
         DataSource getDataSource();
@@ -157,6 +183,27 @@ public class TrueSqlTests2 implements
             System.setProperty("truesql." + cl.getName() + ".password", password);
         }
 
+        var rsToString = (Function<ResultSet, String>) rs ->
+            Stream.iterate(
+                rs, t -> {
+                    try {
+                        return t.next();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, t -> t
+            ).map(r -> {
+                try {
+                    var s = "";
+                    for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
+                        s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
+                    return s;
+
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }).collect(Collectors.joining("\n"));
+
         try (var initConn = ds.getConnection()) {
             var sql = new String(
                 TrueSqlTests2.class.getResourceAsStream(fileName).readAllBytes()
@@ -164,6 +211,7 @@ public class TrueSqlTests2 implements
 
             for (var part : sql.split("---"))
                 initConn.createStatement().execute(part);
+            var xx = 1;
         } catch (IOException | SQLException e) {
             throw new RuntimeException(e);
         }

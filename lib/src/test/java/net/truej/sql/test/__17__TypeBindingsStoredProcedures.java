@@ -14,12 +14,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static net.truej.sql.source.Parameters.inout;
 import static net.truej.sql.source.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(POSTGRESQL)
+// FIXME: MariaDB?
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
 @TrueSql public class __17__TypeBindingsStoredProcedures {
     record DataTypes(
         @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,

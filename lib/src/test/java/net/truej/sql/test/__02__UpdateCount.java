@@ -21,9 +21,9 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         Assertions.assertEquals(
             1L,
             cn.q("""
-                update bill b
+                update bill
                 set discount = amount * ?
-                where cast(b.date as date) = '2024-09-01'
+                where cast(bill.date as date) = '2024-09-01'
                 """, new BigDecimal("0.1")
             ).withUpdateCount.fetchNone()
         );
@@ -40,9 +40,9 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
             cn.q(
                 discounts,
                 """
-                    update bill b
+                    update bill
                     set discount = ?
-                    where cast(b.date as date) = ?""",
+                    where cast(bill.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             ).withUpdateCount.fetchNone()
         );
