@@ -1,8 +1,9 @@
-drop schema if exists public cascade;
-create SCHEMA PUBLIC;
----
+drop schema public cascade;
+create schema public;
+
 create type enum_user_sex as enum('MALE', 'FEMALE');
 create type point_nullable as (a int, b int);
+
 create table users (
     id bigserial not null,
     name varchar(100) not null,
@@ -10,14 +11,11 @@ create table users (
     sex enum_user_sex,
     constraint users_pk primary key (id)
 );
---alter table users
---add constraint users_pk primary key (id);
 create table clinic (
     id bigint primary key,
     name varchar(100) not null,
     city_id bigint not null
 );
-
 create table city (
     id bigint primary key,
     name varchar(50) not null
@@ -55,57 +53,25 @@ create table all_default_data_types(
     time_type_null time,
     timestamp_type timestamp not null,
     timestamp_type_null timestamp
-)
----
+);
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);
 alter table clinic_users add constraint clinic_users_fk0 foreign key (clinic_id) references clinic(id);
 alter table clinic_users add constraint clinic_users_fk1 foreign key (user_id)   references users(id);
 alter table user_bills   add constraint user_bills_fk0   foreign key (user_id)   references users(id);
 alter table user_bills   add constraint user_bills_fk1   foreign key (bill_id)   references bill(id);
----
-
-insert into users(name, info, sex) values('Joe', null, 'MALE');
-insert into users(name, info, sex) values('Donald', 'Do not disturb', 'MALE');
-
-insert into city(id, name) values(1, 'London');
-insert into city(id, name) values(2, 'Paris');
-
-insert into clinic(id, name, city_id) values(1, 'Paris Neurology Hospital', 2);
-insert into clinic(id, name, city_id) values(2, 'London Heart Hospital', 1);
-insert into clinic(id, name, city_id) values(3, 'Diagnostic center', 1);
-
---insert into bill(id, amount, discount, date) values(1, 2000.55, null, to_timestamp('2024-07-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS'));
---insert into bill(id, amount, discount, date) values(2, 1000.20, null, to_timestamp('2024-07-01 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
---insert into bill(id, amount, discount, date) values(3, 5000, null,    to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
---insert into bill(id, amount, discount, date) values(4, 7000.77, null, to_timestamp('2024-08-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
---insert into bill(id, amount, discount, date) values(5, 500.10, null,  to_timestamp('2024-09-01 15:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-
-insert into bill(id, amount, discount, date) values(1, 2000.55, null, '2024-07-01T12:00:00Z'::timestamptz);
-insert into bill(id, amount, discount, date) values(2, 1000.20, null, '2024-07-01T16:00:00Z'::timestamptz);
-insert into bill(id, amount, discount, date) values(3, 5000, null,    '2024-08-01T15:00:00Z'::timestamptz);
-insert into bill(id, amount, discount, date) values(4, 7000.77, null, '2024-08-01T15:00:00Z'::timestamptz);
-insert into bill(id, amount, discount, date) values(5, 500.10, null,  '2024-09-01T15:00:00Z'::timestamptz);
-
-insert into clinic_users values(1, 2);
-insert into clinic_users values(2, 1);
-
-insert into user_bills values(1, 1);
-insert into user_bills values(1, 2);
-insert into user_bills values(2, 3);
-insert into user_bills values(2, 4);
-insert into user_bills values(2, 5);
----
 
 create procedure digit_magic(in x int, inout y int, out z int)
 language plpgsql AS $$ begin
     y = y + x;
     z = y + x;
 end; $$;
+
 create procedure bill_zero()
 language plpgsql AS $$ begin
     update bill set amount = 0;
 end; $$;
+
 create procedure discount_bill(in datedisc timestamp)
 language plpgsql AS $$ begin
     update bill set discount = amount * 0.1 where date = datedisc;

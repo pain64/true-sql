@@ -33,7 +33,7 @@ public class TrueSqlTests implements TestInstanceFactory, ParameterResolver {
 
                 try (var initConn = this.getConnection()) {
                     var sql = new String(
-                        this.getClass().getResourceAsStream("/schema/hsqldb.sql").readAllBytes()
+                        this.getClass().getResourceAsStream("/schema/hsqldb.cleanup.sql").readAllBytes()
                     );
 
                     for (var part : sql.split("---"))

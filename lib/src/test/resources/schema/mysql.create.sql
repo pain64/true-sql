@@ -1,3 +1,7 @@
+drop database test;
+create database test;
+use test;
+
 create table if not exists users (
     id bigint not null AUTO_INCREMENT,
     name varchar(100) not null,
@@ -5,17 +9,17 @@ create table if not exists users (
     constraint users_pk PRIMARY KEY(id)
 );
 create table if not exists city (
-    id bigint not null AUTO_INCREMENT PRIMARY KEY,
+    id bigint not null PRIMARY KEY,
     name varchar(50) not null
 );
 create table if not exists clinic (
-    id bigint not null AUTO_INCREMENT PRIMARY KEY,
+    id bigint not null PRIMARY KEY,
     name varchar(100) not null,
     city_id bigint not null,
     constraint clinic_fk2       foreign key (city_id)   references city(id)
 );
 create table if not exists bill (
-    id bigint not null AUTO_INCREMENT PRIMARY KEY,
+    id bigint not null PRIMARY KEY,
     amount decimal(15,2) not null,
     discount decimal(15,2),
     date datetime not null
@@ -37,46 +41,6 @@ create table if not exists all_default_data_types(
     byte_type tinyint not null,
     byte_type_null tinyint
 );
-
-delete from user_bills;
-delete from clinic_users;
-delete from bill;
-delete from clinic;
-delete from city;
-delete from users;
-delete from all_default_data_types;
-
-alter table user_bills AUTO_INCREMENT = 1;
-alter table clinic_users AUTO_INCREMENT = 1;
-alter table bill AUTO_INCREMENT = 1;
-alter table clinic AUTO_INCREMENT = 1;
-alter table city AUTO_INCREMENT = 1;
-alter table users AUTO_INCREMENT = 1;
-
-insert into users(id, name, info) values (1, 'Joe', null);
-insert into users(id, name, info) values (2, 'Donald', 'Do not disturb');
-
-insert into city(id, name) values (1, 'London');
-insert into city(id, name) values (2, 'Paris');
-
-insert into clinic(id, name, city_id) values (1, 'Paris Neurology Hospital', 2);
-insert into clinic(id, name, city_id) values (2, 'London Heart Hospital', 1);
-insert into clinic(id, name, city_id) values (3, 'Diagnostic center', 1);
-
-insert into bill(id, amount, discount, date) values(1, 2000.55, null, timestamp '2024-07-01 12:00:00');
-insert into bill(id, amount, discount, date) values(2, 1000.20, null, timestamp '2024-07-01 16:00:00');
-insert into bill(id, amount, discount, date) values(3, 5000, null,    timestamp '2024-08-01 15:00:00');
-insert into bill(id, amount, discount, date) values(4, 7000.77, null, timestamp '2024-08-01 15:00:00');
-insert into bill(id, amount, discount, date) values(5, 500.10, null,  timestamp '2024-09-01 15:00:00');
-
-insert into clinic_users values(1, 2);
-insert into clinic_users values(2, 1);
-
-insert into user_bills values(1, 1);
-insert into user_bills values(1, 2);
-insert into user_bills values(2, 3);
-insert into user_bills values(2, 4);
-insert into user_bills values(2, 5);
 
 create procedure if not exists digit_magic(in x int, inout y int, out z int)
     begin

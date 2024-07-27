@@ -58,7 +58,7 @@ public class TrueSqlTests2 implements
         Message[] value() default {};
     }
 
-    private static final Map<Database, DatabaseInstance> instances;
+    private static final Map<Database, DataSource> instances;
     static {
 
         var pgContainer = new PostgreSQLContainer<>("postgres:16.3")
@@ -77,72 +77,31 @@ public class TrueSqlTests2 implements
         mssqlContainer.start();
 
         instances = Map.of(
-            Database.HSQLDB, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new JDBCDataSource() {{
-                        setURL("jdbc:hsqldb:mem:test");
-                        setUser("SA");
-                        setPassword("");
-                        runInitScript(this, "/schema/hsqldb.sql", url, user, password);
-                    }};
-                }
-            },
-            Database.POSTGRESQL, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new PGSimpleDataSource() {{
-                        setURL(pgContainer.getJdbcUrl());
-                        setUser(pgContainer.getUsername());
-                        setPassword(pgContainer.getPassword());
-                        runInitScript(
-                            this, "/schema/postgresql.sql", pgContainer.getJdbcUrl(),
-                            pgContainer.getUsername(), pgContainer.getPassword()
-                        );
-                    }};
-                }
-            },
-            Database.MYSQL, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new MysqlDataSource() {{
-                        setURL(mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true");
-                        setUser(mysqlContainer.getUsername());
-                        setPassword(mysqlContainer.getPassword());
-                        runInitScript(
-                            this, "/schema/mysql.sql", mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
-                            mysqlContainer.getUsername(), mysqlContainer.getPassword()
-                        );
-                    }};
-                }
-            },
-            Database.MARIADB, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new MariaDbDataSource() {{
-                        try {
-                            setUrl(mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true");
-                            setUser(mariaDbContainer.getUsername());
-                            setPassword(mariaDbContainer.getPassword());
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                        runInitScript(
-                            this, "/schema/mysql.sql", mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
-                            mariaDbContainer.getUsername(), mariaDbContainer.getPassword()
-                        );
-                    }};
-                }
-            },
-            Database.MSSQL, new DatabaseInstance() {
-                @Override public DataSource getDataSource() {
-                    return new SQLServerDataSource() {{
-                        setURL(mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE");
-                        setUser(mssqlContainer.getUsername());
-                        setPassword(mssqlContainer.getPassword());
-                        runInitScript(
-                            this, "/schema/mssql.sql", mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
-                            mssqlContainer.getUsername(), mssqlContainer.getPassword()
-                        );
-                    }};
-                }
-            }
+            Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb"),
+            Database.POSTGRESQL, new TestDataSource(
+                pgContainer.getJdbcUrl(),
+                pgContainer.getUsername(),
+                pgContainer.getPassword(),
+                "postgresql"
+            ),
+            Database.MYSQL, new TestDataSource(
+                mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
+                mysqlContainer.getUsername(),
+                mysqlContainer.getPassword(),
+                "mysql"
+            ),
+            Database.MARIADB, new TestDataSource(
+                mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
+                mariaDbContainer.getUsername(),
+                mariaDbContainer.getPassword(),
+                "mysql"
+            ),
+            Database.MSSQL, new TestDataSource(
+                mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
+                mssqlContainer.getUsername(),
+                mssqlContainer.getPassword(),
+                "mssql"
+            )
         );
     }
 
@@ -321,7 +280,12 @@ public class TrueSqlTests2 implements
 
         return new TestTemplateInvocationContext() {
             @Override public String getDisplayName(int invocationIndex) {
-                instance.getDataSource(); // publish schema for the Compiler
+                // publish schema for the compiler
+                try (var cn = instance.getConnection()) {
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
                 return database.name().toLowerCase();
             }
 
@@ -344,15 +308,15 @@ public class TrueSqlTests2 implements
                         if (pType == MainConnection.class) {
                             try {
                                 return new MainConnection(
-                                    instance.getDataSource().getConnection()
+                                    instance.getConnection()
                                 );
                             } catch (SQLException e) {
                                 throw new RuntimeException(e);
                             }
                         } else if (pType == MainDataSource.class)
-                            return new MainDataSource(instance.getDataSource());
+                            return new MainDataSource(instance);
                         else if (pType == MainDataSourceUnchecked.class)
-                            return new MainDataSourceUnchecked(instance.getDataSource());
+                            return new MainDataSourceUnchecked(instance);
 
                         throw new IllegalStateException("unreachable");
                     }
