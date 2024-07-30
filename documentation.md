@@ -26,9 +26,8 @@ email: [truesqlbest@email.com]()
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
 - [Exceptional perfomance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
 
-#### More information about TrueSql
-[A review article about ORM issues.]()<br>
-[Article about TrueSql.]()<br>
+#### More information about TrueSql and community
+IN PROGRESS [Article about TrueSql.]() <br>
 [Our youtube channel about TrueSql.]()<br>
 [In this telegram channel we answer questions about TrueSql.]()
 
@@ -49,10 +48,10 @@ email: [truesqlbest@email.com]()
         <td>latest</td>
         <td>latest</td>
         <td>latest</td>
-        <td>12c</td>
+        <td>12c+</td>
         <td>latest</td>
         <td>latest</td>
-        <td>latest</td>
+        <td>in progress</td>
     </tr>
 </table>
 
@@ -69,16 +68,22 @@ email: [truesqlbest@email.com]()
 // declare DataSourceW or ConnectionW as connection configuration
 @Configuration(
     checks = @CompileTimeChecks(
-                url = "jdbc:hsqldb:file:db1",
+                url = "jdbc:postgresql://localhost:5432/test_db",
                 username = "user",
                 password = "userpassword"
     )
-) record PgDb(DataSource w) implements DataSourceW { }
+) public class PgDs extends DataSourceW {
+    public PgDs(DataSource w) { super(w); }
+}
 // ! ANNOTATE YOUR CLASS WITH @TrueSQL !
 @TrueSQL class Main {
     void main() {
         // create db instance
-        var ds = new PgDb(new JdbcDataSource("localhost:5432"));
+        var ds = new PgDs(new HikariDataSource() {{
+            setJdbcUrl(url);
+            setUsername(username);
+            setPassword(password);
+        }});
         // chill
         var name = ds.q("select name from users where id = ?", 42)
             .fetchOne(String.class);
@@ -99,11 +104,13 @@ import net.truej.sql.config.CompileTimeChecks;
 
 @Configuration(
     checks = @CompileTimeChecks(
-        url = "jdbc:hsqldb:file:db1",
+        url = "jdbc:postgresql://localhost:5432/test_db",
         username = "user",
         password = "userpassword"
     )
-) record PgDb(DataSource w) implements DataSourceW { }
+) public class PgDs extends DataSourceW {
+    public PgDs(DataSource w) { super(w); }
+}
 ```
 
 You can configure db connection with next ENV variables
@@ -116,10 +123,10 @@ To check configuration when build use flag
 
     ./gradlew build -Dtruesql.printConfig=true
 
-###### NB: DTO generating doesn't work without compile-time check configuration.
+###### NB: Without compile-time validation generate DTO and compile-time query validation don't work. asCall() and constraint violations checks don't works, but without compile-time verification.
 
 ## ResultSet to DTO mapping. Grouped object-tree fetching.
-TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (jdbc representation of query result) to DTO. TrueSql map fields according to the declare order:
+TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (jdbc representation of query result) to DTO. TrueSql map fields into record according to the declare order:
 
 ```java
 // declared outside of current method
@@ -150,13 +157,13 @@ All possibilities of grouped object-tree demonstrated below.
 During compilation, we send queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
 ```java
 ds.q("select * frm users").fetchNone();
-//raise compiletime error... syntax error
+// raise compiletime error... syntax error
 
 ds.q("select * from ysers").fetchNone();
-//raise compiletime error... table doesnt exist
+// raise compiletime error... table doesnt exist
 
 ds.q("select name, id from user where id = ?", 123).fetchOne(String.class);
-//raise compiletime error... wrong DTO
+// raise compiletime error... wrong DTO
 ```
 
 Moreover, by communicating directly with the database, we can generate DTO in compile-time. <br>
@@ -179,7 +186,7 @@ record User(long id, String name) { }
 ```java
 var clinicAddresses = ds.q("""
     select distinct
-        ci.name as "city      ", 
+        ci.name as "city    ", 
         cl.name as "clinics."
     from city ci
         left join clinic cl on ci.id = cl.city_id
@@ -258,7 +265,227 @@ record Clinic(long id, String name, List<String> addresses, List<User> users) {
     <summary>The code we generated for you!</summary>
 
 ```java
-//
+
+public static class Bill {
+    @Nullable public final java.time.OffsetDateTime date;
+    @Nullable public final java.math.BigDecimal amount;
+
+    public Bill(
+        java.time.OffsetDateTime date,
+        java.math.BigDecimal amount
+    ) {
+        this.date = date;
+        this.amount = amount;
+    }
+
+    @Override public boolean equals(Object other) {
+        return this == other || (
+            other instanceof Bill o &&
+            java.util.Objects.equals(this.date, o.date) &&
+            java.util.Objects.equals(this.amount, o.amount)
+        );
+    }
+
+    @Override public int hashCode() {
+        int h = 1;
+        h = h * 59 + java.util.Objects.hashCode(this.date);
+        h = h * 59 + java.util.Objects.hashCode(this.amount);
+        return h;
+    }
+}
+public static class User {
+    @Nullable public final java.lang.String name;
+    @Nullable public final java.lang.String info;
+    public final List<Bill> bills;
+
+    public User(
+        java.lang.String name,
+        java.lang.String info,
+        List<Bill> bills
+    ) {
+        this.name = name;
+        this.info = info;
+        this.bills = bills;
+    }
+
+    @Override public boolean equals(Object other) {
+        return this == other || (
+            other instanceof User o &&
+            java.util.Objects.equals(this.name, o.name) &&
+            java.util.Objects.equals(this.info, o.info) &&
+            java.util.Objects.equals(this.bills, o.bills)
+        );
+    }
+
+    @Override public int hashCode() {
+        int h = 1;
+        h = h * 59 + java.util.Objects.hashCode(this.name);
+        h = h * 59 + java.util.Objects.hashCode(this.info);
+        h = h * 59 + java.util.Objects.hashCode(this.bills);
+        return h;
+    }
+}
+public static class Clinic {
+    @NotNull public final java.lang.String city;
+    public final List<java.lang.String> clinic;
+    public final List<User> users;
+
+    public Clinic(
+        java.lang.String city,
+        List<java.lang.String> clinic,
+        List<User> users
+    ) {
+        this.city = city;
+        this.clinic = clinic;
+        this.users = users;
+    }
+
+    @Override public boolean equals(Object other) {
+        return this == other || (
+            other instanceof Clinic o &&
+            java.util.Objects.equals(this.city, o.city) &&
+            java.util.Objects.equals(this.clinic, o.clinic) &&
+            java.util.Objects.equals(this.users, o.users)
+        );
+    }
+
+    @Override public int hashCode() {
+        int h = 1;
+        h = h * 59 + java.util.Objects.hashCode(this.city);
+        h = h * 59 + java.util.Objects.hashCode(this.clinic);
+        h = h * 59 + java.util.Objects.hashCode(this.users);
+        return h;
+    }
+}
+public static 
+List<Clinic> fetchList__line139__(
+    
+    ConnectionW source
+)  {
+    var buffer = new StringBuilder();
+    
+    buffer.append("""
+        select
+        ci.name  as "      city                   ",
+        cl.name  as "      clinic.                ",
+        u.name   as "User users .name            ",
+        u.info   as "      users .info            ",
+        b.date   as "      users .Bill bills.date ",
+        b.amount as "      users .     bills.amount"
+    from city ci
+        join clinic       cl  on ci.id         = cl.city_id
+        left join clinic_users clu on clu.clinic_id = cl.id
+        left join users        u   on clu.user_id   = u.id
+        left join user_bills   ub  on ub.user_id    = u.id
+        left join bill         b   on b.id          = ub.bill_id
+     """);
+    
+    var query = buffer.toString();
+    
+    try {
+        var connection = source.w();
+        try (var stmt = connection.prepareStatement(query)) {
+        
+            var n = 0;
+            
+            
+            stmt.execute();
+            
+            var rs = stmt.getResultSet();
+            
+            record Row(
+                java.lang.String c1,
+                java.lang.String c2,
+                java.lang.String c3,
+                java.lang.String c4,
+                java.time.OffsetDateTime c5,
+                java.math.BigDecimal c6
+            ) {}
+            record G1(
+                java.lang.String c1
+            ) {}
+            record G2(
+                java.lang.String c3,
+                java.lang.String c4
+            ) {}
+            
+            
+            var mapped = Stream.iterate(
+                rs, t -> {
+                    try {
+                        return t.next();
+                    } catch (SQLException e) {
+                        throw source.mapException(e);
+                    }
+                }, t -> t
+            ).map(t -> {
+                try {
+                    return
+                        new Row (
+                            new net.truej.sql.bindings.StringReadWrite().get(rs, 1),
+                            new net.truej.sql.bindings.StringReadWrite().get(rs, 2),
+                            new net.truej.sql.bindings.StringReadWrite().get(rs, 3),
+                            new net.truej.sql.bindings.StringReadWrite().get(rs, 4),
+                            new net.truej.sql.bindings.OffsetDateTimeReadWrite().get(rs, 5),
+                            new net.truej.sql.bindings.BigDecimalReadWrite().get(rs, 6)
+                        );
+                } catch (SQLException e) {
+                    throw source.mapException(e);
+                }
+            })
+            .collect(
+                java.util.stream.Collectors.groupingBy(
+                    r -> new G1(
+                        r.c1
+                    ), java.util.LinkedHashMap::new, Collectors.toList()
+                )
+            ).entrySet().stream()
+            .filter(g1 ->
+                java.util.Objects.nonNull(g1.getKey().c1)
+            ).map(g1 ->
+                new Clinic(
+                    EvenSoNullPointerException.check(g1.getKey().c1),
+                    g1.getValue().stream().filter(r ->
+                        java.util.Objects.nonNull(r.c2)
+                    ).map(r ->
+                        EvenSoNullPointerException.check(r.c2)
+                    ).distinct().toList(),
+                    g1.getValue().stream().collect(
+                        java.util.stream.Collectors.groupingBy(
+                            r -> new G2(
+                                r.c3,
+                                r.c4
+                            ), java.util.LinkedHashMap::new, Collectors.toList()
+                        )
+                    ).entrySet().stream()
+                    .filter(g2 ->
+                        java.util.Objects.nonNull(g2.getKey().c3) ||
+                        java.util.Objects.nonNull(g2.getKey().c4)
+                    ).map(g2 ->
+                        new User(
+                            g2.getKey().c3,
+                            g2.getKey().c4,
+                            g2.getValue().stream().filter(r ->
+                                java.util.Objects.nonNull(r.c5) ||
+                                java.util.Objects.nonNull(r.c6)
+                            ).map(r ->
+                                new Bill(
+                                    r.c5,
+                                    r.c6
+                                )
+                            ).toList()
+                        )
+                    ).toList()
+                )
+            );
+            return mapped.toList();
+        
+        }
+    } catch (SQLException e) {
+        throw source.mapException(e);
+    }
+}
+
 ```
 </details>
 
@@ -295,21 +522,21 @@ Use fetch method overload to tell TrueSql interpret column as Nullable or NotNul
 ```java
 import static com.truej.sql.v3.source.Parameters.Nullable;
 import static com.truej.sql.v3.source.Parameters.NotNull;
-//...
+// ...
 var infos = ds.q("select info from users where id = ?", 42)
     .fetchOne(Nullable, String.class);
 
 var names = ds.q("select info from users where info is not null")
     .fetchOneOrZero(NotNull, String.class);
 ```
-###### NB?
+
 ### Fetch with your own DTO
 Use org.jetrbrains.annotations in DTO.
 
 ```java
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-//consider name Nullablle/NotNull
+// consider name Nullablle/NotNull
 record User(long id, @Nullable String info) { }
 record Clinic(long id, @NotNull String info) { }
 ```
@@ -318,29 +545,39 @@ record Clinic(long id, @NotNull String info) { }
 By default TrueSql annotate fields in line with db driver. You can change it with next syntax:
 
 ```java
-var user = ds.q("select id, info as ":t? info" from users")
-    .g.fetchList(UserG.class);
+var user = ds.q("""
+    select 
+        id, 
+        info as ":t? info" 
+    from users
+    """)
+    .g.fetchList(User.class);
 ```
 
 <details>
-    <summary>generated UserG</summary>
+    <summary>generated User</summary>
 
 ```java
-record UserG(Long id, @Nullable String name) { }
+record User(Long id, @Nullable String name) { }
 ```
 </details>
 
 
 ```java
-var user = ds.q("select id, name as ":t! name" from users")
-    .g.fetchList(UserG.class);
+var user = ds.q("""
+    select 
+        id, 
+        name as ":t! name" 
+    from users
+    """)
+    .g.fetchList(User.class);
 ```
 
 <details>
-    <summary>generated UserG</summary>
+    <summary>generated User</summary>
 
 ```java
-record UserG(Long id, String name) { }
+record User(Long id, String name) { }
 ```
 </details>
 
@@ -353,7 +590,7 @@ We save and ***improve*** all necessary JDBC possibilities.<br>
 ### GeneratedKeys
 
 ```java
-var user = ds.q("insert into users(id, name) values (?, ?)", 10L, "Pavel")
+var user = ds.q("insert into users(name) values (?)", "Pavel")
             .asGeneratedKeys("id").fetchOne(Long.class);
 ```
 
@@ -363,7 +600,6 @@ var user = ds.q("insert into users(id, name) values (?, ?)", 10L, "Pavel")
 var updateCount = ds.q("update users set name = ? where id % 2 == 0", "Paul")
     .withUpdateCount.fetchNone();
 ```
-###### NB: update count will always be long.
 
 ### Batching
 
@@ -401,11 +637,21 @@ ds.withConnection(cn -> {
 
 In case you need transaction mode
 ```java
-cn.inTransaction(() -> {
-    cn.q("insert into users values (4, ‘Mile’, ‘strong’)").fetchNone();
+try {
+    cn.inTransaction(() -> {
+        cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+            .fetchNone();
 
-    return cn.q("select name from users where id = 4").fetchOne(String.class);
-})
+        // do something dangerous
+
+        throw new ForceRollback();
+    });
+} catch (ForceRollback ex) {
+    // null
+    var name = cn.q("select name from clinic where id = ?", 4)
+        .fetchOneOrZero(String.class)
+
+}
 ```
 
 ### Streaming fetching
@@ -416,7 +662,7 @@ ds.withConnection(cn -> {
         var stream = cn.q("select id, name from users")
             .g.fetchStream(User.class)
     ) {
-    //stream.toList();
+    var users = stream.toList();
     }
 })
 ```
@@ -464,7 +710,9 @@ class PgPointRW extends AsObjectReadWrite<PGPoint> { };
             rw = PgPointRW.class
         )
     }
-) record PgDb(DataSource w) implements DataSourceW { };
+) public class PgDs extends DataSourceW {
+    public PgDs(DataSource w) { super(w); }
+}
 ```
 
 ### JDBC extended binding
@@ -512,14 +760,16 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 @Configuration(
     typeBindings = {
         @TypeBinding(
-            //JDBC column sql type
+            // JDBC column sql type
             compatibleSqlType = Types.OTHER,
-            //JDBC column sql type name provided by db
+            // JDBC column sql type name provided by db
             compatibleSqlTypeName = "user_sex",
             rw = PgUserSexRW.class
         )
     }
-) record PgDb(DataSource w) implements DataSourceW { };
+) public class PgDs extends DataSourceW {
+    public PgDs(DataSource w) { super(w); }
+}
 ```
 
 ### Usage in fetch
@@ -531,9 +781,27 @@ var userSex = ds.q("select sex from users where id = ?", 42).fetchOne(UserSex.cl
 Otherwise, use next syntax
 
 ```java
-var UserSex = ds.q("select name, sex as ":t UserSex" from users")
-    .g.fetchList(User.class);
+var UserSex = ds.q("""
+    select 
+        name, 
+        sex as ":t UserSex sex" 
+    from users
+    """).g.fetchList(User.class);
 ```
+
+Specify nullability only after type name
+
+```java
+// Nullable
+var UserSex = ds.q("""
+    select 
+        name, 
+        sex as ":t UserSex? sex" 
+    from users
+    """).g.fetchList(User.class);
+```
+
+
 
 ### Type bindings comatibility check
 TrueSql will check type binding compatibility in order with this table
@@ -558,10 +826,15 @@ TrueSql will check type binding compatibility in order with this table
 ## Multiple database schemas in one module
 
 ```java
-record PgDb(DataSource w) implements DataSourceW {};
-record MSDb(DataSource w) implements DataSourceW {};
+// some @Configuration
+public class PgDs extends DataSourceW {
+    public PgDs(DataSource w) { super(w); }
+}
+// some @Configuration
+public class MSDs extends DataSourceW {
+    public MSDs(DataSource w) { super(w); }
+}
 ```
-###### NB:
 
 ## DB constraint violation checks
 Here an example how you can wrap all SQLException's that may arise at DataSourceW or ConnectionW:
@@ -569,7 +842,9 @@ Here an example how you can wrap all SQLException's that may arise at DataSource
 ```java
 import net.truej.sql.ConstraintViolationException;
 
-public record MainDataSource(DataSource w) implements DataSourceW {
+public class MainDataSource extends DataSourceW {
+    public MainDataSource(DataSource w) { super(w); }
+
     @Override public RuntimeException mapException(SQLException ex) {
 
         var pgUniqueConstraintCode = "23505";
@@ -598,6 +873,7 @@ try {
     );
 }
 ```
+###### NB: also has overloads with database and schema
 
 ## 100% sql-injection safety guarantee
 1. In case of unfold feature, TrueSql only add parameters nests to query text. In other cases query text stay static.
