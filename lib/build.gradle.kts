@@ -38,6 +38,9 @@ dependencies {
     testImplementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
     testImplementation("org.testcontainers:mssqlserver:1.20.0")
 
+    testImplementation("org.testcontainers:oracle-xe:1.20.0")
+    testImplementation("com.oracle.database.jdbc:ojdbc11:23.4.0.24.05")
+
     // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 

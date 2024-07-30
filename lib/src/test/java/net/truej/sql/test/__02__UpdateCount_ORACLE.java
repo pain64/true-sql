@@ -11,12 +11,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
+import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn(ORACLE)
-@TrueSql public class __02__UpdateCount {
+@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
+@TrueSql public class __02__UpdateCount_ORACLE {
 
     @TestTemplate public void test(MainConnection cn) {
         Assertions.assertEquals(
@@ -24,7 +23,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
             cn.q("""
                 update bill
                 set discount = amount * ?
-                where cast(bill.date as date) = '2024-09-01'
+                where trunc(bill."date") = '01.09.24'
                 """, new BigDecimal("0.1")
             ).withUpdateCount.fetchNone()
         );
@@ -43,7 +42,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
                 """
                     update bill
                     set discount = ?
-                    where cast(bill.date as date) = ?""",
+                    where trunc(bill."date") = ?""",
                 v -> new Object[]{v.discount, v.date}
             ).withUpdateCount.fetchNone()
         );

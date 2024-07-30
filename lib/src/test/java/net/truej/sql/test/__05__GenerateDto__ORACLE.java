@@ -2,28 +2,25 @@ package net.truej.sql.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.deser.JSR310DateTimeDeserializerBase;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.UserSex;
+import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
 
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB, ORACLE})
+@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
 // FIX test for enable on MySQL: mysql has no OffsetDateTime
-@TrueSql public class __05__GenerateDto {
+@TrueSql public class __05__GenerateDto__ORACLE {
 
     @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {
         Assertions.assertEquals(
@@ -92,7 +89,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                         u.name as 		":t!       users.name"
                     from clinic c
                         left join clinic_users cu on cu.clinic_id = c.id
-                        left join users         u on u.id         = cu.user_id"""
+                        left join users         u on u.id         = cu.user_id
+                    order by c.id, c.name, u.id, u.name"""
                 ).g.fetchList(Clinic.class)
             )
         );
@@ -112,7 +110,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                       "amount" : 2000.55
                     }, {
                       "date" : 1719849600.000000000,
-                      "amount" : 1000.20
+                      "amount" : 1000.2
                     } ]
                   } ]
                 }, {
@@ -123,13 +121,13 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                     "info" : "Do not disturb",
                     "bills" : [ {
                       "date" : 1722524400.000000000,
-                      "amount" : 5000.00
+                      "amount" : 5000
                     }, {
                       "date" : 1722524400.000000000,
                       "amount" : 7000.77
                     }, {
                       "date" : 1725202800.000000000,
-                      "amount" : 500.10
+                      "amount" : 500.1
                     } ]
                   } ]
                 } ]""",
@@ -138,19 +136,19 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 .writerWithDefaultPrettyPrinter().writeValueAsString(
                     cn.q("""
                         select
-                            ci.name  as "      city                   ",
-                            cl.name  as "      clinic.                ",
-                            u.name   as "User3 users .name            ",
-                            u.info   as "      users .info            ",
-                            b.date   as "      users .Bill bills.date ",
-                            b.amount as "      users .     bills.amount"
+                            ci.name    as "      city                   ",
+                            cl.name    as "      clinic.                ",
+                            u.name     as "User3 users .name            ",
+                            u.info     as "      users .info            ",
+                            b."date"   as "      users .Bill bills.date ",
+                            b.amount   as "      users .     bills.amount"
                         from city ci
                                  join clinic       cl  on ci.id         = cl.city_id
                             left join clinic_users clu on clu.clinic_id = cl.id
                             left join users        u   on clu.user_id   = u.id
                             left join user_bills   ub  on ub.user_id    = u.id
                             left join bill         b   on b.id          = ub.bill_id
-                        order by ci.name, cl.name, u.name, u.info, b.date, b.amount"""
+                        order by ci.name, cl.name, u.name, u.info, b."date", b.amount"""
                     ).g.fetchList(Clinic2.class)
                 )
         );

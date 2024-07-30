@@ -8,10 +8,7 @@ import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
 import org.mariadb.jdbc.MariaDbDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.testcontainers.containers.MSSQLServerContainer;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.*;
 
 import javax.sql.DataSource;
 import javax.tools.Diagnostic;
@@ -36,6 +33,8 @@ import java.util.stream.Stream;
 
 public class TrueSqlTests2 implements
     TestTemplateInvocationContextProvider, TestInstanceFactory, ExecutionCondition {
+
+    public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB, MSSQL, ORACLE /*, DB2 */}
 
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     public @interface DisabledOn {
@@ -70,11 +69,17 @@ public class TrueSqlTests2 implements
         var mssqlContainer = new MSSQLServerContainer<>("mcr.microsoft.com/mssql/server:2022-latest")
             .acceptLicense()
             .withReuse(true);
+        var oracleContainer = new OracleContainer("gvenzl/oracle-xe:latest")
+            .withDatabaseName("test")
+            .withUsername("testUser")
+            .withPassword("testPassword")
+            .withReuse(true);
 
         pgContainer.start();
         mysqlContainer.start();
         mariaDbContainer.start();
         mssqlContainer.start();
+        oracleContainer.start();
 
         instances = Map.of(
             Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb"),
@@ -101,6 +106,12 @@ public class TrueSqlTests2 implements
                 mssqlContainer.getUsername(),
                 mssqlContainer.getPassword(),
                 "mssql"
+            ),
+            Database.ORACLE, new TestDataSource(
+                oracleContainer.getJdbcUrl(),
+                oracleContainer.getUsername(),
+                oracleContainer.getPassword(),
+                "oracle"
             )
         );
     }
@@ -125,8 +136,6 @@ public class TrueSqlTests2 implements
             ? ConditionEvaluationResult.enabled("has at least one db to run")
             : ConditionEvaluationResult.disabled("has no db to run");
     }
-
-    public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB, MSSQL /*, ORACLE, DB2 */}
 
     @Override public boolean supportsTestTemplate(ExtensionContext extensionContext) {
         return true;

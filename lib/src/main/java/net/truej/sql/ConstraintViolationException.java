@@ -25,14 +25,18 @@ public class ConstraintViolationException extends RuntimeException {
         for (var constraint : constraints) {
             if (
                 (
-                    constraint.catalogName == null || catalogName == null ||
-                    constraint.catalogName.equals(this.catalogName)
+                    catalogName == null || constraint.catalogName == null ||
+                    constraint.catalogName.equalsIgnoreCase(this.catalogName)
                 ) && (
-                    constraint.schemaName == null || schemaName == null ||
-                    constraint.schemaName.equals(this.schemaName)
+                    schemaName == null || constraint.schemaName == null ||
+                    constraint.schemaName.equalsIgnoreCase(this.schemaName)
+                ) && (
+                    tableName == null ||
+                    constraint.tableName.equalsIgnoreCase(tableName)
+                ) && (
+                    constraintName == null ||
+                    constraint.constraintName.equalsIgnoreCase(constraintName)
                 )
-                && constraint.tableName.equalsIgnoreCase(tableName)
-                && constraint.constraintName.equalsIgnoreCase(constraintName)
             )
                 return constraint.handler.handle();
         }

@@ -3,7 +3,6 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import net.truej.sql.fetch.UpdateResult;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -14,13 +13,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 // FIXME: disable this check in compiler for HSQLDB -- enable test
 // FIXME: check MariaDB insert-returning
 // FIXME: check MsSQL output
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MYSQL, MARIADB, MSSQL, ORACLE})
-@TrueSql public class __08__GeneratedKeysManyColumns {
+@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@TrueSql public class __08__GeneratedKeysManyColumns_ORACLE {
 
     record Discount(Long id, @Nullable BigDecimal discount) { }
 
@@ -30,18 +30,19 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
             List.of(
                 new Discount(1L, new BigDecimal("400.11")),
                 new Discount(2L, new BigDecimal("200.04")),
-                new Discount(3L, new BigDecimal("1000.00")),
+                new Discount(3L, new BigDecimal("1000")),
                 new Discount(4L, new BigDecimal("1400.15")),
                 new Discount(5L, new BigDecimal("100.02"))
             ),
             ds.q("update bill set discount = amount * ?", new BigDecimal("0.2"))
                 .asGeneratedKeys("id", "discount").fetchList(Discount.class)
         );
+
         var expected1 = new UpdateResult<>(
             5L, List.of(
             new Discount(1L, new BigDecimal("400.11")),
             new Discount(2L, new BigDecimal("200.04")),
-            new Discount(3L, new BigDecimal("1000.00")),
+            new Discount(3L, new BigDecimal("1000")),
             new Discount(4L, new BigDecimal("1400.15")),
             new Discount(5L, new BigDecimal("100.02")))
         );
@@ -65,17 +66,17 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         );
 
         var expected2 = List.of(
-            new Discount(1L, new BigDecimal("20.00")),
-            new Discount(2L, new BigDecimal("20.00")),
-            new Discount(3L, new BigDecimal("15.00")),
-            new Discount(4L, new BigDecimal("15.00"))
+            new Discount(1L, new BigDecimal("20")),
+            new Discount(2L, new BigDecimal("20")),
+            new Discount(3L, new BigDecimal("15")),
+            new Discount(4L, new BigDecimal("15"))
         );
 
         var actual2 = ds.q(
                 discounts, """
                     update bill b
                     set discount = 100 * ?
-                    where cast(b.date as date) = ?""",
+                    where trunc(b."date") = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
             .asGeneratedKeys("id", "discount")
@@ -88,10 +89,10 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         var expected3 = new UpdateResult<>(
             new long[]{2L, 2L},
             List.of(
-                new Discount(1L, new BigDecimal("20.00")),
-                new Discount(2L, new BigDecimal("20.00")),
-                new Discount(3L, new BigDecimal("15.00")),
-                new Discount(4L, new BigDecimal("15.00"))
+                new Discount(1L, new BigDecimal("20")),
+                new Discount(2L, new BigDecimal("20")),
+                new Discount(3L, new BigDecimal("15")),
+                new Discount(4L, new BigDecimal("15"))
             )
         );
 
@@ -99,7 +100,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 discounts, """
                     update bill b
                     set discount = 100 * ?
-                    where cast(b.date as date) = ?""",
+                    where trunc(b."date") = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
             .asGeneratedKeys("id", "discount").withUpdateCount

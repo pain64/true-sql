@@ -280,7 +280,8 @@ public class GLangParser {
 
     public record ColumnMetadata(
         NullMode nullMode, int sqlType,
-        String sqlTypeName, String javaClassName, String columnName
+        String sqlTypeName, String javaClassName, String columnName,
+        int scale, int precision
     ) { }
 
     public interface BindColumn {

@@ -18,7 +18,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
 import static net.truej.sql.source.Parameters.NotNull;
 
-// FIXME: test for hsqldb without in no-checks mode
+// FIXME: disable this check in compiler for HSQLDB
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MSSQL})
 @TrueSql public class __08__GeneratedKeysOneColumn {
 

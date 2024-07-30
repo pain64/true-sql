@@ -37,6 +37,7 @@ public class InvocationsFinder {
     private static final String MYSQL_DB_NAME = "MySQL";
     private static final String MARIA_DB_NAME = "MariaDB";
     private static final String MSSQL_DB_NAME = "Microsoft SQL Server";
+    private static final String ORACLE_DB_NAME = "Oracle";
 
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
@@ -548,6 +549,22 @@ public class InvocationsFinder {
                                 ) return;
                             }
 
+                            if (onDatabase.equals(ORACLE_DB_NAME)) {
+                                if (
+                                    fromColumn.sqlTypeName().equals("NUMBER") &&
+                                    fromColumn.scale() == 0 && (
+                                        toBinding.className().equals(Long.class.getName()) ||
+                                        toBinding.className().equals(long.class.getName()) ||
+                                        toBinding.className().equals(Integer.class.getName()) ||
+                                        toBinding.className().equals(int.class.getName()) ||
+                                        toBinding.className().equals(Short.class.getName()) ||
+                                        toBinding.className().equals(short.class.getName()) ||
+                                        toBinding.className().equals(Byte.class.getName()) ||
+                                        toBinding.className().equals(byte.class.getName())
+                                    )
+                                ) return;
+                            }
+
                             // vendor-specific
                             if (
                                 toBinding.className().equals("java.time.OffsetDateTime") &&
@@ -701,65 +718,84 @@ public class InvocationsFinder {
                             ) {
 
                                 var onDatabase = connection.getMetaData().getDatabaseProductName();
-                                List<GLangParser.ColumnMetadata> columns;
+                                final List<GLangParser.ColumnMetadata> columns;
 
                                 switch (statementMode) {
                                     case StatementGenerator.AsDefault _,
                                          AsGeneratedKeysColumnNames _,
                                          AsGeneratedKeysIndices _ -> {
 
-                                        var aMetadata = stmt.getMetaData();
+                                        var makeColumns = (Function<ResultSetMetaData, List<GLangParser.ColumnMetadata>>) rMetadata -> {
+                                            if (rMetadata == null) return List.of();
 
-                                        var fixedColumnLabel = (Function<String, String>) label -> {
-                                            if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
-                                                return "";
-                                            if (
-                                                onDatabase.equals(MSSQL_DB_NAME) &&
-                                                label.startsWith(":tnull")
-                                            ) return ":t?" + label.substring(6);
+                                            var fixedColumnLabel = (Function<String, String>) label -> {
+                                                if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
+                                                    return "";
+                                                if (
+                                                    onDatabase.equals(MSSQL_DB_NAME) &&
+                                                    label.startsWith(":tnull")
+                                                ) return ":t?" + label.substring(6);
 
-                                            return label;
+                                                return label;
+                                            };
+
+                                            try {
+                                                return IntStream.range(1, rMetadata.getColumnCount() + 1).mapToObj(i -> {
+                                                    try {
+                                                        return new GLangParser.ColumnMetadata(
+                                                            switch (rMetadata.isNullable(i)) {
+                                                                case
+                                                                    ResultSetMetaData.columnNoNulls ->
+                                                                    GLangParser.NullMode.EXACTLY_NOT_NULL;
+                                                                case
+                                                                    ResultSetMetaData.columnNullable ->
+                                                                    GLangParser.NullMode.EXACTLY_NULLABLE;
+                                                                case
+                                                                    ResultSetMetaData.columnNullableUnknown ->
+                                                                    GLangParser.NullMode.DEFAULT_NOT_NULL;
+                                                                default ->
+                                                                    throw new IllegalStateException("unreachable");
+                                                            },
+                                                            rMetadata.getColumnType(i),
+                                                            rMetadata.getColumnTypeName(i),
+                                                            rMetadata.getColumnClassName(i),
+                                                            fixedColumnLabel.apply(rMetadata.getColumnLabel(i)),
+                                                            rMetadata.getScale(i),
+                                                            rMetadata.getPrecision(i)
+                                                        );
+                                                    } catch (SQLException e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                }).toList();
+                                            } catch (SQLException e) {
+                                                throw new RuntimeException(e);
+                                            }
                                         };
 
+
                                         if (
+                                            onDatabase.equals(ORACLE_DB_NAME)
+                                            && (
+                                                statementMode instanceof AsGeneratedKeysIndices ||
+                                                statementMode instanceof AsGeneratedKeysColumnNames
+                                            )
+                                        ) {
+                                            stmt.getMetaData(); // runs query check
+                                            columns = null;
+                                        } else if (
                                             (
                                                 onDatabase.equals(MYSQL_DB_NAME) ||
                                                 onDatabase.equals(MARIA_DB_NAME)
                                             ) && (
                                                 statementMode instanceof AsGeneratedKeysIndices ||
                                                 statementMode instanceof AsGeneratedKeysColumnNames
-                                            ))
-                                            aMetadata = stmt.getGeneratedKeys().getMetaData();
-
-                                        var rMetadata = aMetadata;
-
-                                        if (rMetadata == null) columns = List.of();
-                                        else {
-                                            columns = IntStream.range(1, rMetadata.getColumnCount() + 1).mapToObj(i -> {
-                                                try {
-                                                    return new GLangParser.ColumnMetadata(
-                                                        switch (rMetadata.isNullable(i)) {
-                                                            case ResultSetMetaData.columnNoNulls ->
-                                                                GLangParser.NullMode.EXACTLY_NOT_NULL;
-                                                            case ResultSetMetaData.columnNullable ->
-                                                                GLangParser.NullMode.EXACTLY_NULLABLE;
-                                                            case
-                                                                ResultSetMetaData.columnNullableUnknown ->
-                                                                GLangParser.NullMode.DEFAULT_NOT_NULL;
-                                                            default ->
-                                                                throw new IllegalStateException("unreachable");
-                                                        },
-                                                        rMetadata.getColumnType(i),
-                                                        rMetadata.getColumnTypeName(i),
-                                                        rMetadata.getColumnClassName(i),
-                                                        fixedColumnLabel.apply(rMetadata.getColumnLabel(i))
-                                                    );
-                                                } catch (SQLException e) {
-                                                    throw new RuntimeException(e);
-                                                }
-                                            }).toList();
-                                        }
+                                            )
+                                        )
+                                            columns = makeColumns.apply(stmt.getGeneratedKeys().getMetaData());
+                                        else
+                                            columns = makeColumns.apply(stmt.getMetaData());
                                     }
+
                                     case StatementGenerator.AsCall _ -> {
                                         var pMetadata = stmt.getParameterMetaData();
                                         var parameters = forPrepare.queryMode.parts().stream()
@@ -773,6 +809,9 @@ public class InvocationsFinder {
                                         var outParameterIndexes = IntStream.range(0, parameters.size())
                                             .peek(i -> {
                                                 try {
+                                                    if (onDatabase.equals(ORACLE_DB_NAME))
+                                                        return; // skip parameters check for oracle
+
                                                     var pMode = pMetadata.getParameterMode(i + 1);
                                                     var pModeText = switch (pMode) {
                                                         case ParameterMetaData.parameterModeIn ->
@@ -830,29 +869,35 @@ public class InvocationsFinder {
                                             .map(i -> i + 1)
                                             .toArray();
 
-                                        columns = Arrays.stream(outParameterIndexes).mapToObj(i -> {
-                                            try {
-                                                return new GLangParser.ColumnMetadata(
-                                                    switch (pMetadata.isNullable(i)) {
-                                                        case ParameterMetaData.parameterNoNulls ->
-                                                            GLangParser.NullMode.EXACTLY_NOT_NULL;
-                                                        case ParameterMetaData.parameterNullable ->
-                                                            GLangParser.NullMode.EXACTLY_NULLABLE;
-                                                        case
-                                                            ParameterMetaData.parameterNullableUnknown ->
-                                                            GLangParser.NullMode.DEFAULT_NOT_NULL;
-                                                        default ->
-                                                            throw new IllegalStateException("unreachable");
-                                                    },
-                                                    pMetadata.getParameterType(i),
-                                                    pMetadata.getParameterTypeName(i),
-                                                    pMetadata.getParameterClassName(i),
-                                                    "a" + i
-                                                );
-                                            } catch (SQLException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        }).toList();
+                                        if (onDatabase.equals(ORACLE_DB_NAME)) columns = null;
+                                        else
+                                            columns = Arrays.stream(outParameterIndexes).mapToObj(i -> {
+                                                try {
+                                                    return new GLangParser.ColumnMetadata(
+                                                        switch (pMetadata.isNullable(i)) {
+                                                            case
+                                                                ParameterMetaData.parameterNoNulls ->
+                                                                GLangParser.NullMode.EXACTLY_NOT_NULL;
+                                                            case
+                                                                ParameterMetaData.parameterNullable ->
+                                                                GLangParser.NullMode.EXACTLY_NULLABLE;
+                                                            case
+                                                                ParameterMetaData.parameterNullableUnknown ->
+                                                                GLangParser.NullMode.DEFAULT_NOT_NULL;
+                                                            default ->
+                                                                throw new IllegalStateException("unreachable");
+                                                        },
+                                                        pMetadata.getParameterType(i),
+                                                        pMetadata.getParameterTypeName(i),
+                                                        pMetadata.getParameterClassName(i),
+                                                        "a" + i,
+                                                        pMetadata.getScale(i),
+                                                        pMetadata.getPrecision(i)
+                                                    );
+                                                } catch (SQLException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            }).toList();
 
                                         statementMode = new StatementGenerator.AsCall(outParameterIndexes);
                                     }
@@ -863,6 +908,9 @@ public class InvocationsFinder {
                                     case ExistingDto existing -> {
                                         var parsed = parseExistingDto.apply(existing);
                                         var dtoFields = flattedDtoType(parsed);
+
+                                        // skip check if metadata is not available
+                                        if (columns == null) yield parsed;
 
                                         if (dtoFields.size() != columns.size())
                                             throw new ValidationException(
@@ -891,6 +939,10 @@ public class InvocationsFinder {
                                         yield parsed;
                                     }
                                     case GenerateDto gDto -> {
+                                        if (columns == null) throw new ValidationException(
+                                            ".g mode it not available because column metadata is not provided by JDBC driver"
+                                        );
+
                                         var fields = parseResultSetColumns(
                                             columns, (column, columnIndex, javaClassNameHint, dtoNullMode) -> {
 
@@ -971,6 +1023,11 @@ public class InvocationsFinder {
                                                         if (onDatabase.equals(MSSQL_DB_NAME)) {
                                                             if (column.javaClassName().equals("microsoft.sql.DateTimeOffset"))
                                                                 return "java.time.OffsetDateTime";
+                                                        }
+
+                                                        if (onDatabase.equals(ORACLE_DB_NAME)) {
+                                                            if (column.javaClassName().equals("oracle.sql.TIMESTAMPTZ"))
+                                                                return "java.time.ZonedDateTime";
                                                         }
 
                                                         return switch (column.sqlType()) {
@@ -1188,6 +1245,17 @@ public class InvocationsFinder {
                                             upper(CONSTRAINT_NAME) = upper(?)
                                         """;
 
+                                if (onDatabase.equals(ORACLE_DB_NAME))
+                                    defaultQuery = """
+                                        select
+                                            '', ?
+                                        from all_constraints
+                                        where
+                                            upper(OWNER)           = upper(?) and
+                                            upper(TABLE_NAME)      = upper(?) and
+                                            upper(CONSTRAINT_NAME) = upper(?)
+                                        """;
+
                                 switch (tree.args.length()) {
                                     case 4:
                                         if (
@@ -1227,6 +1295,10 @@ public class InvocationsFinder {
                                                 realSchema = connection.getCatalog();
                                             }
 
+                                            if (onDatabase.equals(ORACLE_DB_NAME)) {
+                                                realCatalog = "";
+                                            }
+
                                             var _ = findConstraint.apply(
                                                 defaultQuery, List.of(
                                                     realCatalog, realSchema,
@@ -1253,16 +1325,17 @@ public class InvocationsFinder {
                                             tree.args.get(3) instanceof JCTree.JCLiteral l3 &&
                                             l3.getValue() instanceof String constraintName
                                         ) {
-                                            final String realCatalog;
+                                            var realCatalog = connection.getCatalog();
+
+                                            if (onDatabase.equals(ORACLE_DB_NAME))
+                                                realCatalog = ""; // unused
 
                                             var _ = findConstraint.apply(
                                                 defaultQuery, List.of(
-                                                    connection.getCatalog(), schemaName,
+                                                    realCatalog, schemaName,
                                                     tableName, constraintName
                                                 )
                                             );
-
-                                            realCatalog = connection.getCatalog();
 
                                             tree.args = com.sun.tools.javac.util.List.of(
                                                     tree.args.head
@@ -1283,6 +1356,7 @@ public class InvocationsFinder {
                                             tree.args.get(4) instanceof JCTree.JCLiteral l4 &&
                                             l4.getValue() instanceof String constraintName
                                         ) {
+                                            // TODO: not supported in oracle
                                             var _ = findConstraint.apply(
                                                 defaultQuery, List.of(
                                                     catalogName, schemaName, tableName, constraintName

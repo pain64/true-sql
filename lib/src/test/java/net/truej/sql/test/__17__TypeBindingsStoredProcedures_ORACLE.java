@@ -15,12 +15,12 @@ import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import static net.truej.sql.source.Parameters.inout;
 import static net.truej.sql.source.Parameters.out;
 
-// FIXME: MariaDB?
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL, ORACLE})
-@TrueSql public class __17__TypeBindingsStoredProcedures {
+@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@TrueSql public class __17__TypeBindingsStoredProcedures_ORACLE {
     record DataTypes(
         @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
         @NotNull boolean boolean_type, @Nullable Boolean boolean_type_null,
@@ -30,7 +30,6 @@ import static net.truej.sql.source.Parameters.out;
         @NotNull String string_type, @Nullable String string_type_null,
         @NotNull short short_type, @Nullable Short short_type_null,
         @NotNull byte byte_type, @Nullable Byte byte_type_null,
-        @NotNull LocalTime time_type, @Nullable LocalTime time_type_null,
         @NotNull LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
     ) { }
 
@@ -45,19 +44,18 @@ import static net.truej.sql.source.Parameters.out;
                     ?,?,
                     ?,?,
                     ?,?,
-                    ?,?,
-                    ?,?)}
+                    ?,?
+                )}
                 """,
             inout(new BigDecimal("100.24124")), out(BigDecimal.class),
             inout(true), out(Boolean.class),
-            //new byte[] {1}, null,
+//            //new byte[] {1}, null,
             inout(LocalDate.of(2024, 7, 1)), out(LocalDate.class),
             inout(100), out(Integer.class),
             inout(99L), out(Long.class),
             inout("hello"), out(String.class),
             inout((short) 255), out(Short.class),
             inout((byte) 8), out(Byte.class),
-            inout(LocalTime.of(23, 59, 59)), out(LocalTime.class),
             inout(LocalDateTime.of(1984, 1, 1, 23, 59, 59)), out(LocalDateTime.class)
         ).asCall().fetchOne(DataTypes.class);
 

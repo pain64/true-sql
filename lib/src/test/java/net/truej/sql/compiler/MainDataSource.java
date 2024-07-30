@@ -7,6 +7,7 @@ import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeBinding;
 import net.truej.sql.source.DataSourceW;
+import oracle.jdbc.OracleDatabaseException;
 import org.hsqldb.HsqlException;
 import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PSQLException;
@@ -82,6 +83,19 @@ import java.sql.Types;
 
             return new ConstraintViolationException(
                 databaseName, tableAndSchema[0], tableAndSchema[1], constraintName
+            );
+        }
+
+        if (
+            ex.getCause() != null && ex.getCause() instanceof OracleDatabaseException oex &&
+            ex.getSQLState().startsWith("23")
+        ) {
+            var schemaAndConstraint = oex.getMessage()
+                .replaceAll(".*\\((\\S+\\.\\S+)\\).*", "$1")
+                .replace("\n", "").split("\\.");
+
+            return new ConstraintViolationException(
+                null, schemaAndConstraint[0], null, schemaAndConstraint[1]
             );
         }
 
