@@ -14,6 +14,11 @@ import java.util.List;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
 import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 
+// 1. unfold
+// 2. records
+// 3. type inference
+// 4. 3.0.0 release
+// 5. refactor structure - demo
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
 @TrueSql public class __02__UpdateCount_ORACLE {
 

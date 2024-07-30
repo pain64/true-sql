@@ -94,7 +94,10 @@ public class Fixture {
 //            )
 //        }
     )
-    public record MainDataSource(DataSource w) implements DataSourceW {
+    public static class MainDataSource extends DataSourceW {
+
+        public MainDataSource(DataSource w) { super(w); }
+
         @Override public RuntimeException mapException(SQLException ex) {
 
             if (ex instanceof SQLIntegrityConstraintViolationException iex) {
@@ -109,7 +112,7 @@ public class Fixture {
                 );
             }
 
-            return DataSourceW.super.mapException(ex);
+            return super.mapException(ex);
         }
     }
 

@@ -15,4 +15,6 @@ import java.sql.Connection;
 //        username = "uikit",
 //        password = "1234"
     )
-) public record MainConnection(Connection w) implements ConnectionW { }
+) public class MainConnection extends ConnectionW {
+    public MainConnection(Connection w) { super(w); }
+}

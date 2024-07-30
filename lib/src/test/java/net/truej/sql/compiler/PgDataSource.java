@@ -15,5 +15,6 @@ import java.sql.Date;
         username = "sa",
         password = "1234"
     )
-) public record PgDataSource(DataSource w) implements DataSourceW {
+) public class PgDataSource extends DataSourceW {
+    public PgDataSource(DataSource w) { super(w); }
 }

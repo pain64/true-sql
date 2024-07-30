@@ -8,38 +8,39 @@ import net.truej.sql.dsl.UpdateCount;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public non-sealed interface ConnectionW extends
+public non-sealed class ConnectionW implements
     Source, Q<ConnectionW.Single, ConnectionW.Batched> {
 
-    Connection w();
+    public final Connection w;
+    public ConnectionW(Connection w) { this.w = w; }
 
-    interface InTransactionAction<T, E extends Exception> {
+    public interface InTransactionAction<T, E extends Exception> {
         T run() throws E;
     }
 
-    @SuppressWarnings("resource") default <T, E extends Exception> T inTransaction(
+    public final <T, E extends Exception> T inTransaction(
         InTransactionAction<T, E> action
     ) throws E {
         try {
-            var oldAutoCommit = w().getAutoCommit();
+            var oldAutoCommit = w.getAutoCommit();
 
             try {
-                w().setAutoCommit(false);
+                w.setAutoCommit(false);
                 var result = action.run();
-                w().commit();
+                w.commit();
                 return result;
             } catch (Throwable e) {
-                w().rollback();
+                w.rollback();
                 throw e;
             } finally {
-                w().setAutoCommit(oldAutoCommit);
+                w.setAutoCommit(oldAutoCommit);
             }
         } catch (SQLException e) {
             throw mapException(e);
         }
     }
 
-    class Single implements
+    public static class Single implements
         As<DataSourceW.AsCall, Single.AsGeneratedKeys>,
         NoUpdateCount.None, NoUpdateCount.One,
         NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ {
@@ -86,5 +87,5 @@ public non-sealed interface ConnectionW extends
         public final G g = new G();
     }
 
-    class Batched extends DataSourceW.Batched {}
+    public static class Batched extends DataSourceW.Batched {}
 }

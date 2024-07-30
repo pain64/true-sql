@@ -31,6 +31,7 @@ import static net.truej.sql.compiler.ExistingDtoParser.flattedDtoType;
 import static net.truej.sql.compiler.ExistingDtoParser.parse;
 import static net.truej.sql.compiler.GLangParser.parseResultSetColumns;
 import static net.truej.sql.compiler.StatementGenerator.generate;
+import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
 
 public class InvocationsFinder {
@@ -44,7 +45,9 @@ public class InvocationsFinder {
     public record SimpleParameter(JCTree.JCExpression expression) implements QueryPart { }
     public record InoutParameter(JCTree.JCExpression expression) implements QueryPart { }
     public record OutParameter(Symbol.ClassSymbol toClass) implements QueryPart { }
-    public record UnfoldParameter(int n, JCTree.JCExpression expression) implements QueryPart { }
+    public record UnfoldParameter(
+        JCTree.JCExpression expression, @Nullable JCTree.JCLambda extractor
+    ) implements QueryPart { }
 
     // FIXME: remove ???
     record ForPrepareInvocation(
@@ -101,13 +104,23 @@ public class InvocationsFinder {
                 var found = TypeFinder.resolve(names, symtab, cu, invoke.args.head);
                 return new OutParameter(found);
             } else if (check.apply("unfold")) {
-                return new UnfoldParameter(1, invoke.args.head);
-            } else if (check.apply("unfold2")) {
-                return new UnfoldParameter(2, invoke.args.head);
-            } else if (check.apply("unfold3")) {
-                return new UnfoldParameter(3, invoke.args.head);
-            } else if (check.apply("unfold4")) {
-                return new UnfoldParameter(4, invoke.args.head);
+                if (invoke.args.size() == 1)
+                    return new UnfoldParameter(invoke.args.head, null);
+                else if(invoke.args.size() == 2) {
+                    if (
+                        invoke.args.get(1) instanceof JCTree.JCLambda lmb &&
+                        lmb.body instanceof JCTree.JCNewArray array &&
+                        array.elemtype instanceof JCTree.JCIdent elementTypeId &&
+                        elementTypeId.name.equals(names.fromString("Object"))
+                    )
+                        return new UnfoldParameter(invoke.args.head, lmb);
+                    else
+                        throw new ValidationException(
+                            "Unfold parameter extractor must be lambda literal returning " +
+                            "object array literal (e.g. `u -> new Object[]{u.f1, u.f2}`)"
+                        );
+                } else
+                    throw new ValidationException("bad tree"); // FIXME: refactor to new bad tree subsystem
             } else
                 return new SimpleParameter(invoke);
         };
@@ -392,17 +405,9 @@ public class InvocationsFinder {
 
                                         var vt = varTypes.get(processorId.name);
 
-                                        if (
-                                            vt.getInterfaces().stream().anyMatch(
-                                                tt -> tt.tsym == clConnectionW
-                                            )
-                                        ) {
+                                        if (vt.getSuperclass().tsym == clConnectionW) {
                                             sourceMode = StatementGenerator.SourceMode.CONNECTION;
-                                        } else if (
-                                            vt.getInterfaces().stream().anyMatch(
-                                                tt -> tt.tsym == clDataSourceW
-                                            )
-                                        ) {
+                                        } else if (vt.getSuperclass().tsym == clDataSourceW) {
                                             if (withConnectionSource.contains(processorId.name))
                                                 sourceMode = StatementGenerator.SourceMode.CONNECTION;
                                             else
@@ -684,11 +689,14 @@ public class InvocationsFinder {
                                          OutParameter _,
                                          SimpleParameter _ -> "?";
                                     case TextPart tp -> tp.text;
-                                    case UnfoldParameter u -> IntStream.range(0, u.n)
-                                        .mapToObj(_ -> "?")
-                                        .collect(Collectors.joining(
-                                            ", ", u.n == 1 ? "" : "(", u.n == 1 ? "" : ")"
-                                        ));
+                                    case UnfoldParameter u -> {
+                                        var n = unfoldArgumentsCount(u.extractor);
+                                        yield IntStream.range(0, n)
+                                            .mapToObj(_ -> "?")
+                                            .collect(Collectors.joining(
+                                                ", ", n == 1 ? "" : "(", n == 1 ? "" : ")"
+                                            ));
+                                    }
                                 })
                                 .collect(Collectors.joining());
 

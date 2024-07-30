@@ -21,7 +21,7 @@ public class StatementGenerator {
     }
     public record BatchedQuery(
         JCTree.JCExpression listDataExpression,
-        JCTree.JCLambda expressionLambda,
+        JCTree.JCLambda extractor,
         List<InvocationsFinder.QueryPart> parts
     ) implements QueryMode { }
 
@@ -109,6 +109,11 @@ public class StatementGenerator {
         }
     }
 
+    public static int unfoldArgumentsCount(@Nullable JCTree.JCLambda extractor) {
+        return extractor == null ? 1 :
+            ((JCTree.JCNewArray) extractor.body).elems.size();
+    }
+
     // TODO: deal with nullability in DTO Fields
     // TODO: deal with nullability in return type
     public static String generate(
@@ -144,7 +149,7 @@ public class StatementGenerator {
 
             return fetchAs instanceof FetchStream
                 ? STR."UpdateResultStream<\{updateCountType}, \{t}>"
-            : STR."UpdateResult<\{updateCountType}, \{toCollectionType.get()}>";
+                : STR."UpdateResult<\{updateCountType}, \{toCollectionType.get()}>";
         };
 
         // FIXME: remove duplication with AnnotationProcessor
@@ -160,7 +165,8 @@ public class StatementGenerator {
             case FetchNone _ -> wrapTypeWithUpdateCount.apply(null, "Void");
             case FetchList f -> wrapTypeWithUpdateCount.apply("List", f.toType.javaClassName());
             case FetchOne f -> wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName());
-            case FetchOneOrZero f -> wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName()); // FIXME: nullable
+            case FetchOneOrZero f ->
+                wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName()); // FIXME: nullable
             case FetchStream f -> wrapTypeWithUpdateCount.apply("Stream", f.toType.javaClassName());
         };
 
@@ -232,16 +238,21 @@ public class StatementGenerator {
 
                 var eachTypeParameter = Out.each(
                     nonTextParts, ", ", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart _ -> throw new IllegalStateException("unreachable");
+                        case InvocationsFinder.TextPart _ ->
+                            throw new IllegalStateException("unreachable");
                         case InvocationsFinder.SimpleParameter _,
                              InvocationsFinder.InoutParameter _,
                              InvocationsFinder.OutParameter _ -> o."P\{i + 1}";
                         case InvocationsFinder.UnfoldParameter up -> {
-                            var attributes = Out.each(
-                                IntStream.range(0, up.n()).boxed().toList(),
-                                ", ", (oo, j, _) -> oo."P\{i + 1}A\{j + 1}"
+                            var n = unfoldArgumentsCount(up.extractor());
+
+                            if (n == 1) yield o."P\{i + 1}";
+
+                            var elements = Out.each(
+                                IntStream.range(0, n).boxed().toList(),
+                                ", ", (oo, j, _) -> oo."P\{i + 1}E\{j + 1}"
                             );
-                            yield o."\{attributes}";
+                            yield o."P\{i + 1}, \{elements}";
                         }
                     }
                 );
@@ -250,7 +261,8 @@ public class StatementGenerator {
 
                 var eachParameter = Out.each(
                     nonTextParts, ",\n", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart _ -> throw new IllegalStateException("unreachable");
+                        case InvocationsFinder.TextPart _ ->
+                            throw new IllegalStateException("unreachable");
                         case InvocationsFinder.SimpleParameter _,
                              InvocationsFinder.InoutParameter _ -> o."""
                             P\{i + 1} p\{i + 1},
@@ -258,32 +270,28 @@ public class StatementGenerator {
                         case InvocationsFinder.OutParameter _ -> o."""
                             TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
                         case InvocationsFinder.UnfoldParameter up -> {
-                            var attributes = Out.each(
-                                IntStream.range(0, up.n()).boxed().toList(),
-                                ", ", (oo, j, _) -> oo."P\{i + 1}A\{j + 1}"
+                            var n = unfoldArgumentsCount(up.extractor());
+                            if (n == 1) yield o."""
+                                List<P\{i + 1}> p\{i + 1},
+                                TypeReadWrite<P\{i + 1}> prw\{i + 1}e1""";
+
+                            var extractorsAndRw = Out.each(
+                                IntStream.range(0, n).boxed().toList(),
+                                ",\n", (oo, j, _) -> oo."""
+                                    ParameterExtractor<P\{i + 1}, P\{i + 1}E\{j + 1}> p\{i + 1}e\{j + 1},
+                                    TypeReadWrite<P\{i + 1}E\{j + 1}> prw\{i + 1}e\{j + 1}"""
                             );
-                            var container = (WriteNext) oo -> switch (up.n()) {
-                                case 1 -> oo."\{attributes}";
-                                case 2 -> oo."Pair<\{attributes}>";
-                                case 3 -> oo."Triple<\{attributes}>";
-                                case 4 -> oo."Quad<\{attributes}>";
-                                default -> throw new IllegalStateException("unreachable");
-                            };
-                            var rw = Out.each(
-                                IntStream.range(0, up.n()).boxed().toList(),
-                                ",\n", (oo, j, _) ->
-                                    oo."TypeReadWrite<P\{i + 1}A\{j + 1}> prw\{i + 1}a\{j + 1}"
-                            );
+
                             yield o."""
-                                List<\{container}> p\{i + 1},
-                                \{rw}""";
+                                List<P\{i + 1}> p\{i + 1},
+                                \{extractorsAndRw}""";
                         }
                     }
                 );
 
                 parametersCode = nonTextParts.isEmpty() ? o -> o."" : o -> o."\{eachParameter},";
 
-                    throwsClause = o -> null;
+                throwsClause = o -> null;
                 queryText = o -> {
                     var pIndex = new int[]{1};
 
@@ -299,12 +307,13 @@ public class StatementGenerator {
                                 yield oo."buffer.append(\" ? \");";
                             }
                             case InvocationsFinder.UnfoldParameter up -> {
+                                var n = unfoldArgumentsCount(up.extractor());
                                 var unfolded = Out.each(
-                                    IntStream.range(0, up.n()).boxed().toList(),
+                                    IntStream.range(0, n).boxed().toList(),
                                     ", ", (ooo, _, _) -> ooo."?"
                                 );
 
-                                var withParens = up.n() == 1
+                                var withParens = n == 1
                                     ? unfolded
                                     : (WriteNext) ooo -> ooo."(\{unfolded})";
 
@@ -330,16 +339,19 @@ public class StatementGenerator {
                 setParameters = o -> {
                     var setters = Out.each(
                         nonTextParts, "\n", (oo, i, p) -> switch (p) {
-                            case InvocationsFinder.TextPart _ -> throw new IllegalStateException("unreachable");
+                            case InvocationsFinder.TextPart _ ->
+                                throw new IllegalStateException("unreachable");
                             case InvocationsFinder.SimpleParameter _,
-                                 InvocationsFinder.InoutParameter _ -> oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
+                                 InvocationsFinder.InoutParameter _ ->
+                                oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
                             case InvocationsFinder.OutParameter _ ->
                                 oo."prw\{i + 1}.registerOutParameter(stmt, ++n);";
                             case InvocationsFinder.UnfoldParameter up -> {
+                                var n = unfoldArgumentsCount(up.extractor());
                                 var unfolded = Out.each(
-                                    IntStream.range(0, up.n()).boxed().toList(),
+                                    IntStream.range(0, n).boxed().toList(),
                                     "\n", (ooo, j, _) -> ooo."""
-                                        prw\{i + 1}a\{j + 1}.set(stmt, ++n, \{up.n() == 1 ? "element" : STR."element.a\{j + 1}()"});"""
+                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{n == 1 ? "element" : STR."p\{i + 1}e\{j + 1}.get(element)"});"""
                                 );
                                 yield oo."""
 
@@ -475,14 +487,14 @@ public class StatementGenerator {
 
         var doWithSource = (WriteNext) o -> switch (source) {
             case DATASOURCE -> o."""
-                try (var connection = source.w().getConnection()) {
+                try (var connection = source.w.getConnection()) {
                     \{acquireStatement}
                 } catch (SQLException e) {
                     throw source.mapException(e);
                 }""";
             case CONNECTION -> o."""
                 try {
-                    var connection = source.w();
+                    var connection = source.w;
                     \{acquireStatement}
                 } catch (SQLException e) {
                     throw source.mapException(e);

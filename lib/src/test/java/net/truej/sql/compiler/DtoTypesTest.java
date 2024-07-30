@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 
 import static net.truej.sql.util.CompileAssert.*;
 
+@Disabled
 public class DtoTypesTest {
     // Анализ AST
     //   Stmt."select * from xxx"

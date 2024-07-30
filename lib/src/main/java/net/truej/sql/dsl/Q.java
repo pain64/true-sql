@@ -15,5 +15,5 @@ public interface Q<S, B> {
 //    default <T> void q(List<T> batch, BatchTemplateExtractor<T> query) { raise(); }
 
     default S q(String query, Object... args) { return raise(); }
-    default <T> B q(List<T> batch, String query, Parameters.BatchArgumentsExtractor<T> arguments) { return raise(); }
+    default <T> B q(List<T> batch, String query, Parameters.ArgumentsExtractor<T> arguments) { return raise(); }
 }

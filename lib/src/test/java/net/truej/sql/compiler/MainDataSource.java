@@ -43,10 +43,11 @@ import java.sql.Types;
             rw = PgPointNotNullableRW.class
         )
     }
-) public record MainDataSource(DataSource w) implements DataSourceW {
+) public class MainDataSource extends DataSourceW {
 
-    @Override
-    public RuntimeException mapException(SQLException ex) {
+    public MainDataSource(DataSource w) { super(w); }
+
+    @Override public RuntimeException mapException(SQLException ex) {
         if (ex instanceof SQLIntegrityConstraintViolationException &&
             ex.getCause() instanceof HsqlException hex) {
             var parts = hex.getMessage().split(";");
@@ -113,7 +114,7 @@ import java.sql.Types;
             );
         }
 
-        return DataSourceW.super.mapException(ex);
+        return super.mapException(ex);
     }
 }
 

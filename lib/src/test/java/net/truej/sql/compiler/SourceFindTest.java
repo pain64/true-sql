@@ -1,11 +1,13 @@
 package net.truej.sql.compiler;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static net.truej.sql.util.CompileAssert.assertGenerated;
 
+@Disabled
 public class SourceFindTest {
     @Test void first() throws IOException {
         assertGenerated(

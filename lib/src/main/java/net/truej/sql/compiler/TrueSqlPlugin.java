@@ -1,12 +1,10 @@
 package net.truej.sql.compiler;
 
 import com.sun.source.util.*;
-import com.sun.tools.javac.api.Messages;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
@@ -200,13 +198,13 @@ public class TrueSqlPlugin implements Plugin {
                     switch (part) {
                         case InvocationsFinder.SimpleParameter p:
                             var extractor = new JCTree.JCLambda(
-                                List.of(bq.expressionLambda().params.head),
+                                List.of(bq.extractor().params.head),
                                 p.expression()
                             );
                             var extractorType = new Type.ClassType(
                                 Type.noType,
                                 List.of(
-                                    bq.expressionLambda().params.head.type,
+                                    bq.extractor().params.head.type,
                                     boxType.apply(p.expression().type)
                                 ),
                                 clParameterExtractor
@@ -249,28 +247,42 @@ public class TrueSqlPlugin implements Plugin {
                             metadataIndex++;
                             break;
                         case InvocationsFinder.UnfoldParameter p:
+                            var n = unfoldArgumentsCount(p.extractor());
                             var unfoldType = p.expression().type.allparams().head;
                             tree.args = tree.args.append(p.expression());
 
-                            switch (p.n()) {
-                                case 1:
-                                    tree.args = tree.args.append(createRwFor.apply(
-                                        unfoldType
-                                    ));
-                                    break;
-                                case 2:
-                                case 3:
-                                case 4:
-                                    for (var attributeType : unfoldType.allparams())
-                                        tree.args = tree.args.append(createRwFor.apply(
-                                            attributeType
-                                        ));
-                                    break;
-                                default:
-                                    throw new RuntimeException("unreachable");
-                            }
 
-                            metadataIndex += p.n();
+                            if (p.extractor() == null) {
+                                tree.args = tree.args.append(createRwFor.apply(
+                                    unfoldType
+                                ));
+                            } else
+                                for (var i = 0; i < n; i++) {
+                                    var partExpression =
+                                        ((JCTree.JCNewArray) p.extractor().body).elems.get(i);
+
+                                    var extractor = new JCTree.JCLambda(
+                                        List.of(p.extractor().params.head), partExpression
+                                    );
+
+                                    var extractorType = new Type.ClassType(
+                                        Type.noType,
+                                        List.of(
+                                            p.extractor().params.head.type,
+                                            boxType.apply(partExpression.type)
+                                        ),
+                                        clParameterExtractor
+                                    );
+
+                                    extractor.type = extractorType;
+                                    extractor.target = extractorType;
+
+                                    tree.args = tree.args.append(extractor);
+                                    tree.args = tree.args.append(createRwFor.apply(partExpression.type));
+                                    metadataIndex++;
+                                }
+
+                            metadataIndex += n;
                             break;
                         case InvocationsFinder.TextPart _:
                             break;

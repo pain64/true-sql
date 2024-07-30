@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
     @TestTemplate public void withGeneratedKeys(MainConnection parameter) {
         classField = parameter;
-        var local = new MainConnection(parameter.w());
+        var local = new MainConnection(parameter.w);
 
         classField.q("select name from users").fetchNone();
         parameter.q("select name from users").fetchNone();

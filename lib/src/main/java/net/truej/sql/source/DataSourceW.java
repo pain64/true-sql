@@ -3,30 +3,28 @@ package net.truej.sql.source;
 import net.truej.sql.dsl.*;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 
-public non-sealed interface DataSourceW extends
+public non-sealed class DataSourceW implements
     Source, Q<DataSourceW.Single, DataSourceW.Batched> {
 
-    DataSource w();
+    public final DataSource w;
 
-    interface WithConnectionAction<T, E extends Exception> {
+    public DataSourceW(DataSource w) {this.w = w;}
+
+    public interface WithConnectionAction<T, E extends Exception> {
         T run(ConnectionW cn) throws E;
     }
 
-    default <T, E extends Exception> T withConnection(
+    public final <T, E extends Exception> T withConnection(
         WithConnectionAction<T, E> action
     ) throws E {
         var self = this;
-        try (var cn = w().getConnection()) {
+        try (var cn = w.getConnection()) {
             return action.run(
-                new ConnectionW() {
+                new ConnectionW(cn) {
                     @Override public RuntimeException mapException(SQLException ex) {
                         return self.mapException(ex);
-                    }
-                    @Override public Connection w() {
-                        return cn;
                     }
                 }
             );
@@ -35,11 +33,11 @@ public non-sealed interface DataSourceW extends
         }
     }
 
-    interface InTransactionAction<T, E extends Exception> {
+    public interface InTransactionAction<T, E extends Exception> {
         T run(ConnectionW connection) throws E;
     }
 
-    default <T, E extends Exception> T inTransaction(
+    public final <T, E extends Exception> T inTransaction(
         InTransactionAction<T, E> action
     ) throws E {
         return withConnection(
@@ -47,7 +45,7 @@ public non-sealed interface DataSourceW extends
         );
     }
 
-    class AsCall implements
+    public static class AsCall implements
         NoUpdateCount.None, NoUpdateCount.One {
 
         public static class WithUpdateCount implements
@@ -66,7 +64,7 @@ public non-sealed interface DataSourceW extends
         public final G g = new G();
     }
 
-    class Single implements
+    public static class Single implements
         As<AsCall, Single.AsGeneratedKeys>,
         NoUpdateCount.None, NoUpdateCount.One,
         NoUpdateCount.OneOrZero, NoUpdateCount.List_ {
@@ -113,7 +111,7 @@ public non-sealed interface DataSourceW extends
         public final G g = new G();
     }
 
-    class Batched implements
+    public static class Batched implements
         As<AsCall, Batched.AsGeneratedKeys>,
         NoUpdateCount.None, NoUpdateCount.List_ {
 

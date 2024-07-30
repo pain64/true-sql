@@ -4,4 +4,6 @@ import net.truej.sql.source.DataSourceW;
 
 import javax.sql.DataSource;
 
-public record MainDataSourceUnchecked(DataSource w) implements DataSourceW { }
+public class MainDataSourceUnchecked extends DataSourceW {
+    public MainDataSourceUnchecked(DataSource w) { super(w); }
+}

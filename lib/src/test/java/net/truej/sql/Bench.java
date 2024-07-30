@@ -26,7 +26,9 @@ public class Bench {
         new Runner(opt).run();
     }
 
-    record MainConnection(Connection w) implements ConnectionW { }
+    static class MainConnection extends ConnectionW {
+        public MainConnection(Connection w) { super(w); }
+    }
 
     @State(Scope.Thread)
     public static class S {

@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test1 {
 
-    record PgConnection(Connection w) implements ConnectionW { }
-    @Configuration record PgDataSource(DataSource w) implements DataSourceW { }
-
-    static DataSource createDs() { return null; }
-
-    public static void main(String[] args) {
-        var pg = new PgDataSource(createDs());
-    }
+//    record PgConnection(Connection w) implements ConnectionW { }
+//    @Configuration record PgDataSource(DataSource w) implements DataSourceW { }
+//
+//    static DataSource createDs() { return null; }
+//
+//    public static void main(String[] args) {
+//        var pg = new PgDataSource(createDs());
+//    }
 
     // @Database class PgDataSource extends DataSourceW {}
     // @Database class PgConnection extends ConnectionW {}
@@ -111,7 +111,9 @@ public class Test1 {
     // TODO: orIsNull pattern
 
 
-    record MainConnection(Connection w) implements ConnectionW { }
+    class MainConnection extends ConnectionW {
+        public MainConnection(Connection w) { super(w); }
+    }
 
     @Test void test1() throws SQLException {
         var cn = new MainConnection(
