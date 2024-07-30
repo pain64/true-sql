@@ -23,7 +23,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
             cn.q("""
                 update bill
                 set discount = amount * ?
-                where trunc(bill."date") = '01.09.24'
+                where trunc(bill."date") = to_date('01.09.2024', 'DD.MM.YYYY')
                 """, new BigDecimal("0.1")
             ).withUpdateCount.fetchNone()
         );
