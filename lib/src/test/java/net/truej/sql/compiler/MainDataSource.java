@@ -25,6 +25,7 @@ import java.sql.Types;
 //        url = "jdbc:postgresql://localhost:5432/uikit_sample",
 //        username = "uikit",
 //        password = "1234"
+        // create connection pool
     ),
     typeBindings = {
         @TypeBinding(

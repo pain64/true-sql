@@ -11,9 +11,10 @@ import org.postgresql.geometric.PGpoint;
 
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 import static net.truej.sql.source.Parameters.*;
+
+import net.truej.sql.test.__12__TypeBindingsTrueSql.*;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __12__TypeBindings {
@@ -24,12 +25,22 @@ import static net.truej.sql.source.Parameters.*;
         Assertions.assertEquals(
             expected, ds.q("select ?::point", expected).fetchOne(PGpoint.class)
         );
+    }
 
-        var expected2 = UserSex.MALE;
+    @TestTemplate public void testEnumBind(MainDataSource ds) {
+        Assertions.assertEquals(
+            UserSex.MALE, ds.q("select sex from users where id = 1")
+                .fetchOne(Nullable, UserSex.class)
+        );
+    }
+
+    @TestTemplate public void testTypeInference(MainDataSource ds) throws NoSuchFieldException {
+        Object fetched = ds.q("select name, sex from users where id = 1")
+            .g.fetchOne(User.class);
 
         Assertions.assertEquals(
-            expected2,
-            ds.q("select sex from users where id = 1").fetchOne(Nullable, UserSex.class)
+            UserSex.class.getName(),
+            fetched.getClass().getField("sex").getType().getName()
         );
     }
 }

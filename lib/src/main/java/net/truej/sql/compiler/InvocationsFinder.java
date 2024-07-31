@@ -106,7 +106,7 @@ public class InvocationsFinder {
             } else if (check.apply("unfold")) {
                 if (invoke.args.size() == 1)
                     return new UnfoldParameter(invoke.args.head, null);
-                else if(invoke.args.size() == 2) {
+                else if (invoke.args.size() == 2) {
                     if (
                         invoke.args.get(1) instanceof JCTree.JCLambda lmb &&
                         lmb.body instanceof JCTree.JCNewArray array &&
@@ -973,6 +973,8 @@ public class InvocationsFinder {
                                                     );
                                                 } else {
                                                     var inferType = (Supplier<String>) () -> {
+                                                        // нужно как-то понять что нет конфликта по биндам
+                                                        //
                                                         if (
                                                             nullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
                                                             nullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
@@ -1038,6 +1040,7 @@ public class InvocationsFinder {
                                                                 return "java.time.ZonedDateTime";
                                                         }
 
+                                                        // shim for new java.time API (JSR-310)
                                                         return switch (column.sqlType()) {
                                                             case Types.DATE ->
                                                                 "java.time.LocalDate";
@@ -1053,7 +1056,13 @@ public class InvocationsFinder {
                                                             case Types.TIMESTAMP_WITH_TIMEZONE ->
                                                                 column.javaClassName().equals("java.time.ZonedDateTime")
                                                                     ? column.javaClassName() : "java.time.OffsetDateTime";
-                                                            default -> column.javaClassName();
+                                                            default -> parsedConfig.typeBindings().stream()
+                                                                .filter(b ->
+                                                                    column.sqlTypeName().equals(b.compatibleSqlTypeName())
+                                                                )
+                                                                .findFirst()
+                                                                .map(Standard.Binding::className)
+                                                                .orElse(column.javaClassName());
                                                         };
                                                     };
 
