@@ -115,9 +115,9 @@ import net.truej.sql.config.CompileTimeChecks;
 
 You can configure db connection with next ENV variables
 
-    truesql.xxx.PgDb.url=null
-    truesql.xxx.PgDb.username=null
-    truesql.xxx.PgDb.password=null
+    truesql.xxx.PgDs.url=null
+    truesql.xxx.PgDs.username=null
+    truesql.xxx.PgDs.password=null
 
 To check configuration when build use flag
 
@@ -685,11 +685,20 @@ var ids = List.of(1, 2, 3);
 ds.q("select id, name from users where id in (?)", unfold(ids))
     .g.fetchList(User.class);
 ```
-And if you have N-width parameter use unfoldN
+And if you have N-width parameter use next
 ```java
-var params = List.of(new Pair<>(1, "a"), new Pair<>(2, "b"));
-ds.q("select v from t1 where (id, v) in = (?)", unfold2(params))
-    .fetchList(String.class);
+var data = List.of(
+            new User(1L, "Joe"),
+            new User(2L, "Donald")
+            );
+
+ds.q("""
+    select 
+        case when info is null then 'null' else info end as info
+    from users 
+    where (id, name) in (?)
+    """, unfold(data, u -> new Object[]{u.id, u.name})
+.fetchList(String.class);
 ```
 
 ## Extra type bindings
