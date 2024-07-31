@@ -24,7 +24,7 @@ email: [truesqlbest@email.com]()
 - [Extra type bindings](#extra-type-bindings)
 - [DB constraint violation checks](#db-constraint-violation-checks)
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
-- [Exceptional perfomance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
+- [Exceptional performance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
 
 #### More information about TrueSql and community
 IN PROGRESS [Article about TrueSql.]() <br>
@@ -75,14 +75,14 @@ IN PROGRESS [Article about TrueSql.]() <br>
 ) public class PgDs extends DataSourceW {
     public PgDs(DataSource w) { super(w); }
 }
-// ! ANNOTATE YOUR CLASS WITH @TrueSQL !
-@TrueSQL class Main {
+// ! ANNOTATE YOUR CLASS WITH @TrueSql !
+@TrueSql class Main {
     void main() {
         // create db instance
         var ds = new PgDs(new HikariDataSource() {{
-            setJdbcUrl(url);
-            setUsername(username);
-            setPassword(password);
+            setJdbcUrl("jdbc:postgresql://localhost:5432/test_db");
+            setUsername("user");
+            setPassword("userpassword");
         }});
         // chill
         var name = ds.q("select name from users where id = ?", 42)
