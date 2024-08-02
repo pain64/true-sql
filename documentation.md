@@ -5,12 +5,13 @@ TrueSql is an ultimate sql database connector for Java.<br>
 It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make TrueSql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose TrueSql.
 
 ##### Contact us via
-tg: [Alex](), [Dmitry]()<br>
-email: [truesqlbest@email.com]()
+tg: @overln2, @aka_naked_gun<br>
+email: [net.truej.sql@gmail.com]()
 
 ## FEATURES
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
-- [Compile-time query validation and DTO-generation](#compile-time-query-validation-and-dto-generation)
+- [Compile-time query validation](#compile-time-query-validation)
+- [DTO generation](#dto-generation)
 - [Null-safety](#null-safety)
 - [Full featured:](#full-featured)
   - [Generated keys](#generatedkeys)
@@ -28,8 +29,8 @@ email: [truesqlbest@email.com]()
 
 #### More information about TrueSql and community
 IN PROGRESS [Article about TrueSql.]() <br>
-[Our youtube channel about TrueSql.]()<br>
-[In this telegram channel we answer questions about TrueSql.]()
+[Our youtube channel about TrueSql.](https://www.youtube.com/@TrueSql64)<br>
+[In this telegram channel we answer questions about TrueSql.](https://t.me/TrueSql)
 
 #### TESTED ON ALL MAJOR DATABASES
 
@@ -153,7 +154,7 @@ ds.q("""
 
 All possibilities of grouped object-tree demonstrated below.
 
-## Compile-time query validation and DTO generation
+## Compile-time query validation
 During compilation, we send queries and their parameters to the database to check whether the query can be executed successfully. i.e<br>
 ```java
 ds.q("select * frm users").fetchNone();
@@ -165,6 +166,7 @@ ds.q("select * from ysers").fetchNone();
 ds.q("select name, id from user where id = ?", 123).fetchOne(String.class);
 // raise compiletime error... wrong DTO
 ```
+## DTO generation
 
 Moreover, by communicating directly with the database, we can generate DTO in compile-time. <br>
 **Just add ".g" and mark up your query.**
@@ -698,7 +700,7 @@ ds.q("""
     from users 
     where (id, name) in (?)
     """, unfold(data, u -> new Object[]{u.id, u.name})
-.fetchList(String.class);
+).fetchList(String.class);
 ```
 
 ## Extra type bindings
@@ -873,13 +875,15 @@ If you use net.truej.sql.ConstraintViolationException then TrueSql will check co
 
 ```java
 try {
-	ds.q("insert into users values(1, ‘John’, null)").fetchNone();
+   ds.q(
+       "insert into users(name, email) values(?, ?)", name, email 
+   ).fetchNone();
 } catch (ConstraintViolationException ex) {
-	ex.when(
-		new Constraint<>("users", "users_pk", () -> {
-			throw new Handled("User with id=1 already exists.");
-        })
-    );
+   ex.when(
+       ds.constraint("users", "users_email_unique", () -> {
+           throw new MyException("user with email already exists");
+       })
+   );
 }
 ```
 ###### NB: also has overloads with database and schema
@@ -893,4 +897,4 @@ For these reasons, sql-injection can't happen.
 ## Exceptional performance. Equal to JDBC
 TrueSql translates to pure JDBC. This means that no others can be any faster.
 
-??? here table with comparsion with other frameworks
+The tests have already been done. Soon we will public them!
