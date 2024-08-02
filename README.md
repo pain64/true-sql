@@ -57,11 +57,11 @@ IN PROGRESS [Article about TrueSql.]() <br>
 </table>
 
 ## Get started
-1. Get artifacts here: [Maven repository link](https://mvnrepository.com/artifact/net.truej/sql).<br>
+1. Get artifacts here: [Maven repository link](https://central.sonatype.com/artifact/net.truej/sql).<br>
 2. Have fun!
 <details>
   <summary>build.gradle.kts</summary>
-  <a href="https://github.com/pain64/true-sql/blob/main/samples/api-showcase/build.gradle.kts">link</a>
+  <a href="https://github.com/pain64/true-sql/blob/main/samples/spring-gradle/build.gradle.kts">link</a>
   <br>...
 </details>
 
