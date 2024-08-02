@@ -1,1 +1,6 @@
-../.gradle/gradle.properties
+.gradle/
+build/
+.idea/
+out/
+publish.sh
+gradle.properties

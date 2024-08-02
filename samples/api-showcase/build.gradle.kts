@@ -10,11 +10,11 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":lib"))
+
     implementation("org.jetbrains:annotations:24.0.0")
     implementation(platform("org.junit:junit-bom:5.9.1"))
     implementation("org.junit.jupiter:junit-jupiter")
-    annotationProcessor(project(":lib"))
+
 }
 
 tasks.withType<JavaCompile> {
