@@ -871,7 +871,7 @@ public class MainDataSource extends DataSourceW {
     }
 }
 ```
-If you use net.truej.sql.ConstraintViolationException then TrueSql will check constraint existence in database. The way you can catch wrapped DB constraint violations:
+If you use net.truej.sql.dsl.ConstraintViolationException then TrueSql will check constraint existence in database. The way you can catch wrapped DB constraint violations:
 
 ```java
 try {

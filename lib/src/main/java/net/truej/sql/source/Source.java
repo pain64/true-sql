@@ -1,3 +1,6 @@
 package net.truej.sql.source;
 
-public sealed interface Source extends RuntimeConfig permits ConnectionW, DataSourceW { }
+import net.truej.sql.dsl.NewConstraint;
+
+public sealed interface Source extends RuntimeConfig, NewConstraint
+    permits ConnectionW, DataSourceW { }

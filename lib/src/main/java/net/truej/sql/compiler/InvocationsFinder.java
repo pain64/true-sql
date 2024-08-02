@@ -9,7 +9,6 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
-import net.truej.sql.Constraint;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
@@ -211,7 +210,208 @@ public class InvocationsFinder {
                         varTypes.put(cnParameterName, found);
                         withConnectionSource.add(cnParameterName);
                     }
+                } else if (
+                    tree.meth instanceof JCTree.JCFieldAccess fa &&
+                    fa.name.equals(names.fromString("constraint"))
+                ) {
+                    if (tree.args.length() < 3 || tree.args.length() > 5) return;
+                    var sourceExpression = fa.selected;
 
+                    if (sourceExpression instanceof JCTree.JCIdent idExpr) {
+                        var vt = varTypes.get(idExpr.name);
+
+                        var parsedConfig = ConfigurationParser.parseConfig(
+                            env, symtab, names, cu,
+                            vt.className(),
+                            vt.getAnnotation(Configuration.class),
+                            false
+                        );
+
+                        record CatalogAndSchema(String catalogName, String schemaName) { }
+
+                        try (
+                            var connection = DriverManager.getConnection(
+                                parsedConfig.url(), parsedConfig.username(), parsedConfig.password()
+                            )
+                        ) {
+                            var onDatabase = connection.getMetaData().getDatabaseProductName();
+
+                            var findConstraint = (
+                                BiFunction<String, List<String>, CatalogAndSchema>
+                                ) (query, args) -> {
+
+                                try {
+                                    var stmt = connection.prepareStatement(query);
+                                    for (var i = 0; i < args.size(); i++)
+                                        stmt.setString(i + 1, args.get(i));
+
+                                    var rs = stmt.executeQuery();
+                                    if (!rs.next())
+                                        throw new ValidationException(
+                                            "constraint not found"
+                                        );
+
+                                    var full = new CatalogAndSchema(
+                                        rs.getString(1), rs.getString(2)
+                                    );
+
+                                    if (rs.next()) throw new ValidationException(
+                                        "too much constraints for criteria"
+                                    );
+
+                                    return full;
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            };
+
+                            var defaultQuery = """
+                                select
+                                    '', ''
+                                from information_schema.table_constraints
+                                where
+                                    upper(TABLE_CATALOG)   = upper(?) and
+                                    upper(TABLE_SCHEMA)    = upper(?) and
+                                    upper(TABLE_NAME)      = upper(?) and
+                                    upper(CONSTRAINT_NAME) = upper(?)""";
+
+                            if (onDatabase.equals(MYSQL_DB_NAME))
+                                defaultQuery = """
+                                    select
+                                        '', ?
+                                    from information_schema.table_constraints
+                                    where
+                                        upper(TABLE_SCHEMA)    = upper(?) and
+                                        upper(TABLE_NAME)      = upper(?) and
+                                        upper(CONSTRAINT_NAME) = upper(?)
+                                    """;
+
+                            if (onDatabase.equals(ORACLE_DB_NAME))
+                                defaultQuery = """
+                                    select
+                                        '', ?
+                                    from all_constraints
+                                    where
+                                        upper(OWNER)           = upper(?) and
+                                        upper(TABLE_NAME)      = upper(?) and
+                                        upper(CONSTRAINT_NAME) = upper(?)
+                                    """;
+
+                            switch (tree.args.length()) {
+                                case 3:
+                                    if (
+                                        tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
+                                        l1.getValue() instanceof String tableName &&
+                                        tree.args.get(1) instanceof JCTree.JCLiteral l2 &&
+                                        l2.getValue() instanceof String constraintName
+                                    ) {
+                                        var rsToString = (Function<ResultSet, String>) rs ->
+                                            Stream.iterate(
+                                                rs, t -> {
+                                                    try {
+                                                        return t.next();
+                                                    } catch (SQLException e) {
+                                                        throw new RuntimeException(e);
+                                                    }
+                                                }, t -> t
+                                            ).map(r -> {
+                                                try {
+                                                    var s = "";
+                                                    for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
+                                                        s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
+                                                    return s;
+
+                                                } catch (SQLException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            }).collect(Collectors.joining("\n"));
+
+                                        var realCatalog = connection.getCatalog();
+                                        var realSchema = connection.getSchema();
+
+                                        // FIXME: correct resolve for PostgreSQL (search_path)
+
+                                        if (onDatabase.equals(MYSQL_DB_NAME)) {
+                                            realCatalog = "def";
+                                            realSchema = connection.getCatalog();
+                                        }
+
+                                        if (onDatabase.equals(ORACLE_DB_NAME)) {
+                                            realCatalog = "";
+                                        }
+
+                                        var _ = findConstraint.apply(
+                                            defaultQuery, List.of(
+                                                realCatalog, realSchema,
+                                                tableName, constraintName
+                                            )
+                                        );
+
+                                        tree.args = com.sun.tools.javac.util.List.<JCTree.JCExpression>of(
+                                                maker.Literal(realCatalog)
+                                            )
+                                            .append(maker.Literal(realSchema))
+                                            .appendList(tree.args);
+
+                                    } else
+                                        throw new RuntimeException("bad tree");
+                                    break;
+                                case 4:
+                                    if (
+                                        tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
+                                        l1.getValue() instanceof String schemaName &&
+                                        tree.args.get(1) instanceof JCTree.JCLiteral l2 &&
+                                        l2.getValue() instanceof String tableName &&
+                                        tree.args.get(2) instanceof JCTree.JCLiteral l3 &&
+                                        l3.getValue() instanceof String constraintName
+                                    ) {
+                                        var realCatalog = connection.getCatalog();
+
+                                        if (onDatabase.equals(ORACLE_DB_NAME))
+                                            realCatalog = ""; // unused
+
+                                        var _ = findConstraint.apply(
+                                            defaultQuery, List.of(
+                                                realCatalog, schemaName,
+                                                tableName, constraintName
+                                            )
+                                        );
+
+                                        tree.args = com.sun.tools.javac.util.List.<JCTree.JCExpression>of(
+                                                maker.Literal(realCatalog)
+                                            )
+                                            .appendList(tree.args);
+
+                                    } else throw new RuntimeException("bad tree");
+                                    break;
+                                default:  // 5
+                                    if (
+                                        tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
+                                        l1.getValue() instanceof String catalogName &&
+                                        tree.args.get(1) instanceof JCTree.JCLiteral l2 &&
+                                        l2.getValue() instanceof String schemaName &&
+                                        tree.args.get(2) instanceof JCTree.JCLiteral l3 &&
+                                        l3.getValue() instanceof String tableName &&
+                                        tree.args.get(3) instanceof JCTree.JCLiteral l4 &&
+                                        l4.getValue() instanceof String constraintName
+                                    ) {
+                                        // TODO: not supported in oracle
+                                        var _ = findConstraint.apply(
+                                            defaultQuery, List.of(
+                                                catalogName, schemaName, tableName, constraintName
+                                            )
+                                        );
+
+                                    } else
+                                        throw new RuntimeException("bad tree");
+                                    break;
+                            }
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    // bad tree
                 } else if (tree.meth instanceof JCTree.JCFieldAccess f) {
                     var fetchMethodName = f.name.toString();
 
@@ -1056,13 +1256,14 @@ public class InvocationsFinder {
                                                             case Types.TIMESTAMP_WITH_TIMEZONE ->
                                                                 column.javaClassName().equals("java.time.ZonedDateTime")
                                                                     ? column.javaClassName() : "java.time.OffsetDateTime";
-                                                            default -> parsedConfig.typeBindings().stream()
-                                                                .filter(b ->
-                                                                    column.sqlTypeName().equals(b.compatibleSqlTypeName())
-                                                                )
-                                                                .findFirst()
-                                                                .map(Standard.Binding::className)
-                                                                .orElse(column.javaClassName());
+                                                            default ->
+                                                                parsedConfig.typeBindings().stream()
+                                                                    .filter(b ->
+                                                                        column.sqlTypeName().equals(b.compatibleSqlTypeName())
+                                                                    )
+                                                                    .findFirst()
+                                                                    .map(Standard.Binding::className)
+                                                                    .orElse(column.javaClassName());
                                                         };
                                                     };
 
@@ -1169,231 +1370,6 @@ public class InvocationsFinder {
                     messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
                 }
                 super.visitApply(tree);
-            }
-
-            @Override public void visitNewClass(JCTree.JCNewClass tree) {
-
-                var constraintsSym = symtab.enterClass(
-                    symtab.unnamedModule, names.fromString(Constraint.class.getName())
-                );
-
-                if (tree.clazz instanceof JCTree.JCTypeApply apply) {
-                    if (
-                        apply.clazz instanceof JCTree.JCIdent id &&
-                        id.name.equals(constraintsSym.name) && (
-                            cu.starImportScope.findFirst(
-                                constraintsSym.name, sym -> sym == constraintsSym
-                            ) != null ||
-
-                            cu.namedImportScope.findFirst(
-                                constraintsSym.name, sym -> sym == constraintsSym
-                            ) != null
-                        )
-                    ) {
-                        if (tree.args.length() < 4 || tree.args.length() > 6) return;
-                        var sourceExpression = tree.args.get(0);
-
-                        if (sourceExpression instanceof JCTree.JCIdent idExpr) {
-                            var vt = varTypes.get(idExpr.name);
-
-                            var parsedConfig = ConfigurationParser.parseConfig(
-                                env, symtab, names, cu,
-                                vt.className(),
-                                vt.getAnnotation(Configuration.class),
-                                false
-                            );
-
-                            record CatalogAndSchema(String catalogName, String schemaName) { }
-
-                            try (
-                                var connection = DriverManager.getConnection(
-                                    parsedConfig.url(), parsedConfig.username(), parsedConfig.password()
-                                )
-                            ) {
-                                var onDatabase = connection.getMetaData().getDatabaseProductName();
-
-                                var findConstraint = (
-                                    BiFunction<String, List<String>, CatalogAndSchema>
-                                    ) (query, args) -> {
-
-                                    try {
-                                        var stmt = connection.prepareStatement(query);
-                                        for (var i = 0; i < args.size(); i++)
-                                            stmt.setString(i + 1, args.get(i));
-
-                                        var rs = stmt.executeQuery();
-                                        if (!rs.next())
-                                            throw new ValidationException(
-                                                "constraint not found"
-                                            );
-
-                                        var full = new CatalogAndSchema(
-                                            rs.getString(1), rs.getString(2)
-                                        );
-
-                                        if (rs.next()) throw new ValidationException(
-                                            "too much constraints for criteria"
-                                        );
-
-                                        return full;
-                                    } catch (SQLException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                };
-
-                                var defaultQuery = """
-                                    select
-                                        '', ''
-                                    from information_schema.table_constraints
-                                    where
-                                        upper(TABLE_CATALOG)   = upper(?) and
-                                        upper(TABLE_SCHEMA)    = upper(?) and
-                                        upper(TABLE_NAME)      = upper(?) and
-                                        upper(CONSTRAINT_NAME) = upper(?)""";
-
-                                if (onDatabase.equals(MYSQL_DB_NAME))
-                                    defaultQuery = """
-                                        select
-                                            '', ?
-                                        from information_schema.table_constraints
-                                        where
-                                            upper(TABLE_SCHEMA)    = upper(?) and
-                                            upper(TABLE_NAME)      = upper(?) and
-                                            upper(CONSTRAINT_NAME) = upper(?)
-                                        """;
-
-                                if (onDatabase.equals(ORACLE_DB_NAME))
-                                    defaultQuery = """
-                                        select
-                                            '', ?
-                                        from all_constraints
-                                        where
-                                            upper(OWNER)           = upper(?) and
-                                            upper(TABLE_NAME)      = upper(?) and
-                                            upper(CONSTRAINT_NAME) = upper(?)
-                                        """;
-
-                                switch (tree.args.length()) {
-                                    case 4:
-                                        if (
-                                            tree.args.get(1) instanceof JCTree.JCLiteral l1 &&
-                                            l1.getValue() instanceof String tableName &&
-                                            tree.args.get(2) instanceof JCTree.JCLiteral l2 &&
-                                            l2.getValue() instanceof String constraintName
-                                        ) {
-                                            var rsToString = (Function<ResultSet, String>) rs ->
-                                                Stream.iterate(
-                                                    rs, t -> {
-                                                        try {
-                                                            return t.next();
-                                                        } catch (SQLException e) {
-                                                            throw new RuntimeException(e);
-                                                        }
-                                                    }, t -> t
-                                                ).map(r -> {
-                                                    try {
-                                                        var s = "";
-                                                        for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
-                                                            s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
-                                                        return s;
-
-                                                    } catch (SQLException e) {
-                                                        throw new RuntimeException(e);
-                                                    }
-                                                }).collect(Collectors.joining("\n"));
-
-                                            var realCatalog = connection.getCatalog();
-                                            var realSchema = connection.getSchema();
-
-                                            // FIXME: correct resolve for PostgreSQL (search_path)
-
-                                            if (onDatabase.equals(MYSQL_DB_NAME)) {
-                                                realCatalog = "def";
-                                                realSchema = connection.getCatalog();
-                                            }
-
-                                            if (onDatabase.equals(ORACLE_DB_NAME)) {
-                                                realCatalog = "";
-                                            }
-
-                                            var _ = findConstraint.apply(
-                                                defaultQuery, List.of(
-                                                    realCatalog, realSchema,
-                                                    tableName, constraintName
-                                                )
-                                            );
-
-                                            tree.args = com.sun.tools.javac.util.List.of(
-                                                    tree.args.head
-                                                )
-                                                .append(maker.Literal(realCatalog))
-                                                .append(maker.Literal(realSchema))
-                                                .appendList(tree.args.tail);
-
-                                        } else
-                                            throw new RuntimeException("bad tree");
-                                        break;
-                                    case 5:
-                                        if (
-                                            tree.args.get(1) instanceof JCTree.JCLiteral l1 &&
-                                            l1.getValue() instanceof String schemaName &&
-                                            tree.args.get(2) instanceof JCTree.JCLiteral l2 &&
-                                            l2.getValue() instanceof String tableName &&
-                                            tree.args.get(3) instanceof JCTree.JCLiteral l3 &&
-                                            l3.getValue() instanceof String constraintName
-                                        ) {
-                                            var realCatalog = connection.getCatalog();
-
-                                            if (onDatabase.equals(ORACLE_DB_NAME))
-                                                realCatalog = ""; // unused
-
-                                            var _ = findConstraint.apply(
-                                                defaultQuery, List.of(
-                                                    realCatalog, schemaName,
-                                                    tableName, constraintName
-                                                )
-                                            );
-
-                                            tree.args = com.sun.tools.javac.util.List.of(
-                                                    tree.args.head
-                                                )
-                                                .append(maker.Literal(realCatalog))
-                                                .appendList(tree.args.tail);
-
-                                        } else throw new RuntimeException("bad tree");
-                                        break;
-                                    default:  // 6
-                                        if (
-                                            tree.args.get(1) instanceof JCTree.JCLiteral l1 &&
-                                            l1.getValue() instanceof String catalogName &&
-                                            tree.args.get(2) instanceof JCTree.JCLiteral l2 &&
-                                            l2.getValue() instanceof String schemaName &&
-                                            tree.args.get(3) instanceof JCTree.JCLiteral l3 &&
-                                            l3.getValue() instanceof String tableName &&
-                                            tree.args.get(4) instanceof JCTree.JCLiteral l4 &&
-                                            l4.getValue() instanceof String constraintName
-                                        ) {
-                                            // TODO: not supported in oracle
-                                            var _ = findConstraint.apply(
-                                                defaultQuery, List.of(
-                                                    catalogName, schemaName, tableName, constraintName
-                                                )
-                                            );
-
-                                        } else throw new RuntimeException("bad tree");
-                                        break;
-                                }
-
-                                var zz = 1;
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else
-                            return; // bad tree
-                    }
-                }
-
-                super.visitNewClass(tree);
             }
         }.scan(tree);
 

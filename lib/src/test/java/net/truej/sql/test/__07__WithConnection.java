@@ -19,6 +19,7 @@ import static net.truej.sql.source.Parameters.NotNull;
         var expectedTimeZone = "America/New_York";
         Assertions.assertEquals(
             expectedTimeZone, ds.withConnection(cn -> {
+                    // NB: не надо так делать
                     cn.q("set time zone 'America/New_York'").fetchNone();
 
                     return cn.q("select current_setting('TIMEZONE')")

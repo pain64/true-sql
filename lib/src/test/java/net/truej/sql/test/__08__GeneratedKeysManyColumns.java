@@ -46,6 +46,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
             new Discount(5L, new BigDecimal("100.02")))
         );
 
+
         var actual1 = ds.q("update bill set discount = amount * ?", new BigDecimal("0.2"))
             .asGeneratedKeys("id", "discount").withUpdateCount.fetchList(Discount.class);
 
@@ -102,7 +103,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                     where cast(b.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
-            .asGeneratedKeys("id", "discount").withUpdateCount
+            .asGeneratedKeys("id", "discount")
+            .withUpdateCount
             .fetchList(Discount.class);
 
         Assertions.assertArrayEquals(

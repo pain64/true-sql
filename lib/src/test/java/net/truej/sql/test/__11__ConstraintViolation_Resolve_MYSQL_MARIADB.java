@@ -1,7 +1,7 @@
 package net.truej.sql.test;
 
-import net.truej.sql.Constraint;
-import net.truej.sql.ConstraintViolationException;
+import net.truej.sql.dsl.Constraint;
+import net.truej.sql.dsl.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("insert into users values(1, 'Joe', null)").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "users", "primary", () -> { throw new Handled(); })
+                    ds.constraint("users", "primary", () -> { throw new Handled(); })
                 );
             }
         });
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("insert into users values(1, 'Joe', null)").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "test", "users", "primary", () -> { throw new Handled(); })
+                    ds.constraint("test", "users", "primary", () -> { throw new Handled(); })
                 );
             }
         });

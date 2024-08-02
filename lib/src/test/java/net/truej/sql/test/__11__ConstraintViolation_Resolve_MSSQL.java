@@ -1,7 +1,7 @@
 package net.truej.sql.test;
 
-import net.truej.sql.Constraint;
-import net.truej.sql.ConstraintViolationException;
+import net.truej.sql.dsl.Constraint;
+import net.truej.sql.dsl.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
@@ -10,7 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(MSSQL)
@@ -23,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "clinic", "clinic_fk2", () -> { throw new Handled(); })
+                    ds.constraint("clinic", "clinic_fk2", () -> { throw new Handled(); })
                 );
             }
         });
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
+                    ds.constraint("dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
                 );
             }
         });
@@ -47,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "master", "dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
+                    ds.constraint("master", "dbo", "clinic", "clinic_fk2", () -> { throw new Handled(); })
                 );
             }
         });

@@ -1,4 +1,4 @@
-package net.truej.sql;
+package net.truej.sql.dsl;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -6,12 +6,12 @@ public class ConstraintViolationException extends RuntimeException {
     // Nulls here are for 'bad jdbc drivers'
     private final @Nullable String catalogName;
     private final @Nullable String schemaName;
-    private final String tableName;
-    private final String constraintName;
+    private final @Nullable String tableName;
+    private final @Nullable String constraintName;
 
     public ConstraintViolationException(
         @Nullable String catalogName, @Nullable String schemaName,
-        String tableName, String constraintName
+        @Nullable String tableName, @Nullable String constraintName
     ) {
         this.catalogName = catalogName;
         this.schemaName = schemaName;

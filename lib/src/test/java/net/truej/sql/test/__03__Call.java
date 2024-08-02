@@ -23,8 +23,8 @@ import static net.truej.sql.source.Parameters.*;
     // fixme: make int
     // todo: подумать над nullability для out параметров???
     record IntPair(
-        @NotNull Integer first,
-        @NotNull Integer second
+        @NotNull int first,
+        @NotNull int second
     ) { }
 
     @TestTemplate public void test(MainConnection cn) {

@@ -1,7 +1,7 @@
 package net.truej.sql.test;
 
-import net.truej.sql.Constraint;
-import net.truej.sql.ConstraintViolationException;
+import net.truej.sql.dsl.Constraint;
+import net.truej.sql.dsl.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 ds.q("delete from city").fetchNone();
             } catch (ConstraintViolationException ex) {
                 ex.when(
-                    new Constraint<>(ds, "clinic", "clinic_fk2", () -> {
+                    ds.constraint("clinic", "clinic_fk2", () -> {
                         throw new Handled();
                     })
                 );
@@ -48,7 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                     return true;
                 } catch (ConstraintViolationException ex) {
                     return ex.when(
-                        new Constraint<>(ds, "clinic", "clinic_fk2", () -> false)
+                        // is it better ?
+                        // ds.constraint("clinic", "clinic_fk2", () -> false),
+                        ds.constraint("clinic", "clinic_fk2", () -> false)
                     );
                 }
             }).get(), false
