@@ -704,7 +704,7 @@ ds.q("""
 ```
 
 ## Extra type bindings
-Nowadays bind custom types is a casual need. TrueSql provides two ways to bind parameters. 
+Nowadays bind custom types is a casual need. TrueSql provides two ways to bind type read&write.  
 
 ### JDBC as object binding
 If bound type may be mapped as preparedStatement.getObject()/setObject()
@@ -718,6 +718,7 @@ class PgPointRW extends AsObjectReadWrite<PGPoint> { };
 @Configuration(
     typeBindings = {
         @TypeBinding(
+            compatibleSqlTypeName = "point",
             rw = PgPointRW.class
         )
     }
@@ -760,7 +761,7 @@ abstract class PgEnumRW<T extends Enum<T>> implements TypeReadWrite<T> {
 }
 ```
 
-Add bind and compatibility check to configuration
+Add bind to configuration
 
 ```java
 enum UserSex {MALE, FEMALE}
@@ -771,8 +772,6 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 @Configuration(
     typeBindings = {
         @TypeBinding(
-            // JDBC column sql type
-            compatibleSqlType = Types.OTHER,
             // JDBC column sql type name provided by db
             compatibleSqlTypeName = "user_sex",
             rw = PgUserSexRW.class
@@ -783,13 +782,34 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 }
 ```
 
-### Usage in fetch
-If type exists in db
+### Type inference
+As you can see, in examples above we use compatibleSqlTypeName parameter. You should use this mapping in case you want bind java class to custom sql type, which is not default sql type, i.e. point. If you have made this binding, you can use this in fetches, parameters, generating dto as well as default types
 
 ```java
 var userSex = ds.q("select sex from users where id = ?", 42).fetchOne(UserSex.class);
 ```
-Otherwise, use next syntax
+<br>If database has no custom sql types, or, you want wrap default type you should use compatibleSqlType parameter
+
+```java
+enum UserSex {MALE, FEMALE}
+class MySqlUserSexRW extends MySqlEnumRW<UserSex> {
+    @Override public Class<UserSex> aClass() { return UserSex.class; }
+}
+
+@Configuration(
+    typeBindings = {
+        @TypeBinding(
+            // JDBC column sql type name provided by db
+            compatibleSqlType = Types.VARCHAR,
+            rw = MySqlUserSexRW.class
+        )
+    }
+) public class MySqlDs extends DataSourceW {
+    public MySqlDs(DataSource w) { super(w); }
+}
+```
+If you want generate dto with this type, you should specify type like this
+
 
 ```java
 var UserSex = ds.q("""
@@ -811,28 +831,6 @@ var UserSex = ds.q("""
     from users
     """).g.fetchList(User.class);
 ```
-
-
-
-### Type bindings comatibility check
-TrueSql will check type binding compatibility in order with this table
-<table>
-    <tr>
-        <td><b>SqlType\SqlTypeName</td>
-        <td><b>No</td>
-        <td><b>Specified</td>
-    </tr>
-    <tr>
-        <td><b>No</td>
-        <td>check bound className match<br>with JDBC getColumnClassName()</td>
-        <td>check db sql type name match<br>with compatibleSqlTypeName</td>
-    </tr>
-    <tr>
-        <td><b>Specified</td>
-        <td>check JDBC sql type match with compatibleSqlType</td>
-        <td>check both compatibleSqlType<br>and compatibleSqlTypeName</td>
-    </tr>
-</table>
 
 ## Multiple database schemas in one module
 
