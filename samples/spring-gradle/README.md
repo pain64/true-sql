@@ -1,5 +1,5 @@
 ### How to run this demo
-You need PostgreSQL to be accessible at localhost:5432. Also you need user with name `sa` and password `1234`
+You need PostgreSQL to be accessible at `localhost:5432`. Also you need user with name `sa` and password `1234`
 user and database creation script:
 ```shell
 sudo su postgres
