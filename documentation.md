@@ -786,7 +786,7 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 As you can see, in examples above we use compatibleSqlTypeName parameter. You should use this mapping in case you want bind java class to custom sql type, which is not default sql type, i.e. point. If you have made this binding, you can use this in fetches, parameters, generating dto as well as default types
 
 ```java
-var userSex = ds.q("select sex from users where id = ?", 42).fetchOne(UserSex.class);
+var userSex = ds.q("select sex from users where id = ?", 42).g.fetchOne(UserSex.class);
 ```
 <br>If database has no custom sql types, or, you want wrap default type you should use compatibleSqlType parameter
 
