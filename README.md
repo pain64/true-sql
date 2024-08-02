@@ -90,7 +90,7 @@ IN PROGRESS [Article about TrueSql.]() <br>
     }
 }
 ```
-[schema.sql](https://github.com/pain64/true-sql/blob/main/lib/src/test/resources/schema/postgresql.sql) (also used for all examples below)
+[schema.sql](https://github.com/pain64/true-sql/tree/main/lib/src/test/resources/schemal) (also used for all examples below)
 
 ###### NB: Pass parameters one by one after query text.
 
@@ -113,7 +113,7 @@ import net.truej.sql.config.CompileTimeChecks;
 }
 ```
 
-You can configure db connection with next ENV variables
+You can configure db connection for compile-time checks with next ENV variables
 
     truesql.xxx.PgDs.url=null
     truesql.xxx.PgDs.username=null
