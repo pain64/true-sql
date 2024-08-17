@@ -178,13 +178,13 @@ public class GLangParser {
 
     public record Field(FieldType type, String name) { }
 
-    public record NumberedColumn(int n, Line line) { }
+    public record NumberedColumn(int n, ColumnMetadata column, Line line) { }
 
     private static final Pattern SNAKE_TO_CAMEL_CASE_PATTERN = Pattern.compile("_(\\p{L})");
 
     private static String makeFieldName(String columnName) {
         return SNAKE_TO_CAMEL_CASE_PATTERN
-            .matcher(columnName.toLowerCase())
+            .matcher(columnName)
             .replaceAll(m -> m.group(1).toUpperCase());
     }
 
@@ -203,16 +203,24 @@ public class GLangParser {
 
         var localsChecked = locals.stream().map(nl -> {
             if (nl.line.chain.fieldName == null)
-                throw new ValidationException("Field name required");
+                if (nl.column.columnName == null)
+                    throw new ValidationException(
+                        "Your database driver doest not provides column name" +
+                        " (labels only). Field name required"
+                    );
+
 
             if (nl.line.chain.fieldClassName != null)
                 throw new ValidationException("Aggregated java class name not expected here");
+
+            var realFieldName = nl.line.chain.fieldName != null
+                ? nl.line.chain.fieldName : nl.column.columnName;
 
             return new Field(
                 new ScalarType(
                     nl.line.nullMode, nl.line.javaClassName
                 ),
-                makeFieldName(nl.line.chain.fieldName)
+                makeFieldName(realFieldName)
             );
         });
 
@@ -267,7 +275,10 @@ public class GLangParser {
                     return new Field(
                         new AggregatedType(aggregatedTypeName, buildGroup(
                             groupLines.stream().map(nl -> new NumberedColumn(
-                                nl.n, new Line(nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next)
+                                nl.n, nl.column,
+                                new Line(
+                                    nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next
+                                )
                             )).toList()
                         )),
                         groupFieldName
@@ -280,7 +291,8 @@ public class GLangParser {
 
     public record ColumnMetadata(
         NullMode nullMode, int sqlType,
-        String sqlTypeName, String javaClassName, String columnName,
+        String sqlTypeName, String javaClassName,
+        @Nullable String columnName, String columnLabel,
         int scale, int precision
     ) { }
 
@@ -299,7 +311,7 @@ public class GLangParser {
                 .range(0, columns.size())
                 .mapToObj(n -> {
                     var column = columns.get(n);
-                    return new NumberedColumn(n, parse(bindColumn, column, n, lex(column.columnName)));
+                    return new NumberedColumn(n, column, parse(bindColumn, column, n, lex(column.columnLabel)));
                 })
                 .toList()
         );

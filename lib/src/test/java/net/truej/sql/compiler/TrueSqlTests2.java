@@ -1,16 +1,9 @@
 package net.truej.sql.compiler;
 
-import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
-import com.mysql.cj.jdbc.MysqlDataSource;
-import net.truej.sql.Bench;
 import net.truej.sql.util.TestCompiler2;
-import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.jupiter.api.extension.*;
-import org.mariadb.jdbc.MariaDbDataSource;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.*;
 
-import javax.sql.DataSource;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
@@ -22,12 +15,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

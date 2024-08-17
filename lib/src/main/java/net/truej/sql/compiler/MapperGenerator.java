@@ -29,7 +29,7 @@ public class MapperGenerator {
                 .filter(f -> f.type() instanceof GLangParser.ScalarType).toList();
 
             var groupKeys = Out.each(locals, ",\n", (o, i, field) ->
-                o."\{field.type().javaClassName()} c\{offset + i + 1}"
+                o."\{boxedClassName(field.type().javaClassName())} c\{offset + i + 1}"
             );
             var _ = out."""
                 record G\{level}(
@@ -159,6 +159,20 @@ public class MapperGenerator {
             STR."EvenSoNullPointerException.check(\{expr})" : expr;
     }
 
+    static String boxedClassName(String className){
+        return switch (className) {
+            case "boolean" -> Boolean.class.getName();
+            case "byte" -> Byte.class.getName();
+            case "char" -> Character.class.getName();
+            case "short" -> Short.class.getName();
+            case "int" -> Integer.class.getName();
+            case "long" -> Long.class.getName();
+            case "float" -> Float.class.getName();
+            case "double" -> Double.class.getName();
+            default -> className;
+        };
+    }
+
     public static void generate(
         Out out, GLangParser.FieldType toType,
         int[] outParametersIndexes,
@@ -191,19 +205,7 @@ public class MapperGenerator {
 
                 if (hasGrouping) {
                     var rowFields = Out.each(flattened, ",\n", (o, i, field) -> {
-                        var boxedClassName = switch (field.javaClassName()) {
-                            case "boolean" -> Boolean.class.getName();
-                            case "byte" -> Byte.class.getName();
-                            case "char" -> Character.class.getName();
-                            case "short" -> Short.class.getName();
-                            case "int" -> Integer.class.getName();
-                            case "long" -> Long.class.getName();
-                            case "float" -> Float.class.getName();
-                            case "double" -> Double.class.getName();
-                            default -> field.javaClassName();
-                        };
-
-                        return ((Out) o)."\{boxedClassName} c\{i + 1}";
+                        return ((Out) o)."\{boxedClassName(field.javaClassName())} c\{i + 1}";
                     });
 
                     var groupKeysDto = (WriteNext) o ->

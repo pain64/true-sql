@@ -15,10 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
+import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
 // FIX test for enable on MySQL: mysql has no OffsetDateTime
 @TrueSql public class __05__GenerateDto__ORACLE {
 

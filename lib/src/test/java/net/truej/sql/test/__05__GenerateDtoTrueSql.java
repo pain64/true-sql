@@ -7,6 +7,7 @@ public class __05__GenerateDtoTrueSql {
     class User1 {}
     class Clinic { }
     class Clinic2 { }
+    class Clinic3 { }
     class User4 {}
     class User5 {}
     class User6 {}

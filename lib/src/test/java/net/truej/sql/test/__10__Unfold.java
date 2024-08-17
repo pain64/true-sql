@@ -16,6 +16,7 @@ import static net.truej.sql.source.Parameters.*;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __10__Unfold {
+
     @TestTemplate public void unfold1(MainDataSource ds) {
         var ids = List.of(1, 2, 3);
 
@@ -23,6 +24,18 @@ import static net.truej.sql.source.Parameters.*;
             List.of("Joe", "Donald"),
             ds.q("select name from users where id in (?)", unfold(ids))
                 .fetchList(String.class)
+        );
+    }
+
+    @TestTemplate public void unfold1AsObjectArray(MainDataSource ds) {
+        var ids = List.of(1, 2, 3);
+
+        Assertions.assertEquals(
+            List.of("Joe", "Donald"),
+            ds.q(
+                "select name from users where id in (?)",
+                unfold(ids, i -> new Object[]{i})
+            ).fetchList(String.class)
         );
     }
 }

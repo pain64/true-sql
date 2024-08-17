@@ -8,23 +8,27 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
 @ExtendWith(TrueSqlTests2.class)
-@TrueSqlTests2.Message(
-    kind = ERROR, text = "Field name required"
+@EnableOn({ORACLE, MSSQL})
+@Message(
+    kind = ERROR, text = "Your database driver doest not provides column name" +
+                         " (labels only). Field name required"
 )
 @TrueSql public class __16__FieldNameRequired {
 
     @TestTemplate public void test(MainConnection cn) {
         cn.q("""
-                    select
-                        c.id   as		"        ",
-                        c.name as 		"          name      ",
-                        u.id   as 		":t! User2 users.id",
-                        u.name as 		":t!       users.name"
-                    from clinic c
-                        left join clinic_users cu on cu.clinic_id = c.id
-                        left join users         u on u.id         = cu.user_id"""
+            select
+                c.id                          ,
+                c.name                        ,
+                u.id   as ":t! User2 users.id",
+                u.name as ":t!       users."
+            from clinic c
+                left join clinic_users cu on cu.clinic_id = c.id
+                left join users         u on u.id         = cu.user_id"""
         ).g.fetchList(Clinic.class);
     }
 }

@@ -14,19 +14,21 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains:annotations:24.0.0")
+
+    testImplementation("org.apiguardian:apiguardian-api:1.1.2")
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    implementation("org.apiguardian:apiguardian-api:1.1.2")
-    testImplementation("org.hsqldb:hsqldb:2.7.3")
-    implementation("org.postgresql:postgresql:42.7.3")
+
     testImplementation("org.openjdk.jmh:jmh-core:1.37")
     testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
-    implementation("org.projectlombok:lombok:1.18.32")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
 
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
 
+    testImplementation("org.hsqldb:hsqldb:2.7.3")
+
+    testImplementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.testcontainers:postgresql:1.20.0")
 
     testImplementation("com.mysql:mysql-connector-j:9.0.0")
@@ -106,7 +108,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("net.truej", "sql", "3.0.0-beta1")
+    coordinates("net.truej", "sql", "3.0.0-beta2")
 
     pom {
         name.set("TrueSql")

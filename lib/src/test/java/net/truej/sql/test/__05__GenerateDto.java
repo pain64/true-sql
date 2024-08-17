@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB, ORACLE})
+@ExtendWith(TrueSqlTests2.class) @DisabledOn({ORACLE, MYSQL, MARIADB})
 // FIX test for enable on MySQL: mysql has no OffsetDateTime
 @TrueSql public class __05__GenerateDto {
 
@@ -153,7 +153,30 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         );
     }
 
-    @TestTemplate public void test4(MainDataSource ds) throws JsonProcessingException {
+    @TestTemplate public void keepCaseInAsNames(MainDataSource ds) throws JsonProcessingException {
+        Assertions.assertEquals(
+            """
+                [ {
+                  "userName" : "Joe",
+                  "userInfo" : null
+                }, {
+                  "userName" : "Donald",
+                  "userInfo" : "Do not disturb"
+                } ]""",
+            new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .writerWithDefaultPrettyPrinter().writeValueAsString(
+                    ds.q("""
+                        select
+                            u.name as "userName",
+                            u.info as "userInfo"
+                        from users u order by u.id"""
+                    ).g.fetchList(User4.class)
+                )
+        );
+    }
+
+    @TestTemplate public void test5(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
             """
                 [ {
@@ -168,7 +191,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 .writerWithDefaultPrettyPrinter().writeValueAsString(
                     ds.q("""
                         select name, info as ":t? info" from users"""
-                    ).g.fetchList(User4.class)
+                    ).g.fetchList(User5.class)
                 )
         );
     }

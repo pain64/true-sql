@@ -140,15 +140,16 @@ public class StatementGenerator {
         var updateCountType = query instanceof BatchedQuery ? "long[]" : "Long";
 
         var wrapTypeWithUpdateCount = (BiFunction<@Nullable String, String, String>) (collectionT, t) -> {
+            var boxed = MapperGenerator.boxedClassName(t);
             if (fetchAs instanceof FetchNone) return updateCountType;
 
             var toCollectionType = (Supplier<String>) () ->
-                collectionT != null ? collectionT + "<" + t + ">" : t;
+                collectionT != null ? collectionT + "<" + boxed + ">" : boxed;
 
             if (!withUpdateCount) return toCollectionType.get();
 
             return fetchAs instanceof FetchStream
-                ? STR."UpdateResultStream<\{updateCountType}, \{t}>"
+                ? STR."UpdateResultStream<\{updateCountType}, \{boxed}>"
                 : STR."UpdateResult<\{updateCountType}, \{toCollectionType.get()}>";
         };
 
@@ -246,7 +247,7 @@ public class StatementGenerator {
                         case InvocationsFinder.UnfoldParameter up -> {
                             var n = unfoldArgumentsCount(up.extractor());
 
-                            if (n == 1) yield o."P\{i + 1}";
+                            if (up.extractor() == null) yield o."P\{i + 1}";
 
                             var elements = Out.each(
                                 IntStream.range(0, n).boxed().toList(),
@@ -271,7 +272,7 @@ public class StatementGenerator {
                             TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
                         case InvocationsFinder.UnfoldParameter up -> {
                             var n = unfoldArgumentsCount(up.extractor());
-                            if (n == 1) yield o."""
+                            if (up.extractor() == null) yield o."""
                                 List<P\{i + 1}> p\{i + 1},
                                 TypeReadWrite<P\{i + 1}> prw\{i + 1}e1""";
 
@@ -313,13 +314,9 @@ public class StatementGenerator {
                                     ", ", (ooo, _, _) -> ooo."?"
                                 );
 
-                                var withParens = n == 1
-                                    ? unfolded
-                                    : (WriteNext) ooo -> ooo."(\{unfolded})";
-
                                 yield oo."""
                                     for (var i = 0; i < p\{pIndex[0]}.size(); i++) {
-                                        buffer.append(" \{withParens} ");
+                                        buffer.append(" (\{unfolded}) ");
                                         if (i != p\{pIndex[0]++}.size() - 1)
                                             buffer.append(", ");
                                     }""";
@@ -351,7 +348,7 @@ public class StatementGenerator {
                                 var unfolded = Out.each(
                                     IntStream.range(0, n).boxed().toList(),
                                     "\n", (ooo, j, _) -> ooo."""
-                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{n == 1 ? "element" : STR."p\{i + 1}e\{j + 1}.get(element)"});"""
+                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{up.extractor() == null ? "element" : STR."p\{i + 1}e\{j + 1}.get(element)"});"""
                                 );
                                 yield oo."""
 

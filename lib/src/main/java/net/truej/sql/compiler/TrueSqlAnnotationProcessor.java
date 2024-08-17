@@ -5,9 +5,11 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
-import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.code.Symtab;
@@ -15,7 +17,6 @@ import com.sun.tools.javac.tree.JCTree;
 
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.code.Types;
@@ -35,9 +36,26 @@ import net.truej.sql.source.Parameters;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
+    @Override public synchronized void init(ProcessingEnvironment processingEnv) {
+
+        ServiceLoader.load(
+            Driver.class, TrueSqlAnnotationProcessor.class.getClassLoader()
+        ).forEach(driver -> {
+            try {
+                DriverManager.registerDriver(driver);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        super.init(processingEnv);
+    }
+
     @Override public boolean process(
         Set<? extends TypeElement> annotations, RoundEnvironment roundEnv
     ) {
+
+
         System.out.println("annotation processor started!!!");
 
         var env = (JavacProcessingEnvironment) processingEnv;

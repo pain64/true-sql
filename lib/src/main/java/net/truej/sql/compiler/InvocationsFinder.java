@@ -17,6 +17,7 @@ import net.truej.sql.source.Parameters;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -34,6 +35,8 @@ import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
 
 public class InvocationsFinder {
+    private static final String POSTGRESQL_DB_NAME = "PostgreSQL";
+    private static final String HSQL_DB_NAME = "HSQL Database Engine";
     private static final String MYSQL_DB_NAME = "MySQL";
     private static final String MARIA_DB_NAME = "MariaDB";
     private static final String MSSQL_DB_NAME = "Microsoft SQL Server";
@@ -199,10 +202,13 @@ public class InvocationsFinder {
                 var zz = 1;
                 if (
                     tree.meth instanceof JCTree.JCFieldAccess fa &&
-                    fa.selected instanceof JCTree.JCIdent id &&
-                    fa.name.equals(names.fromString("withConnection")) &&
+                    fa.selected instanceof JCTree.JCIdent id && (
+                        fa.name.equals(names.fromString("withConnection")) ||
+                        fa.name.equals(names.fromString("inTransaction"))
+                    ) &&
                     tree.args.size() == 1 &&
-                    tree.args.head instanceof JCTree.JCLambda lmb
+                    tree.args.head instanceof JCTree.JCLambda lmb &&
+                    lmb.params.size() == 1
                 ) {
                     var found = varTypes.get(id.name);
                     if (found != null) {
@@ -894,17 +900,11 @@ public class InvocationsFinder {
                                         yield IntStream.range(0, n)
                                             .mapToObj(_ -> "?")
                                             .collect(Collectors.joining(
-                                                ", ", n == 1 ? "" : "(", n == 1 ? "" : ")"
+                                                ", ", "(", ")"
                                             ));
                                     }
                                 })
                                 .collect(Collectors.joining());
-
-                            try {
-                                Class.forName("org.postgresql.Driver");
-                            } catch (ClassNotFoundException e) {
-                                throw new RuntimeException(e);
-                            }
 
                             try (
                                 var connection = DriverManager.getConnection(
@@ -936,9 +936,46 @@ public class InvocationsFinder {
                                         var makeColumns = (Function<ResultSetMetaData, List<GLangParser.ColumnMetadata>>) rMetadata -> {
                                             if (rMetadata == null) return List.of();
 
+                                            var isUppercaseOnly = (Function<String, Boolean>) str ->
+                                                str.chars().filter(ch -> ch != '_')
+                                                    .allMatch(Character::isUpperCase);
+
+                                            var isGLangExpression = (Function<String, Boolean>) str ->
+                                                str.contains(".") || str.contains(":t");
+
+                                            var getColumnName = (BiFunction<ResultSetMetaData, Integer, String>) (mt, i) -> {
+                                                try {
+                                                    return switch (onDatabase) {
+                                                        case POSTGRESQL_DB_NAME ->
+                                                            (String) mt.getClass().getMethod("getBaseColumnName", int.class)
+                                                                .invoke(mt, i);
+                                                        case HSQL_DB_NAME -> {
+                                                            var name = mt.getColumnName(i);
+                                                            yield isUppercaseOnly.apply(name)
+                                                                ? name.toLowerCase() : name;
+                                                        }
+                                                        case ORACLE_DB_NAME, MSSQL_DB_NAME -> null;
+                                                        default -> mt.getColumnName(i);
+                                                    };
+
+                                                } catch (SQLException | NoSuchMethodException |
+                                                         IllegalAccessException |
+                                                         InvocationTargetException ex) {
+                                                    throw new RuntimeException(ex);
+                                                }
+                                            };
+
                                             var fixedColumnLabel = (Function<String, String>) label -> {
                                                 if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
-                                                    return "";
+                                                    return ""; // ???
+
+                                                if (onDatabase.equals(HSQL_DB_NAME) || onDatabase.equals(ORACLE_DB_NAME)) {
+                                                    if (isGLangExpression.apply(label))
+                                                        return label;
+                                                    return isUppercaseOnly.apply(label)
+                                                        ? label.toLowerCase() : label;
+                                                }
+
                                                 if (
                                                     onDatabase.equals(MSSQL_DB_NAME) &&
                                                     label.startsWith(":tnull")
@@ -967,6 +1004,7 @@ public class InvocationsFinder {
                                                             rMetadata.getColumnType(i),
                                                             rMetadata.getColumnTypeName(i),
                                                             rMetadata.getColumnClassName(i),
+                                                            getColumnName.apply(rMetadata, i),
                                                             fixedColumnLabel.apply(rMetadata.getColumnLabel(i)),
                                                             rMetadata.getScale(i),
                                                             rMetadata.getPrecision(i)
@@ -1098,7 +1136,7 @@ public class InvocationsFinder {
                                                         pMetadata.getParameterType(i),
                                                         pMetadata.getParameterTypeName(i),
                                                         pMetadata.getParameterClassName(i),
-                                                        "a" + i,
+                                                        null, "a" + i,
                                                         pMetadata.getScale(i),
                                                         pMetadata.getPrecision(i)
                                                     );
@@ -1157,7 +1195,7 @@ public class InvocationsFinder {
                                                 final GLangParser.NullMode nullMode;
                                                 if (dtoNullMode != GLangParser.NullMode.DEFAULT_NOT_NULL) {
                                                     checkNullability.check(
-                                                        column.columnName(), dtoNullMode, columnIndex, column
+                                                        column.columnLabel(), dtoNullMode, columnIndex, column
                                                     );
                                                     nullMode = dtoNullMode;
                                                 } else
@@ -1169,7 +1207,7 @@ public class InvocationsFinder {
                                                         javaClassNameHint, nullMode
                                                     );
                                                     checkTypeCompatibility.check(
-                                                        onDatabase, columnIndex, column.columnName(), binding, nullMode, column
+                                                        onDatabase, columnIndex, column.columnLabel(), binding, nullMode, column
                                                     );
                                                 } else {
                                                     var inferType = (Supplier<String>) () -> {

@@ -26,6 +26,5 @@ import static net.truej.sql.source.Parameters.NotNull;
                 }
             )
         );
-
     }
 }
