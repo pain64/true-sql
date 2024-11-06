@@ -1,4 +1,4 @@
-declare
+ declare
     type array_t is varray(16) of varchar2(100);
     array array_t := array_t(
        'alter table clinic       drop constraint clinic_fk2',
@@ -140,7 +140,13 @@ begin
            byte_type_null      out    number,
 
            timestamp_type      in out timestamp,
-           timestamp_type_null out    timestamp
+           timestamp_type_null out    timestamp,
+
+           float_type          in out binary_float,
+           float_type_null     out    binary_float,
+
+           double_type         in out binary_double,
+           double_type_null    out    binary_double
 
        ) is begin
            null;

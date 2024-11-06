@@ -24,6 +24,11 @@ public class Standard {
         new Binding("java.lang.Long", LongReadWrite.class.getName(), true, null, null),
         new Binding("java.lang.String", StringReadWrite.class.getName(), true, null, null),
 
+        new Binding("float", FloatReadWrite.class.getName(), true, null, null),
+        new Binding("java.lang.Float", FloatReadWrite.class.getName(), true, null, null),
+        new Binding("double", DoubleReadWrite.class.getName(), true, null, null),
+        new Binding("java.lang.Double", DoubleReadWrite.class.getName(), true, null, null),
+
         new Binding("java.time.LocalDate", LocalDateReadWrite.class.getName(), true, Types.DATE, null),
         new Binding("java.time.LocalTime", LocalTimeReadWrite.class.getName(), true, Types.TIME, null),
         new Binding("java.time.LocalDateTime", LocalDateTimeReadWrite.class.getName(), true, Types.TIMESTAMP, null),

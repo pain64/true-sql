@@ -9,6 +9,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Date;
 
+// FIXME: remove ???
 @Configuration(
     checks = @CompileTimeChecks(
         url = "jdbc:postgresql://localhost:5432/truesqldb",

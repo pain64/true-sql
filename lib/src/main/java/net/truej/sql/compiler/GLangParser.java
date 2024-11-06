@@ -299,7 +299,7 @@ public class GLangParser {
     public interface BindColumn {
         record Result(String javaClassName, NullMode nullMode) { }
         Result bind(
-            ColumnMetadata column, int columnIndex, @Nullable String javaClassNameHint, NullMode dtoNullMode
+            ColumnMetadata column, int columnIndex, @Nullable String javaClassNameHint, NullMode nullModeHint
         );
     }
 

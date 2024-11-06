@@ -11,31 +11,34 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import static net.truej.sql.source.Parameters.inout;
 import static net.truej.sql.source.Parameters.out;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
 @TrueSql public class __17__TypeBindingsStoredProcedures_ORACLE {
     record DataTypes(
-        @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
-        @NotNull boolean boolean_type, @Nullable Boolean boolean_type_null,
-        @NotNull LocalDate date_type, @Nullable LocalDate date_type_null,
-        @NotNull int integer_type, @Nullable Integer integer_type_null,
-        @NotNull long long_type, @Nullable Long long_type_null,
-        @NotNull String string_type, @Nullable String string_type_null,
-        @NotNull short short_type, @Nullable Short short_type_null,
-        @NotNull byte byte_type, @Nullable Byte byte_type_null,
-        @NotNull LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
+        @NotNull BigDecimal bigDecimalType, @Nullable BigDecimal bigDecimalTypeNull,
+        @NotNull boolean booleanType, @Nullable Boolean booleanTypeNull,
+        @NotNull LocalDate dateType, @Nullable LocalDate dateTypeNull,
+        @NotNull int integerType, @Nullable Integer integerTypeNull,
+        @NotNull long longType, @Nullable Long longTypeNull,
+        @NotNull String stringType, @Nullable String stringTypeNull,
+        @NotNull short shortType, @Nullable Short shortTypeNull,
+        @NotNull byte byteType, @Nullable Byte byteTypeNull,
+        @NotNull LocalDateTime timestampType, @Nullable LocalDateTime timestampTypeNull,
+        @NotNull float floatType, @Nullable Float floatTypeNull,
+        @NotNull double doubleType, @Nullable Double doubleTypeNull
     ) { }
 
     @TestTemplate public void test(MainDataSource ds) {
+        // FIXME: add assert
         ds.q("""
                 {call test_types_procedure(
+                    ?,?,
+                    ?,?,
                     ?,?,
                     ?,?,
                     ?,?,
@@ -56,7 +59,9 @@ import static net.truej.sql.source.Parameters.out;
             inout("hello"), out(String.class),
             inout((short) 255), out(Short.class),
             inout((byte) 8), out(Byte.class),
-            inout(LocalDateTime.of(1984, 1, 1, 23, 59, 59)), out(LocalDateTime.class)
+            inout(LocalDateTime.of(1984, 1, 1, 23, 59, 59)), out(LocalDateTime.class),
+            inout(3.14159f), out(Float.class),
+            inout(3.1415926535d), out(Double.class)
         ).asCall().fetchOne(DataTypes.class);
 
     }

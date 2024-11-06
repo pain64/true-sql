@@ -94,21 +94,25 @@ public class ExistingDtoParser {
         }
     }
 
-    public record FlattenedDtoField(@Nullable String name, ScalarType st) { }
 
-    private static List<FlattenedDtoField> flattenAggregatedType(AggregatedType at) {
+    public sealed interface EntryName { }
+    public record ReturnValue() implements EntryName { }
+    public record FieldName(String name) implements EntryName { }
+    public record FlattenedDtoEntry(String name, ScalarType st) { }
+
+    private static List<FlattenedDtoEntry> flattenAggregatedType(AggregatedType at) {
         return at.fields().stream().flatMap(f ->
             switch (f.type()) {
-                case ScalarType t -> Stream.of(new FlattenedDtoField(f.name(), t));
+                case ScalarType t -> Stream.of(new FlattenedDtoEntry(f.name(), t));
                 case AggregatedType t -> flattenAggregatedType(t).stream();
             }
         ).toList();
     }
 
-    public static List<FlattenedDtoField> flattedDtoType(FieldType ft) {
+    public static List<FlattenedDtoEntry> flattedDtoType(FieldType ft) {
         return switch (ft) {
             case ScalarType st -> List.of(
-                new ExistingDtoParser.FlattenedDtoField("result", st)
+                new FlattenedDtoEntry("result", st)
             );
             case AggregatedType at -> flattenAggregatedType(at);
         };

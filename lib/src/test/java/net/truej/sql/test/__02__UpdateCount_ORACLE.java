@@ -51,7 +51,5 @@ import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
                 v -> new Object[]{v.discount, v.date}
             ).withUpdateCount.fetchNone()
         );
-
-        //TODO: ADD test with generated keys to fetch someone
     }
 }

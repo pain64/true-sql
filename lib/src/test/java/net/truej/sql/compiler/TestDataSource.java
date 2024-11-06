@@ -62,7 +62,7 @@ public record TestDataSource(
 
     @Override public Connection getConnection() throws SQLException {
 
-        var connection =  DriverManager.getConnection(jdbcUrl, username, password);
+        var connection = DriverManager.getConnection(jdbcUrl, username, password);
         try {
             var sql = new String(
                 TestDataSource.class.getResourceAsStream(

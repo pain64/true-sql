@@ -40,6 +40,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         ).fetchNone();
 
 
+        // FIXME: assert ???
         ds.q("""
             select
                 byte_type, byte_type_null,

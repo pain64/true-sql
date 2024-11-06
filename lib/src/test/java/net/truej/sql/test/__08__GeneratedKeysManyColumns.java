@@ -75,7 +75,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         var actual2 = ds.q(
                 discounts, """
                     update bill b
-                    set discount = 100 * ?
+                    set discount = 100.0 * ?
                     where cast(b.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             )
@@ -99,7 +99,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         var actual3 = ds.q(
                 discounts, """
                     update bill b
-                    set discount = 100 * ?
+                    set discount = 100.0 * ?
                     where cast(b.date as date) = ?""",
                 v -> new Object[]{v.discount, v.date}
             )

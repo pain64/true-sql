@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // Enjoy https://bugs.mysql.com/bug.php?id=1956
 
-// FIXME: mariadb
+// FIXME: MariaDB - заставить дебилов сделать нормальное исключение для ConstraintViolation
 @ExtendWith(TrueSqlTests2.class) @EnableOn({MYSQL})
 @TrueSql public class __11__ConstraintViolation_Resolve_MYSQL_MARIADB {
     static class Handled extends Exception { }

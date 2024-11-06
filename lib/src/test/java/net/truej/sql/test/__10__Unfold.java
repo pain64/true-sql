@@ -18,7 +18,7 @@ import static net.truej.sql.source.Parameters.*;
 @TrueSql public class __10__Unfold {
 
     @TestTemplate public void unfold1(MainDataSource ds) {
-        var ids = List.of(1, 2, 3);
+        var ids = List.of(1L, 2L, 3L);
 
         Assertions.assertEquals(
             List.of("Joe", "Donald"),
@@ -28,7 +28,7 @@ import static net.truej.sql.source.Parameters.*;
     }
 
     @TestTemplate public void unfold1AsObjectArray(MainDataSource ds) {
-        var ids = List.of(1, 2, 3);
+        var ids = List.of(1L, 2L, 3L);
 
         Assertions.assertEquals(
             List.of("Joe", "Donald"),

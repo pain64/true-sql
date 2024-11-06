@@ -3,6 +3,7 @@ package net.truej.sql.compiler;
 import net.truej.sql.util.TestCompiler2;
 import org.junit.jupiter.api.extension.*;
 import org.testcontainers.containers.*;
+import org.testcontainers.utility.DockerImageName;
 
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
@@ -60,11 +61,22 @@ public class TrueSqlTests2 implements
         var mssqlContainer = new MSSQLServerContainer<>("mcr.microsoft.com/mssql/server:2022-latest")
             .acceptLicense()
             .withReuse(true);
-        var oracleContainer = new OracleContainer("gvenzl/oracle-xe:latest")
+        // jdemovic1983/oracle23ai
+        //var oracleContainer = new OracleContainer("gvenzl/oracle-xe:latest")
+        var dockerImageName = DockerImageName.parse("gvenzl/oracle-free:23-slim")
+            .asCompatibleSubstituteFor("gvenzl/oracle-xe");
+
+        var oracleContainer = new OracleContainer(dockerImageName)
             .withDatabaseName("test")
             .withUsername("testUser")
             .withPassword("testPassword")
             .withReuse(true);
+
+//        var oracleContainer = new OracleContainer("jdemovic1983/oracle23ai:v1")
+//            .withDatabaseName("test")
+//            .withUsername("testUser")
+//            .withPassword("testPassword")
+//            .withReuse(true);
 
         pgContainer.start();
         mysqlContainer.start();
@@ -73,32 +85,32 @@ public class TrueSqlTests2 implements
         oracleContainer.start();
 
         instances = Map.of(
-            Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb"),
-            Database.POSTGRESQL, new TestDataSource(
+            Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb")
+            , Database.POSTGRESQL, new TestDataSource(
                 pgContainer.getJdbcUrl(),
                 pgContainer.getUsername(),
                 pgContainer.getPassword(),
                 "postgresql"
-            ),
-            Database.MYSQL, new TestDataSource(
+            )
+            , Database.MYSQL, new TestDataSource(
                 mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
                 mysqlContainer.getUsername(),
                 mysqlContainer.getPassword(),
                 "mysql"
-            ),
-            Database.MARIADB, new TestDataSource(
+            )
+            , Database.MARIADB, new TestDataSource(
                 mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
                 mariaDbContainer.getUsername(),
                 mariaDbContainer.getPassword(),
                 "mysql"
-            ),
-            Database.MSSQL, new TestDataSource(
+            )
+            , Database.MSSQL, new TestDataSource(
                 mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
                 mssqlContainer.getUsername(),
                 mssqlContainer.getPassword(),
                 "mssql"
-            ),
-            Database.ORACLE, new TestDataSource(
+            )
+            , Database.ORACLE, new TestDataSource(
                 oracleContainer.getJdbcUrl(),
                 oracleContainer.getUsername(),
                 oracleContainer.getPassword(),

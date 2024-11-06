@@ -90,9 +90,20 @@ import java.sql.Types;
             ex.getCause() != null && ex.getCause() instanceof OracleDatabaseException oex &&
             ex.getSQLState().startsWith("23")
         ) {
-            var schemaAndConstraint = oex.getMessage()
-                .replaceAll(".*\\((\\S+\\.\\S+)\\).*", "$1")
-                .replace("\n", "").split("\\.");
+            // ORA-02292: нарушено ограничение целостности (TESTUSER.CLINIC_FK2) - обнаружена порожденная запись
+            // ORA-00001: уникальное ограничение (TESTUSER.USERS_PK) нарушено в столбцах таблицы TESTUSER.USERS (ID)
+
+            var schemaAndConstraint = switch (oex.getMessage().split(":", 2)[0]) {
+                case "ORA-02292", "ORA-00001"->
+                    // ORA-02292: нарушено ограничение целостности (TESTUSER.CLINIC_FK2) - обнаружена порожденная запись
+                    // ORA-00001: уникальное ограничение (TESTUSER.USERS_PK) нарушено в столбцах таблицы TESTUSER.USERS (ID)
+                    oex.getMessage()
+                        .replaceAll(".* \\((\\S+)\\.(\\S+)\\) .*\n.*", "$1 $2")
+                        .replace("\n", "").split(" ");
+                default -> null;
+            };
+
+            if (schemaAndConstraint == null) return super.mapException(ex);
 
             return new ConstraintViolationException(
                 null, schemaAndConstraint[0], null, schemaAndConstraint[1]

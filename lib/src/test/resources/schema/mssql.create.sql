@@ -136,7 +136,15 @@ create procedure test_types_procedure
 
     @timestamp_type      datetime       ,
     @timestamp_type_o    datetime output,
-    @timestamp_type_null datetime output
+    @timestamp_type_null datetime output,
+
+    @float_type          real       ,
+    @float_type_o        real output,
+    @float_type_null     real output,
+
+    @double_type         float       ,
+    @double_type_o       float output,
+    @double_type_null    float output
    as begin
 
        set @big_decimal_type_o = @big_decimal_type;
@@ -149,4 +157,6 @@ create procedure test_types_procedure
        set @byte_type_o        = @byte_type       ;
        set @time_type_o        = @time_type       ;
        set @timestamp_type_o   = @timestamp_type  ;
+       set @float_type_o       = @float_type      ;
+       set @double_type_o      = @double_type     ;
    end;

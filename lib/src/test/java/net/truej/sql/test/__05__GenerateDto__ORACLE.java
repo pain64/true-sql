@@ -20,7 +20,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
-// FIX test for enable on MySQL: mysql has no OffsetDateTime
 @TrueSql public class __05__GenerateDto__ORACLE {
 
     @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {

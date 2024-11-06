@@ -10,6 +10,7 @@ import java.util.Map;
 
 import static java.util.Arrays.asList;
 
+// TODO: remove ???
 public class TestCompiler {
     public static Map<String, StringJsFile> compile(List<StringSourceFile> compilationUnits) {
         var output = new StringWriter();

@@ -22,14 +22,16 @@ import net.truej.sql.dsl.Q;
 import net.truej.sql.dsl.UpdateCount;
 import net.truej.sql.source.ParameterExtractor;
 import net.truej.sql.source.Parameters;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
 
 public class TrueSqlPlugin implements Plugin {
@@ -97,24 +99,89 @@ public class TrueSqlPlugin implements Plugin {
     }
 
     public record Invocation(
-        java.util.List<Standard.Binding> bindings,
+        String onDatabase, java.util.List<Standard.Binding> bindings,
         String generatedClassName, String fetchMethodName, int lineNumber,
-        JCTree.JCIdent sourceExpression, QueryMode queryMode, ParameterMetadata parameterMetadata
+        JCTree.JCIdent sourceExpression, QueryMode queryMode,
+        @Nullable java.util.List<ParameterMetadata> parametersMetadata
     ) { }
 
     enum ParameterMode {IN, INOUT, OUT, UNKNOWN}
 
-    record ParameterMetadata(
-        String javaClassName, String sqlTypeName, int sqlType,
-        ParameterMode mode, NullMode nullMode
+    public record ParameterMetadata(
+        String javaClassName, String sqlTypeName, int sqlType, int scale, ParameterMode mode
     ) { }
 
     @Override public String getName() { return NAME; }
+
+    // FIXME: check parameter mode ???
+    void checkParameters(Symtab symtab, Invocation invocation) {
+        if (invocation.parametersMetadata == null) return;
+
+        var checkParameterType = (BiConsumer<Symbol.TypeSymbol, Integer>)
+            (parameterTsym, pIndex) -> {
+                // FIXME: reverse expected & has
+                var binding = TypeChecker.getBindingForClass(
+                    invocation.bindings,
+                    parameterTsym.flatName().toString(),
+                    GLangParser.NullMode.DEFAULT_NOT_NULL
+                );
+                var pMetadata = invocation.parametersMetadata.get(pIndex);
+
+                TypeChecker.assertTypesCompatible(
+                    invocation.onDatabase,
+                    pIndex + 1,
+                    pMetadata.sqlType,
+                    pMetadata.sqlTypeName,
+                    pMetadata.javaClassName,
+                    pMetadata.scale,
+                    "parameter" + pIndex,
+                    binding
+                );
+            };
+
+        var pIndex = 0;
+
+        for (var part : invocation.queryMode.parts())
+            switch (part) {
+                case InvocationsFinder.TextPart _ -> { }
+                case InvocationsFinder.InOrInoutParameter p -> {
+                    if (p.expression().type != symtab.botType)
+                        checkParameterType.accept(p.expression().type.tsym, pIndex);
+                    pIndex++;
+                }
+                case InvocationsFinder.OutParameter p -> {
+                    checkParameterType.accept(p.toClass(), pIndex);
+                    pIndex++;
+                }
+                case InvocationsFinder.UnfoldParameter p -> {
+                    var argumentCount = StatementGenerator.unfoldArgumentsCount(p.extractor());
+                    if (p.extractor() == null) {
+                        if (p.expression().type == symtab.botType)
+                            // FIXME: use special exception
+                            throw new RuntimeException("null cannot be passed as argument for unfold parameter");
+
+                        checkParameterType.accept(
+                            p.expression().type.getTypeArguments().getFirst().tsym, pIndex
+                        );
+                    } else
+                        for (var i = 0; i < argumentCount; i++)
+                            checkParameterType.accept(
+                                ((JCTree.JCNewArray) p.extractor().body)
+                                    .elems.get(i).type.tsym, pIndex + i
+                            );
+
+                    pIndex += argumentCount;
+                }
+            }
+    }
 
     void handle(
         Symtab symtab, Names names, TreeMaker maker,
         JCTree.JCMethodInvocation tree, Invocation invocation
     ) {
+
+        checkParameters(symtab, invocation);
+
         var clParameterExtractor = symtab.getClass(
             symtab.unnamedModule, names.fromString(
                 ParameterExtractor.class.getName()

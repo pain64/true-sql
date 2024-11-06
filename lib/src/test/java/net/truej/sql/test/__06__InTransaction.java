@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
     @TestTemplate public void testConnectionThrows(MainConnection cn) {
         try {
             cn.inTransaction(() -> {
-                cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+                cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                     .fetchNone();
 
                 assertEquals(
-                    cn.q("select name from clinic where id = ?", 4)
+                    cn.q("select name from clinic where id = ?", 4L)
                         .fetchOne(String.class)
                     , "Paris St. Marie Hospital"
                 );
@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
             });
         } catch (ForceRollback ex) {
             assertNull(
-                cn.q("select name from clinic where id = ?", 4)
+                cn.q("select name from clinic where id = ?", 4L)
                     .fetchOneOrZero(String.class)
             );
         }
@@ -42,13 +42,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
     @TestTemplate public void testConnectionOk(MainConnection cn) {
 
         cn.inTransaction(() ->
-            cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+            cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                 .fetchNone()
         );
 
         Assertions.assertEquals(
             "Paris St. Marie Hospital",
-            cn.q("select name from clinic where id = ?", 4).fetchOne(String.class)
+            cn.q("select name from clinic where id = ?", 4L).fetchOne(String.class)
         );
     }
 
@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
         Assertions.assertThrows(
             SqlExceptionR.class,
             () -> cn.inTransaction(() -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                         .fetchNone();
                     throw new SQLException("Nice");
                 }
@@ -68,11 +68,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
         try {
             ds.withConnection(cn ->
                 cn.inTransaction(() -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                         .fetchNone();
 
                     assertEquals(
-                        cn.q("select name from clinic where id = ?", 4)
+                        cn.q("select name from clinic where id = ?", 4L)
                             .fetchOne(String.class)
                         , "Paris St. Marie Hospital"
                     );
@@ -81,7 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
             );
         } catch (ForceRollback ex) {
             assertNull(
-                ds.q("select name from clinic where id = ?", 4)
+                ds.q("select name from clinic where id = ?", 4L)
                     .fetchOneOrZero(String.class)
             );
         }
@@ -89,11 +89,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
     @TestTemplate public void testDataSourceInTransaction(MainDataSource ds) {
         ds.inTransaction(cn -> {
-            cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+            cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                 .fetchNone();
 
             assertEquals(
-                cn.q("select name from clinic where id = ?", 4)
+                cn.q("select name from clinic where id = ?", 4L)
                     .fetchOne(String.class)
                 , "Paris St. Marie Hospital"
             );
@@ -105,7 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
         Assertions.assertThrows(
             SqlExceptionR.class,
             () -> ds.withConnection( cn -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                         .fetchNone();
                     throw new SQLException("Nice");
                 }
@@ -117,7 +117,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
         Assertions.assertThrows(
             SqlExceptionR.class,
             () -> ds.inTransaction( cn -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
+                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
                         .fetchNone();
                     throw new SQLException("Nice");
                 }

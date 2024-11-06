@@ -28,33 +28,33 @@ import static net.truej.sql.source.Parameters.Nullable;
 
         Assertions.assertEquals(
             "Donald",
-            cn.q("select name from users where id = ?", 2).fetchOne(String.class)
+            cn.q("select name from users where id = ?", 2L).fetchOne(String.class)
         );
 
         // TODO: also check that warning
         Assertions.assertThrows(
             EvenSoNullPointerException.class,
-            () -> cn.q("select info from users where id = ?", 1)
+            () -> cn.q("select info from users where id = ?", 1L)
                 .fetchOne(NotNull, String.class)
         );
 
         Assertions.assertEquals(
             new User(1L, "Joe", null),
-            cn.q("select id, name, info from users where id = ?", 1)
+            cn.q("select id, name, info from users where id = ?", 1L)
                 .fetchOneOrZero(User.class)
         );
         Assertions.assertNull(
-            cn.q("select id, name, info from users where id = ?", 42)
+            cn.q("select id, name, info from users where id = ?", 42L)
                 .fetchOneOrZero(User.class)
         );
 
         Assertions.assertEquals(
             new User(1L, "Joe", null),
-            cn.q("select id, name, info from users where id = ?", 1)
+            cn.q("select id, name, info from users where id = ?", 1L)
                 .fetchOneOrZero(User.class)
         );
         Assertions.assertNull(
-            cn.q("select info from users where id = ?", 1)
+            cn.q("select info from users where id = ?", 1L)
                 .fetchOneOrZero(Nullable, String.class)
         );
 

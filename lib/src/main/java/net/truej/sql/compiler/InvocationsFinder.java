@@ -22,37 +22,35 @@ import java.sql.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.sql.ParameterMetaData.*;
 import static net.truej.sql.compiler.ExistingDtoParser.flattedDtoType;
 import static net.truej.sql.compiler.ExistingDtoParser.parse;
 import static net.truej.sql.compiler.GLangParser.parseResultSetColumns;
 import static net.truej.sql.compiler.StatementGenerator.generate;
 import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 import static net.truej.sql.compiler.TrueSqlPlugin.doofyEncode;
+import static net.truej.sql.compiler.DatabaseNames.*;
 
 public class InvocationsFinder {
-    private static final String POSTGRESQL_DB_NAME = "PostgreSQL";
-    private static final String HSQL_DB_NAME = "HSQL Database Engine";
-    private static final String MYSQL_DB_NAME = "MySQL";
-    private static final String MARIA_DB_NAME = "MariaDB";
-    private static final String MSSQL_DB_NAME = "Microsoft SQL Server";
-    private static final String ORACLE_DB_NAME = "Oracle";
-
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
-    public record SimpleParameter(JCTree.JCExpression expression) implements QueryPart { }
-    public record InoutParameter(JCTree.JCExpression expression) implements QueryPart { }
+    sealed interface InOrInoutParameter extends QueryPart {
+        JCTree.JCExpression expression();
+    }
+    // FIXME: rename to InParameter???
+    public record SimpleParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
+    public record InoutParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
     public record OutParameter(Symbol.ClassSymbol toClass) implements QueryPart { }
     public record UnfoldParameter(
         JCTree.JCExpression expression, @Nullable JCTree.JCLambda extractor
     ) implements QueryPart { }
 
     // FIXME: remove ???
-    record ForPrepareInvocation(
+    public record ForPrepareInvocation(
         JCTree.JCMethodInvocation tree, StatementGenerator.QueryMode queryMode
     ) { }
 
@@ -281,7 +279,10 @@ public class InvocationsFinder {
                                     upper(TABLE_NAME)      = upper(?) and
                                     upper(CONSTRAINT_NAME) = upper(?)""";
 
-                            if (onDatabase.equals(MYSQL_DB_NAME))
+                            if (
+                                onDatabase.equals(MYSQL_DB_NAME) ||
+                                onDatabase.equals(MARIA_DB_NAME)
+                            )
                                 defaultQuery = """
                                     select
                                         '', ?
@@ -304,7 +305,7 @@ public class InvocationsFinder {
                                     """;
 
                             switch (tree.args.length()) {
-                                case 3:
+                                case 3: // tableName + constraintName
                                     if (
                                         tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
                                         l1.getValue() instanceof String tableName &&
@@ -337,7 +338,10 @@ public class InvocationsFinder {
 
                                         // FIXME: correct resolve for PostgreSQL (search_path)
 
-                                        if (onDatabase.equals(MYSQL_DB_NAME)) {
+                                        if (
+                                            onDatabase.equals(MYSQL_DB_NAME) ||
+                                            onDatabase.equals(MARIA_DB_NAME)
+                                        ) {
                                             realCatalog = "def";
                                             realSchema = connection.getCatalog();
                                         }
@@ -362,7 +366,7 @@ public class InvocationsFinder {
                                     } else
                                         throw new RuntimeException("bad tree");
                                     break;
-                                case 4:
+                                case 4: // schemaName + tableName + constraintName
                                     if (
                                         tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
                                         l1.getValue() instanceof String schemaName &&
@@ -390,7 +394,7 @@ public class InvocationsFinder {
 
                                     } else throw new RuntimeException("bad tree");
                                     break;
-                                default:  // 5
+                                default:  // 5 - catalogName + schemaName + tableName + constraintName
                                     if (
                                         tree.args.get(0) instanceof JCTree.JCLiteral l1 &&
                                         l1.getValue() instanceof String catalogName &&
@@ -643,250 +647,9 @@ public class InvocationsFinder {
                                 names.init, existing.symbol
                             );
 
-                        var getBindingForClass = (BiFunction<String, GLangParser.NullMode, Standard.Binding>) (
-                            javaClassName, nullMode
-                        ) -> {
-                            var binding = parsedConfig.typeBindings().stream()
-                                .filter(b ->
-                                    b.className().equals(javaClassName) ||
-                                    b.className().endsWith(javaClassName)
-                                ).findFirst().orElseThrow(() -> new ValidationException(
-                                    "has no binding for type " + javaClassName
-                                ));
-
-                            if (
-                                !binding.mayBeNullable() && nullMode == GLangParser.NullMode.EXACTLY_NULLABLE
-                            )
-                                throw new ValidationException(
-                                    "type " + javaClassName + " cannot be marked as nullable"
-                                );
-
-                            return binding;
-                        };
-
-                        interface CheckNullability {
-                            void check(String fieldName, GLangParser.NullMode fieldNullMode, int columnIndex, GLangParser.ColumnMetadata column);
-                        }
-
-                        var checkNullability = (CheckNullability) (fieldName, fieldNullMode, columnIndex, column) -> {
-                            enum ReportMode {WARNING, ERROR}
-                            interface Reporter {
-                                void report(ReportMode mode, GLangParser.NullMode you, GLangParser.NullMode driver);
-                            }
-
-                            var doReport = (Reporter) (m, you, driver) -> {
-                                var message = "nullability mismatch for column " + (columnIndex + 1) +
-                                              (fieldName != null ? " (for field `" + fieldName + "`) " : "") +
-                                              " your decision: " + you + " driver infers: " + driver;
-                                switch (m) {
-                                    case WARNING:
-                                        messages.write(
-                                            cu, forPrepare.tree, JCDiagnostic.DiagnosticType.WARNING, message
-                                        );
-                                        System.out.println(message);
-                                        break;
-                                    case ERROR:
-                                        throw new ValidationException(message);
-                                }
-                            };
-
-                            switch (fieldNullMode) {
-                                case EXACTLY_NULLABLE:
-                                    switch (column.nullMode()) {
-                                        case EXACTLY_NULLABLE,
-                                             DEFAULT_NOT_NULL: { } break;
-                                        case EXACTLY_NOT_NULL:
-                                            doReport.report(
-                                                ReportMode.WARNING,
-                                                GLangParser.NullMode.EXACTLY_NULLABLE,
-                                                GLangParser.NullMode.EXACTLY_NOT_NULL
-                                            );
-                                    }
-                                    break;
-                                case DEFAULT_NOT_NULL:
-                                    switch (column.nullMode()) {
-                                        case EXACTLY_NULLABLE:
-                                            doReport.report(
-                                                ReportMode.ERROR,
-                                                GLangParser.NullMode.DEFAULT_NOT_NULL,
-                                                GLangParser.NullMode.EXACTLY_NULLABLE
-                                            );
-                                            break;
-                                        case DEFAULT_NOT_NULL,
-                                             EXACTLY_NOT_NULL: { } break;
-                                    }
-                                    break;
-                                case EXACTLY_NOT_NULL:
-                                    switch (column.nullMode()) {
-                                        case EXACTLY_NULLABLE:
-                                            doReport.report(
-                                                ReportMode.WARNING,
-                                                GLangParser.NullMode.EXACTLY_NOT_NULL,
-                                                GLangParser.NullMode.EXACTLY_NULLABLE
-                                            );
-                                            break;
-                                        case DEFAULT_NOT_NULL,
-                                             EXACTLY_NOT_NULL: { } break;
-                                    }
-                                    break;
-                            }
-                        };
-
-                        interface CheckTypeCompatibility {
-                            void check(
-                                String onDatabase,
-                                int columnIndex,
-                                String fieldName,
-                                Standard.Binding binding,
-                                GLangParser.NullMode bindingNullMode,
-                                GLangParser.ColumnMetadata column
-                            );
-                        }
-
-                        var checkTypeCompatibility = (CheckTypeCompatibility) (
-                            onDatabase, columnIndex, fieldName, toBinding, bindingNullMode, fromColumn
-                        ) -> {
-
-
-                            if ((
-                                onDatabase.equals(MYSQL_DB_NAME) ||
-                                onDatabase.equals(MARIA_DB_NAME)
-                            )) {
-                                if (
-                                    fromColumn.sqlType() == Types.BIGINT && (
-                                        toBinding.className().equals(Long.class.getName()) ||
-                                        toBinding.className().equals(long.class.getName())
-                                    )
-                                ) return;
-                            }
-
-                            if (onDatabase.equals(ORACLE_DB_NAME)) {
-                                if (
-                                    fromColumn.sqlTypeName().equals("NUMBER") &&
-                                    fromColumn.scale() == 0 && (
-                                        toBinding.className().equals(Long.class.getName()) ||
-                                        toBinding.className().equals(long.class.getName()) ||
-                                        toBinding.className().equals(Integer.class.getName()) ||
-                                        toBinding.className().equals(int.class.getName()) ||
-                                        toBinding.className().equals(Short.class.getName()) ||
-                                        toBinding.className().equals(short.class.getName()) ||
-                                        toBinding.className().equals(Byte.class.getName()) ||
-                                        toBinding.className().equals(byte.class.getName())
-                                    )
-                                ) return;
-                            }
-
-                            // vendor-specific
-                            if (
-                                toBinding.className().equals("java.time.OffsetDateTime") &&
-                                fromColumn.sqlTypeName().equals("timestamptz") // postgresql
-                            ) return;
-
-                            // avoid JDBC 1.0 spec bug
-
-                            if (
-                                (toBinding.className().equals(Byte.class.getName()) &&
-                                 fromColumn.sqlType() == Types.TINYINT
-                                ) ||
-                                (toBinding.className().equals(Short.class.getName()) &&
-                                 fromColumn.sqlType() == Types.SMALLINT
-                                )
-                            ) return;
-
-                            if (
-                                (
-                                    toBinding.className().equals(Integer.class.getName()) ||
-                                    toBinding.className().equals(int.class.getName())
-                                ) && fromColumn.javaClassName().equals(Integer.class.getName())
-                            ) {
-
-                                if (fromColumn.sqlType() == Types.TINYINT)
-                                    throw new ValidationException(
-                                        "type mismatch for column " + (columnIndex + 1) +
-                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                        ". Expected " + toBinding.className() + " but has java.lang.Byte"
-                                    );
-
-                                if (fromColumn.sqlType() == Types.SMALLINT)
-                                    throw new ValidationException(
-                                        "type mismatch for column " + (columnIndex + 1) +
-                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                        ". Expected " + toBinding.className() + " but has java.lang.Short"
-                                    );
-                            }
-
-                            if (
-                                (
-                                    bindingNullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
-                                    bindingNullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
-                                ) && (
-                                    (toBinding.className().equals(boolean.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Boolean.class.getName()) ||
-                                        fromColumn.sqlType() == Types.BOOLEAN
-                                    )) ||
-                                    (toBinding.className().equals(byte.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Byte.class.getName()) ||
-                                        fromColumn.sqlType() == Types.TINYINT
-                                    )) ||
-                                    (toBinding.className().equals(char.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Character.class.getName()) ||
-                                        fromColumn.sqlType() == Types.CHAR
-                                    )) ||
-                                    (toBinding.className().equals(short.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Short.class.getName()) ||
-                                        fromColumn.sqlType() == Types.SMALLINT
-                                    )) ||
-                                    (toBinding.className().equals(int.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Integer.class.getName()) ||
-                                        fromColumn.sqlType() == Types.INTEGER
-                                    )) ||
-                                    (toBinding.className().equals(long.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Long.class.getName()) ||
-                                        fromColumn.sqlType() == Types.BIGINT
-                                    )) ||
-                                    (toBinding.className().equals(float.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Float.class.getName()) ||
-                                        fromColumn.sqlType() == Types.FLOAT
-                                    )) ||
-                                    (toBinding.className().equals(double.class.getName()) && (
-                                        fromColumn.javaClassName().equals(Double.class.getName()) ||
-                                        fromColumn.sqlType() == Types.DOUBLE
-                                    ))
-                                )
-                            ) return;
-
-                            if (
-                                toBinding.compatibleSqlType() == null &&
-                                toBinding.compatibleSqlTypeName() == null
-                            ) {
-                                if (!toBinding.className().equals(fromColumn.javaClassName()))
-                                    throw new ValidationException(
-                                        "type mismatch for column " + (columnIndex + 1) +
-                                        (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                        ". Expected " + toBinding.className() + " but has " + fromColumn.javaClassName()
-                                    );
-                            } else {
-                                if (toBinding.compatibleSqlTypeName() != null) {
-                                    if (!toBinding.compatibleSqlTypeName().equals(fromColumn.sqlTypeName()))
-                                        throw new ValidationException(
-                                            "Sql type name mismatch for column " + (columnIndex + 1) +
-                                            (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                            ". Expected " + toBinding.compatibleSqlTypeName() + " but has " + fromColumn.sqlTypeName()
-                                        );
-                                }
-
-                                if (toBinding.compatibleSqlType() != null) {
-                                    if (toBinding.compatibleSqlType() != fromColumn.sqlType())
-                                        throw new ValidationException(
-                                            "Sql type id (java.sql.Types) mismatch for column " + (columnIndex + 1) +
-                                            (fieldName != null ? " (for field `" + fieldName + "`)" : "") +
-                                            ". Expected " + toBinding.compatibleSqlType() + " but has " + fromColumn.sqlType()
-                                        );
-                                }
-                            }
-                        };
-
                         final GLangParser.FieldType toDto;
+                        final List<TrueSqlPlugin.ParameterMetadata> parametersMetadata;
+                        final String onDatabase;
 
                         if (parsedConfig.url() != null) {
                             var query = forPrepare.queryMode().parts().stream()
@@ -925,7 +688,47 @@ public class InvocationsFinder {
                                 }
                             ) {
 
-                                var onDatabase = connection.getMetaData().getDatabaseProductName();
+                                onDatabase = connection.getMetaData().getDatabaseProductName();
+
+                                if (
+                                    onDatabase.equals(MYSQL_DB_NAME)
+                                )
+                                    parametersMetadata = null;
+                                else {
+                                    var parsed = new ArrayList<TrueSqlPlugin.ParameterMetadata>();
+                                    try {
+                                        var pmt = stmt.getParameterMetaData();
+
+                                        for (var i = 1; i < pmt.getParameterCount() + 1; i++)
+                                            parsed.add(
+                                                new TrueSqlPlugin.ParameterMetadata(
+                                                    pmt.getParameterClassName(i),
+                                                    pmt.getParameterTypeName(i),
+                                                    pmt.getParameterType(i),
+                                                    pmt.getScale(i),
+                                                    switch (pmt.getParameterMode(i)) {
+                                                        case parameterModeUnknown ->
+                                                            TrueSqlPlugin.ParameterMode.UNKNOWN;
+                                                        case parameterModeIn ->
+                                                            TrueSqlPlugin.ParameterMode.IN;
+                                                        case parameterModeInOut ->
+                                                            TrueSqlPlugin.ParameterMode.INOUT;
+                                                        case parameterModeOut ->
+                                                            TrueSqlPlugin.ParameterMode.OUT;
+                                                        default ->
+                                                            throw new RuntimeException("unreachable");
+                                                    }
+                                                )
+                                            );
+                                    } catch (SQLFeatureNotSupportedException e) {
+                                        parsed = null;
+                                    } catch (SQLException e) {
+                                        throw new RuntimeException(e);
+                                    }
+
+                                    parametersMetadata = parsed;
+                                }
+
                                 final List<GLangParser.ColumnMetadata> columns;
 
                                 switch (statementMode) {
@@ -1060,15 +863,10 @@ public class InvocationsFinder {
 
                                                     var pMode = pMetadata.getParameterMode(i + 1);
                                                     var pModeText = switch (pMode) {
-                                                        case ParameterMetaData.parameterModeIn ->
-                                                            "IN";
-                                                        case ParameterMetaData.parameterModeInOut ->
-                                                            "INOUT";
-                                                        case ParameterMetaData.parameterModeOut ->
-                                                            "OUT";
-                                                        case
-                                                            ParameterMetaData.parameterModeUnknown ->
-                                                            "UNKNOWN";
+                                                        case parameterModeIn -> "IN";
+                                                        case parameterModeInOut -> "INOUT";
+                                                        case parameterModeOut -> "OUT";
+                                                        case parameterModeUnknown -> "UNKNOWN";
                                                         default ->
                                                             throw new IllegalStateException("unreachable");
                                                     };
@@ -1076,8 +874,8 @@ public class InvocationsFinder {
                                                     switch (parameters.get(i)) {
                                                         case SimpleParameter _ -> {
                                                             if (
-                                                                pMode != ParameterMetaData.parameterModeIn &&
-                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                                pMode != parameterModeIn &&
+                                                                pMode != parameterModeUnknown
                                                             )
                                                                 throw new ValidationException(
                                                                     "For parameter " + (i + 1) +
@@ -1086,8 +884,8 @@ public class InvocationsFinder {
                                                         }
                                                         case InoutParameter _ -> {
                                                             if (
-                                                                pMode != ParameterMetaData.parameterModeInOut &&
-                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                                pMode != parameterModeInOut &&
+                                                                pMode != parameterModeUnknown
                                                             )
                                                                 throw new ValidationException(
                                                                     "For parameter " + (i + 1) +
@@ -1096,8 +894,8 @@ public class InvocationsFinder {
                                                         }
                                                         case OutParameter _ -> {
                                                             if (
-                                                                pMode != ParameterMetaData.parameterModeOut &&
-                                                                pMode != ParameterMetaData.parameterModeUnknown
+                                                                pMode != parameterModeOut &&
+                                                                pMode != parameterModeUnknown
                                                             )
                                                                 throw new ValidationException(
                                                                     "For parameter " + (i + 1) +
@@ -1121,14 +919,11 @@ public class InvocationsFinder {
                                                 try {
                                                     return new GLangParser.ColumnMetadata(
                                                         switch (pMetadata.isNullable(i)) {
-                                                            case
-                                                                ParameterMetaData.parameterNoNulls ->
+                                                            case parameterNoNulls ->
                                                                 GLangParser.NullMode.EXACTLY_NOT_NULL;
-                                                            case
-                                                                ParameterMetaData.parameterNullable ->
+                                                            case parameterNullable ->
                                                                 GLangParser.NullMode.EXACTLY_NULLABLE;
-                                                            case
-                                                                ParameterMetaData.parameterNullableUnknown ->
+                                                            case parameterNullableUnknown ->
                                                                 GLangParser.NullMode.DEFAULT_NOT_NULL;
                                                             default ->
                                                                 throw new IllegalStateException("unreachable");
@@ -1169,16 +964,18 @@ public class InvocationsFinder {
                                             var column = columns.get(i);
 
                                             // FIXME: deduplicate
-                                            var binding = getBindingForClass.apply(
-                                                field.st().javaClassName(), field.st().nullMode()
+                                            var binding = TypeChecker.getBindingForClass(
+                                                parsedConfig.typeBindings(), field.st().javaClassName(), field.st().nullMode()
                                             );
 
-                                            checkNullability.check(
+                                            TypeChecker.assertNullabilityCompatible(
+                                                cu, messages, forPrepare,
                                                 field.name(), field.st().nullMode(), i, column
                                             );
 
-                                            checkTypeCompatibility.check(
-                                                onDatabase, i, field.name(), binding, field.st().nullMode(), column
+                                            TypeChecker.assertTypesCompatible(
+                                                onDatabase, i, column.sqlType(), column.sqlTypeName(),
+                                                column.javaClassName(), column.scale(), field.name(), binding
                                             );
                                         }
 
@@ -1186,127 +983,34 @@ public class InvocationsFinder {
                                     }
                                     case GenerateDto gDto -> {
                                         if (columns == null) throw new ValidationException(
-                                            ".g mode it not available because column metadata is not provided by JDBC driver"
+                                            ".g mode is not available because column metadata is not provided by JDBC driver"
                                         );
 
                                         var fields = parseResultSetColumns(
-                                            columns, (column, columnIndex, javaClassNameHint, dtoNullMode) -> {
+                                            columns, (column, columnIndex, javaClassNameHint, nullModeHint) -> {
 
                                                 final GLangParser.NullMode nullMode;
-                                                if (dtoNullMode != GLangParser.NullMode.DEFAULT_NOT_NULL) {
-                                                    checkNullability.check(
-                                                        column.columnLabel(), dtoNullMode, columnIndex, column
+                                                if (nullModeHint != GLangParser.NullMode.DEFAULT_NOT_NULL) {
+                                                    TypeChecker.assertNullabilityCompatible(
+                                                        cu, messages, forPrepare,
+                                                        column.columnLabel(), nullModeHint, columnIndex, column
                                                     );
-                                                    nullMode = dtoNullMode;
+                                                    nullMode = nullModeHint;
                                                 } else
                                                     nullMode = column.nullMode();
 
                                                 final Standard.Binding binding;
                                                 if (javaClassNameHint != null) {
-                                                    binding = getBindingForClass.apply(
-                                                        javaClassNameHint, nullMode
+                                                    binding = TypeChecker.getBindingForClass(
+                                                        parsedConfig.typeBindings(), javaClassNameHint, nullMode
                                                     );
-                                                    checkTypeCompatibility.check(
-                                                        onDatabase, columnIndex, column.columnLabel(), binding, nullMode, column
+                                                    TypeChecker.assertTypesCompatible(
+                                                        onDatabase, columnIndex, column.sqlType(), column.sqlTypeName(),
+                                                        column.javaClassName(), column.scale(), column.columnLabel(), binding
                                                     );
                                                 } else {
-                                                    var inferType = (Supplier<String>) () -> {
-                                                        // нужно как-то понять что нет конфликта по биндам
-                                                        //
-                                                        if (
-                                                            nullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
-                                                            nullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
-                                                        ) {
-                                                            if (
-                                                                column.javaClassName().equals(Boolean.class.getName()) ||
-                                                                column.sqlType() == Types.BOOLEAN
-                                                            )
-                                                                return boolean.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Byte.class.getName()) ||
-                                                                column.sqlType() == Types.TINYINT
-                                                            )
-                                                                return byte.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Character.class.getName()) ||
-                                                                column.sqlType() == Types.CHAR
-                                                            )
-                                                                return char.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Short.class.getName()) ||
-                                                                column.sqlType() == Types.SMALLINT
-                                                            )
-                                                                return short.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Integer.class.getName()) ||
-                                                                column.sqlType() == Types.INTEGER
-                                                            )
-                                                                return int.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Long.class.getName()) ||
-                                                                column.sqlType() == Types.BIGINT
-                                                            )
-                                                                return long.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Float.class.getName()) ||
-                                                                column.sqlType() == Types.FLOAT
-                                                            )
-                                                                return float.class.getName();
-
-                                                            if (
-                                                                column.javaClassName().equals(Double.class.getName()) ||
-                                                                column.sqlType() == Types.DOUBLE
-                                                            )
-                                                                return double.class.getName();
-                                                        }
-
-                                                        // vendor-specific
-
-                                                        if (onDatabase.equals(MSSQL_DB_NAME)) {
-                                                            if (column.javaClassName().equals("microsoft.sql.DateTimeOffset"))
-                                                                return "java.time.OffsetDateTime";
-                                                        }
-
-                                                        if (onDatabase.equals(ORACLE_DB_NAME)) {
-                                                            if (column.javaClassName().equals("oracle.sql.TIMESTAMPTZ"))
-                                                                return "java.time.ZonedDateTime";
-                                                        }
-
-                                                        // shim for new java.time API (JSR-310)
-                                                        return switch (column.sqlType()) {
-                                                            case Types.DATE ->
-                                                                "java.time.LocalDate";
-                                                            case Types.TIME ->
-                                                                "java.time.LocalTime";
-                                                            case Types.TIMESTAMP ->
-                                                                // https://github.com/pgjdbc/pgjdbc/pull/3006
-                                                                column.sqlTypeName().equals("timestamptz") // postgresql
-                                                                    ? "java.time.OffsetDateTime"
-                                                                    : "java.time.LocalDateTime";
-                                                            case Types.TIME_WITH_TIMEZONE ->
-                                                                "java.time.OffsetTime";
-                                                            case Types.TIMESTAMP_WITH_TIMEZONE ->
-                                                                column.javaClassName().equals("java.time.ZonedDateTime")
-                                                                    ? column.javaClassName() : "java.time.OffsetDateTime";
-                                                            default ->
-                                                                parsedConfig.typeBindings().stream()
-                                                                    .filter(b ->
-                                                                        column.sqlTypeName().equals(b.compatibleSqlTypeName())
-                                                                    )
-                                                                    .findFirst()
-                                                                    .map(Standard.Binding::className)
-                                                                    .orElse(column.javaClassName());
-                                                        };
-                                                    };
-
-                                                    binding = getBindingForClass.apply(
-                                                        inferType.get(), nullMode
+                                                    binding = TypeChecker.getBindingForClass(
+                                                        parsedConfig.typeBindings(), TypeChecker.inferType(parsedConfig, onDatabase, column, nullMode), nullMode
                                                     );
                                                 }
 
@@ -1324,6 +1028,8 @@ public class InvocationsFinder {
                                 throw new ValidationException(e.getMessage());
                             }
                         } else { // no compile time checks
+                            onDatabase = null;
+                            parametersMetadata = null;
                             toDto = switch (dtoMode) {
                                 case null -> null;
                                 case ExistingDto existing -> {
@@ -1331,8 +1037,8 @@ public class InvocationsFinder {
                                     var dtoFields = flattedDtoType(parsed);
 
                                     for (var field : dtoFields) {
-                                        var _ = getBindingForClass.apply(
-                                            field.st().javaClassName(), field.st().nullMode()
+                                        var _ = TypeChecker.getBindingForClass(
+                                            parsedConfig.typeBindings(), field.st().javaClassName(), field.st().nullMode()
                                         );
                                     }
 
@@ -1392,8 +1098,8 @@ public class InvocationsFinder {
                         ((HashMap<JCTree.JCCompilationUnit, HashMap<JCTree.JCMethodInvocation, Object>>) context.get(HashMap.class))
                             .computeIfAbsent(cu, _ -> new HashMap<>())
                             .put(forPrepare.tree, doofyEncode(new TrueSqlPlugin.Invocation(
-                                parsedConfig.typeBindings(), generatedClassName, fetchMethodName, lineNumber,
-                                sourceExpression, forPrepare.queryMode, null
+                                onDatabase, parsedConfig.typeBindings(), generatedClassName, fetchMethodName, lineNumber,
+                                sourceExpression, forPrepare.queryMode, parametersMetadata
                             )));
 
                         result.add(generatedCode);

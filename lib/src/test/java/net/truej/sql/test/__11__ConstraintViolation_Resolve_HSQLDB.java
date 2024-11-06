@@ -1,6 +1,5 @@
 package net.truej.sql.test;
 
-import net.truej.sql.dsl.Constraint;
 import net.truej.sql.dsl.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;

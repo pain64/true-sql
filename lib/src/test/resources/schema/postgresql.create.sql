@@ -52,7 +52,11 @@ create table all_default_data_types(
     time_type time not null,
     time_type_null time,
     timestamp_type timestamp not null,
-    timestamp_type_null timestamp
+    timestamp_type_null timestamp,
+    float_type real not null,
+    float_type_null real,
+    double_type float not null,
+    double_type_null float
 );
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);
