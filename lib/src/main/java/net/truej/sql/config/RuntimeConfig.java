@@ -1,6 +1,6 @@
-package net.truej.sql.source;
+package net.truej.sql.config;
 
-import net.truej.sql.SqlExceptionR;
+import net.truej.sql.fetch.SqlExceptionR;
 
 import java.sql.SQLException;
 

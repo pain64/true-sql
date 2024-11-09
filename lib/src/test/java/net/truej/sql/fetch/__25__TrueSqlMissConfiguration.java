@@ -1,12 +1,11 @@
-package net.truej.sql.test.negative;
+package net.truej.sql.fetch;
 
-import net.truej.sql.dsl.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static net.truej.sql.source.Parameters.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 public class __25__TrueSqlMissConfiguration {
     class A implements As {}

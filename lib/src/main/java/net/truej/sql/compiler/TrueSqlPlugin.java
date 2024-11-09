@@ -16,12 +16,11 @@ import com.sun.tools.javac.api.BasicJavacTask;
 import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.NullParameter;
 import net.truej.sql.bindings.Standard;
-import net.truej.sql.dsl.As;
-import net.truej.sql.dsl.NoUpdateCount;
-import net.truej.sql.dsl.Q;
-import net.truej.sql.dsl.UpdateCount;
-import net.truej.sql.source.ParameterExtractor;
-import net.truej.sql.source.Parameters;
+import net.truej.sql.fetch.As;
+import net.truej.sql.fetch.NoUpdateCount;
+import net.truej.sql.fetch.Q;
+import net.truej.sql.fetch.UpdateCount;
+import net.truej.sql.fetch.Parameters;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -29,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static net.truej.sql.compiler.StatementGenerator.*;
@@ -183,8 +181,8 @@ public class TrueSqlPlugin implements Plugin {
         checkParameters(symtab, invocation);
 
         var clParameterExtractor = symtab.getClass(
-            symtab.unnamedModule, names.fromString(
-                ParameterExtractor.class.getName()
+            symtab.java_base, names.fromString(
+                Function.class.getName()
             )
         );
 
@@ -263,7 +261,7 @@ public class TrueSqlPlugin implements Plugin {
 
                 for (var part : bq.parts())
                     switch (part) {
-                        case InvocationsFinder.SimpleParameter p:
+                        case InvocationsFinder.InParameter p:
                             var extractor = new JCTree.JCLambda(
                                 List.of(bq.extractor().params.head),
                                 p.expression()
@@ -295,7 +293,7 @@ public class TrueSqlPlugin implements Plugin {
             case SingleQuery sq:
                 for (var part : sq.parts())
                     switch (part) {
-                        case InvocationsFinder.SimpleParameter p:
+                        case InvocationsFinder.InParameter p:
                             tree.args = tree.args.append(p.expression());
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
                             metadataIndex++;

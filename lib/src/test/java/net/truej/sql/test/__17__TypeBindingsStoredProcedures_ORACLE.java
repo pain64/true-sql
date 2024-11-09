@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.inout;
-import static net.truej.sql.source.Parameters.out;
+import static net.truej.sql.fetch.Parameters.inout;
+import static net.truej.sql.fetch.Parameters.out;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
 @TrueSql public class __17__TypeBindingsStoredProcedures_ORACLE {

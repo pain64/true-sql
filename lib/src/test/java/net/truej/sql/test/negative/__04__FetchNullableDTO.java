@@ -9,7 +9,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
-import static net.truej.sql.source.Parameters.Nullable;
+import static net.truej.sql.fetch.Parameters.Nullable;
 
 
 

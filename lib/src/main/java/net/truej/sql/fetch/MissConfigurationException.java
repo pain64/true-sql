@@ -1,13 +1,10 @@
-package net.truej.sql.dsl;
+package net.truej.sql.fetch;
 
-// FIXME: make this class package-private
-public class MissConfigurationException extends RuntimeException {
-    // TODO: move Parameters to this package
+class MissConfigurationException extends RuntimeException {
 
     MissConfigurationException(String message) { super(message); }
 
-    // FIXME: make this method package-private
-    public static <T> T raise() {
+    static <T> T raise() {
         throw new MissConfigurationException(
             "TrueSql compiler plugin not enabled. Check out your build tool configuration" +
             " (Gradle, Maven, ...)"

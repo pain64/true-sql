@@ -13,7 +13,7 @@ import net.truej.sql.bindings.Standard;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
 import net.truej.sql.config.Configuration;
-import net.truej.sql.source.Parameters;
+import net.truej.sql.fetch.Parameters;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -41,8 +41,8 @@ public class InvocationsFinder {
     sealed interface InOrInoutParameter extends QueryPart {
         JCTree.JCExpression expression();
     }
-    // FIXME: rename to InParameter???
-    public record SimpleParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
+
+    public record InParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
     public record InoutParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
     public record OutParameter(Symbol.ClassSymbol toClass) implements QueryPart { }
     public record UnfoldParameter(
@@ -122,7 +122,7 @@ public class InvocationsFinder {
                 } else
                     throw new ValidationException("bad tree"); // FIXME: refactor to new bad tree subsystem
             } else
-                return new SimpleParameter(invoke);
+                return new InParameter(invoke);
         };
 
         var fragments = (queryText + " ").split("(?<=[\\s,=()])\\?");
@@ -147,11 +147,11 @@ public class InvocationsFinder {
                         if (imp != null && imp.type.tsym == clParameters)
                             parsed = map.parse(fa.name, invoke, false);
                         else
-                            parsed = new SimpleParameter(invoke);
+                            parsed = new InParameter(invoke);
                     } else
-                        parsed = new SimpleParameter(invoke);
+                        parsed = new InParameter(invoke);
                 } else
-                    parsed = new SimpleParameter(expression);
+                    parsed = new InParameter(expression);
 
                 result.add(parsed);
             }
@@ -312,27 +312,6 @@ public class InvocationsFinder {
                                         tree.args.get(1) instanceof JCTree.JCLiteral l2 &&
                                         l2.getValue() instanceof String constraintName
                                     ) {
-                                        var rsToString = (Function<ResultSet, String>) rs ->
-                                            Stream.iterate(
-                                                rs, t -> {
-                                                    try {
-                                                        return t.next();
-                                                    } catch (SQLException e) {
-                                                        throw new RuntimeException(e);
-                                                    }
-                                                }, t -> t
-                                            ).map(r -> {
-                                                try {
-                                                    var s = "";
-                                                    for (var i = 0; i < r.getMetaData().getColumnCount(); i++)
-                                                        s += r.getMetaData().getColumnLabel(i + 1) + "=" + r.getObject(i + 1) + ";";
-                                                    return s;
-
-                                                } catch (SQLException e) {
-                                                    throw new RuntimeException(e);
-                                                }
-                                            }).collect(Collectors.joining("\n"));
-
                                         var realCatalog = connection.getCatalog();
                                         var realSchema = connection.getSchema();
 
@@ -466,13 +445,14 @@ public class InvocationsFinder {
                                 if (
                                     (tree.args.head instanceof JCTree.JCIdent id &&
                                      id.name.equals(names.fromString("Nullable"))) ||
-                                    tree.args.head.toString().equals("net.truej.sql.source.Parameters.Nullable")
+                                    // FIXME: use FQN
+                                    tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.Nullable")
                                 ) {
                                     nullMode = GLangParser.NullMode.EXACTLY_NULLABLE;
                                 } else if (
                                     (tree.args.head instanceof JCTree.JCIdent id &&
                                      id.name.equals(names.fromString("NotNull"))) ||
-                                    tree.args.head.toString().equals("net.truej.sql.source.Parameters.NotNull")
+                                    tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.NotNull")
                                 ) {
                                     nullMode = GLangParser.NullMode.EXACTLY_NOT_NULL;
                                 } else
@@ -656,7 +636,7 @@ public class InvocationsFinder {
                                 .map(p -> switch (p) {
                                     case InoutParameter _,
                                          OutParameter _,
-                                         SimpleParameter _ -> "?";
+                                         InParameter _ -> "?";
                                     case TextPart tp -> tp.text;
                                     case UnfoldParameter u -> {
                                         var n = unfoldArgumentsCount(u.extractor);
@@ -872,7 +852,7 @@ public class InvocationsFinder {
                                                     };
 
                                                     switch (parameters.get(i)) {
-                                                        case SimpleParameter _ -> {
+                                                        case InParameter _ -> {
                                                             if (
                                                                 pMode != parameterModeIn &&
                                                                 pMode != parameterModeUnknown
@@ -909,7 +889,7 @@ public class InvocationsFinder {
                                                     throw new RuntimeException(e);
                                                 }
                                             })
-                                            .filter(i -> !(parameters.get(i) instanceof SimpleParameter))
+                                            .filter(i -> !(parameters.get(i) instanceof InParameter))
                                             .map(i -> i + 1)
                                             .toArray();
 
@@ -1049,7 +1029,7 @@ public class InvocationsFinder {
                                             ).toList();
 
                                         var outParameterIndexes = IntStream.range(0, parameters.size())
-                                            .filter(i -> !(parameters.get(i) instanceof SimpleParameter))
+                                            .filter(i -> !(parameters.get(i) instanceof InParameter))
                                             .map(i -> i + 1)
                                             .toArray();
 
@@ -1091,6 +1071,8 @@ public class InvocationsFinder {
                             dtoMode instanceof GenerateDto,
                             isWithUpdateCount
                         );
+
+                        // TODO: move errors to here -->
 
                         if (context.get(HashMap.class) == null)
                             context.put(HashMap.class, new HashMap());

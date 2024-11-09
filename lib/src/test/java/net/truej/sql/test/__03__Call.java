@@ -13,7 +13,7 @@ import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 // TODO: split this test to 3 - in, inout and out parameters support
 //  because mssql does not supports (nominal) for inout parameters

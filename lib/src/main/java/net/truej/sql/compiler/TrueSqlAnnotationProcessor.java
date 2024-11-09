@@ -9,6 +9,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.comp.Resolve;
@@ -29,12 +30,12 @@ import net.truej.sql.config.TypeReadWrite;
 import net.truej.sql.fetch.*;
 import net.truej.sql.source.ConnectionW;
 import net.truej.sql.source.DataSourceW;
-import net.truej.sql.source.ParameterExtractor;
-import net.truej.sql.source.Parameters;
 
 @SupportedAnnotationTypes({"net.truej.sql.TrueSql", "net.truej.sql.config.Configuration"})
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
+
+    static final String GENERATED_CLASS_NAME_SUFFIX = "G";
 
     @Override public synchronized void init(ProcessingEnvironment processingEnv) {
 
@@ -114,14 +115,15 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 )
             );
 
-            var generatedClassName = (elementSymbol).getQualifiedName() + "TrueSql"; // FIXME: + "G" ?
+            var generatedClassFqn = elementSymbol.getQualifiedName() + GENERATED_CLASS_NAME_SUFFIX;
+
             var invocations = InvocationsFinder.find(
-                env, context, symtab, names, maker, messages, cu, tree, generatedClassName
+                env, context, symtab, names, maker, messages, cu, tree, generatedClassFqn
             );
 
             try {
                 var builderFile = env.getFiler().createSourceFile(
-                    generatedClassName, element
+                    generatedClassFqn, element
                 );
 
                 try (var out = new PrintWriter(builderFile.openWriter())) {
@@ -137,7 +139,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     out.write("import " + TooFewRowsException.class.getName() + ";\n");
                     out.write("import " + UpdateResult.class.getName() + ";\n");
                     out.write("import " + UpdateResultStream.class.getName() + ";\n");
-                    out.write("import " + ParameterExtractor.class.getName() + ";\n");
+                    out.write("import " + Function.class.getName() + ";\n");
                     out.write("import " + Parameters.class.getName() + ".*;\n");
                     out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
                     out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
@@ -151,7 +153,9 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     // FIXME: uncomment, set isolating mode for annotation processor
                     // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
                     // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
-                    out.write("class %sTrueSql { \n".formatted(elementSymbol.getSimpleName()));
+                    out.write("class %s { \n".formatted(
+                        elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX)
+                    );
 
                     for (var invocation : invocations)
                         out.write(invocation);

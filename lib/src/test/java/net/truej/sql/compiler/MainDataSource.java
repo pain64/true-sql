@@ -1,7 +1,7 @@
 package net.truej.sql.compiler;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import net.truej.sql.dsl.ConstraintViolationException;
+import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeBinding;
@@ -48,7 +48,8 @@ import java.sql.Types;
 
     @Override public RuntimeException mapException(SQLException ex) {
         if (ex instanceof SQLIntegrityConstraintViolationException &&
-            ex.getCause() instanceof HsqlException hex) {
+            ex.getCause() instanceof HsqlException hex
+        ) {
             var parts = hex.getMessage().split(";");
             var constraintAndTable = parts[parts.length - 1].split("table:");
 

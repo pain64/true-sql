@@ -1,6 +1,6 @@
 package net.truej.sql.source;
 
-import net.truej.sql.dsl.*;
+import net.truej.sql.fetch.*;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;

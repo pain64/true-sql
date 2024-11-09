@@ -1,9 +1,9 @@
 package net.truej.sql.source;
 
-import net.truej.sql.dsl.As;
-import net.truej.sql.dsl.NoUpdateCount;
-import net.truej.sql.dsl.Q;
-import net.truej.sql.dsl.UpdateCount;
+import net.truej.sql.fetch.As;
+import net.truej.sql.fetch.NoUpdateCount;
+import net.truej.sql.fetch.Q;
+import net.truej.sql.fetch.UpdateCount;
 
 import java.sql.Connection;
 import java.sql.SQLException;

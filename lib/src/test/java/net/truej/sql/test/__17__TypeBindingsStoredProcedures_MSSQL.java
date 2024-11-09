@@ -16,7 +16,7 @@ import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.out;
+import static net.truej.sql.fetch.Parameters.out;
 
 // FIXME: mariadb
 // TODO: test for postgresql

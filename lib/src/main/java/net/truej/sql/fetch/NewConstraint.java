@@ -1,4 +1,4 @@
-package net.truej.sql.dsl;
+package net.truej.sql.fetch;
 
 public interface NewConstraint {
 

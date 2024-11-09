@@ -4,19 +4,13 @@ import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
 import net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
-import net.truej.sql.fetch.UpdateResult;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
-import static net.truej.sql.source.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.NotNull;
 
 // FIXME: disable this check in compiler for HSQLDB
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({HSQLDB, MSSQL})

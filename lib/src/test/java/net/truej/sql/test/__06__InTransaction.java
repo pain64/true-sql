@@ -1,6 +1,6 @@
 package net.truej.sql.test;
 
-import net.truej.sql.SqlExceptionR;
+import net.truej.sql.fetch.SqlExceptionR;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;

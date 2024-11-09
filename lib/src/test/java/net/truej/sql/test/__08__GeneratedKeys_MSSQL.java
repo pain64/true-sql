@@ -3,15 +3,13 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.TrueSqlTests2.DisabledOn;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
-import static net.truej.sql.source.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.NotNull;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(MSSQL)
 @TrueSql public class __08__GeneratedKeys_MSSQL {

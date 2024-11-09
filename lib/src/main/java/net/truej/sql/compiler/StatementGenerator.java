@@ -182,7 +182,7 @@ public class StatementGenerator {
         switch (query) {
             case BatchedQuery bp -> {
                 var simpleParameters = bp.parts.stream()
-                    .filter(p -> p instanceof InvocationsFinder.SimpleParameter).toList();
+                    .filter(p -> p instanceof InvocationsFinder.InParameter).toList();
 
                 var tpList = Out.each(
                     simpleParameters, ", ", (o, i, _) ->
@@ -200,7 +200,7 @@ public class StatementGenerator {
 
                 var eachParameterDecl = Out.each(simpleParameters, ", ", (o, i, _) ->
                     o."""
-                        ParameterExtractor<B, P\{i + 1}> pe\{i + 1},
+                        Function<B, P\{i + 1}> pe\{i + 1},
                         TypeReadWrite<P\{i + 1}> prw\{i + 1}"""
                 );
 
@@ -221,7 +221,7 @@ public class StatementGenerator {
 
                 var eachSetParameter = Out.each(
                     simpleParameters, "\n", (o, i, p) -> o."""
-                        var p\{i + 1} = pe\{i + 1}.get(element);
+                        var p\{i + 1} = pe\{i + 1}.apply(element);
                         prw\{i + 1}.set(stmt, \{i + 1}, p\{i + 1});"""
                 );
                 setParameters = o -> o."""
@@ -241,7 +241,7 @@ public class StatementGenerator {
                     nonTextParts, ", ", (o, i, p) -> switch (p) {
                         case InvocationsFinder.TextPart _ ->
                             throw new IllegalStateException("unreachable");
-                        case InvocationsFinder.SimpleParameter _,
+                        case InvocationsFinder.InParameter _,
                              InvocationsFinder.InoutParameter _,
                              InvocationsFinder.OutParameter _ -> o."P\{i + 1}";
                         case InvocationsFinder.UnfoldParameter up -> {
@@ -264,7 +264,7 @@ public class StatementGenerator {
                     nonTextParts, ",\n", (o, i, p) -> switch (p) {
                         case InvocationsFinder.TextPart _ ->
                             throw new IllegalStateException("unreachable");
-                        case InvocationsFinder.SimpleParameter _,
+                        case InvocationsFinder.InParameter _,
                              InvocationsFinder.InoutParameter _ -> o."""
                             P\{i + 1} p\{i + 1},
                             TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
@@ -279,7 +279,7 @@ public class StatementGenerator {
                             var extractorsAndRw = Out.each(
                                 IntStream.range(0, n).boxed().toList(),
                                 ",\n", (oo, j, _) -> oo."""
-                                    ParameterExtractor<P\{i + 1}, P\{i + 1}E\{j + 1}> p\{i + 1}e\{j + 1},
+                                    Function<P\{i + 1}, P\{i + 1}E\{j + 1}> p\{i + 1}e\{j + 1},
                                     TypeReadWrite<P\{i + 1}E\{j + 1}> prw\{i + 1}e\{j + 1}"""
                             );
 
@@ -301,7 +301,7 @@ public class StatementGenerator {
                             case InvocationsFinder.TextPart t -> oo."""
                                 buffer.append(""\"
                                     \{t.text()}""\");""";
-                            case InvocationsFinder.SimpleParameter _,
+                            case InvocationsFinder.InParameter _,
                                  InvocationsFinder.InoutParameter _,
                                  InvocationsFinder.OutParameter _ -> {
                                 pIndex[0]++;
@@ -338,7 +338,7 @@ public class StatementGenerator {
                         nonTextParts, "\n", (oo, i, p) -> switch (p) {
                             case InvocationsFinder.TextPart _ ->
                                 throw new IllegalStateException("unreachable");
-                            case InvocationsFinder.SimpleParameter _,
+                            case InvocationsFinder.InParameter _,
                                  InvocationsFinder.InoutParameter _ ->
                                 oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
                             case InvocationsFinder.OutParameter _ ->
@@ -348,7 +348,7 @@ public class StatementGenerator {
                                 var unfolded = Out.each(
                                     IntStream.range(0, n).boxed().toList(),
                                     "\n", (ooo, j, _) -> ooo."""
-                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{up.extractor() == null ? "element" : STR."p\{i + 1}e\{j + 1}.get(element)"});"""
+                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{up.extractor() == null ? "element" : STR."p\{i + 1}e\{j + 1}.apply(element)"});"""
                                 );
                                 yield oo."""
 

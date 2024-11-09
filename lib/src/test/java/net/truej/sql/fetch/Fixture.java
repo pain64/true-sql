@@ -1,6 +1,5 @@
 package net.truej.sql.fetch;
 
-import net.truej.sql.dsl.ConstraintViolationException;
 // import com.truej.sql.v3.prepare.BatchStatement;
 // import com.truej.sql.v3.prepare.Statement;
 import net.truej.sql.config.CompileTimeChecks;

@@ -45,7 +45,7 @@ public class StatementGeneratorTest {
                 public static <B, P1, E1 extends Exception>
                 List<User> fetchList__line12__(
                     List<B> batch,
-                    ParameterExtractor<B, P1> pe1,
+                    Function<B, P1> pe1,
                     TypeReadWrite<P1> prw1,
                     ConnectionW source
                 ) throws E1 {
@@ -106,7 +106,7 @@ public class StatementGeneratorTest {
                 SourceMode.CONNECTION,
                 new BatchedQuery(null, null, List.of(
                     new InvocationsFinder.TextPart("select id, name from users where id = "),
-                    new InvocationsFinder.SimpleParameter(null),
+                    new InvocationsFinder.InParameter(null),
                     new InvocationsFinder.TextPart("")
                 )),
                 new AsDefault(),
@@ -202,7 +202,7 @@ public class StatementGeneratorTest {
                 SourceMode.DATASOURCE,
                 new SingleQuery(List.of(
                     new InvocationsFinder.TextPart("select name from users where id = "),
-                    new InvocationsFinder.SimpleParameter(null),
+                    new InvocationsFinder.InParameter(null),
                     new InvocationsFinder.TextPart("and (name, age) in ("),
                     new InvocationsFinder.UnfoldParameter(null, null),
                     new InvocationsFinder.TextPart(")")

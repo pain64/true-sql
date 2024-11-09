@@ -3,7 +3,7 @@ package net.truej.sql.test.negative.dsl;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.source.Parameters;
+import net.truej.sql.fetch.Parameters;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 

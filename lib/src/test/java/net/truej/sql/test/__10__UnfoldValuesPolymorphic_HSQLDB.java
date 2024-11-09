@@ -11,8 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.source.Parameters.NotNull;
-import static net.truej.sql.source.Parameters.unfold;
+import static net.truej.sql.fetch.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.unfold;
 
 // ? DB2
 // -  MySQL

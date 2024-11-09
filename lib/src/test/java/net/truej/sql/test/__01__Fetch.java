@@ -12,8 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.truej.sql.source.Parameters.NotNull;
-import static net.truej.sql.source.Parameters.Nullable;
+import static net.truej.sql.fetch.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.Nullable;
 
 
 @ExtendWith(TrueSqlTests2.class)

@@ -1,10 +1,8 @@
-package net.truej.sql.dsl;
-
-import net.truej.sql.source.Parameters;
+package net.truej.sql.fetch;
 
 import java.util.List;
 
-import static net.truej.sql.dsl.MissConfigurationException.*;
+import static net.truej.sql.fetch.MissConfigurationException.*;
 
 public interface Q<S, B> {
 // TO BE DONE:

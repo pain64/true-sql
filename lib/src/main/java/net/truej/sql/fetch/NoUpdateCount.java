@@ -1,12 +1,12 @@
-package net.truej.sql.dsl;
+package net.truej.sql.fetch;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.stream.Stream;
 
-import static net.truej.sql.dsl.MissConfigurationException.*;
-import static net.truej.sql.source.Parameters.*;
+import static net.truej.sql.fetch.MissConfigurationException.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 public interface NoUpdateCount {
     interface None {

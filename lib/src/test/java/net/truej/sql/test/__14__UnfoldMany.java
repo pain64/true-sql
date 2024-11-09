@@ -12,7 +12,7 @@ import java.util.List;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
-import static net.truej.sql.source.Parameters.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 @ExtendWith(TrueSqlTests2.class)
 @DisabledOn({HSQLDB, MSSQL})

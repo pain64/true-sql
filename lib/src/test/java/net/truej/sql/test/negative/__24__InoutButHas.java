@@ -9,9 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
-import static net.truej.sql.source.Parameters.inout;
-import static net.truej.sql.source.Parameters.out;
+import static net.truej.sql.fetch.Parameters.inout;
+import static net.truej.sql.fetch.Parameters.out;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @Message(

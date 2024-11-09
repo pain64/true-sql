@@ -1,6 +1,6 @@
-package net.truej.sql.dsl;
+package net.truej.sql.fetch;
 
-import static net.truej.sql.dsl.MissConfigurationException.*;
+import static net.truej.sql.fetch.MissConfigurationException.*;
 
 public interface As<C, K> {
     default C asCall() { return raise(); }

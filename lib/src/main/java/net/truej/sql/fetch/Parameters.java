@@ -1,8 +1,8 @@
-package net.truej.sql.source;
+package net.truej.sql.fetch;
 
 import java.util.List;
 
-import static net.truej.sql.dsl.MissConfigurationException.raise;
+import static net.truej.sql.fetch.MissConfigurationException.raise;
 
 public class Parameters {
     public static final class AsNullable { }

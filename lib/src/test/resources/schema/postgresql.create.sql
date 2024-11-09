@@ -2,7 +2,6 @@ drop schema public cascade;
 create schema public;
 
 create type enum_user_sex as enum('MALE', 'FEMALE');
-create type point_nullable as (a int, b int);
 
 create table users (
     id bigserial not null,

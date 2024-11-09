@@ -11,8 +11,8 @@ import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
 import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
-import static net.truej.sql.source.Parameters.Nullable;
-import static net.truej.sql.source.Parameters.unfold;
+import static net.truej.sql.fetch.Parameters.Nullable;
+import static net.truej.sql.fetch.Parameters.unfold;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __10__UnfoldValuesPolymorphic_PostgreSQL {

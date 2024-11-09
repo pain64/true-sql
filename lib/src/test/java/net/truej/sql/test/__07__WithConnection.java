@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.NotNull;
 
 // FIXME: migrate this test to HSQLDB
 @ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)

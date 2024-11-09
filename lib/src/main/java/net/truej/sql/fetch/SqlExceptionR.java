@@ -1,4 +1,4 @@
-package net.truej.sql;
+package net.truej.sql.fetch;
 
 import java.sql.SQLException;
 

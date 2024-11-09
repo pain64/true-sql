@@ -10,9 +10,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
-import static net.truej.sql.source.Parameters.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
 @TrueSql public class __10__UnfoldValuesPolymorphic_Oracle {

@@ -15,8 +15,8 @@ import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.source.Parameters.inout;
-import static net.truej.sql.source.Parameters.out;
+import static net.truej.sql.fetch.Parameters.inout;
+import static net.truej.sql.fetch.Parameters.out;
 
 // FIXME: MariaDB?
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL, ORACLE})
