@@ -15,6 +15,7 @@ public class __25__TrueSqlMissConfiguration {
     class C implements UpdateCount, UpdateCount.None, UpdateCount.OneG,
         UpdateCount.One, UpdateCount.OneOrZero, UpdateCount.OneOrZeroG, UpdateCount.ListG,
         UpdateCount.List_, UpdateCount.StreamG, UpdateCount.Stream_ {}
+    
     @Test
     void test() {
         Assertions.assertThrows(

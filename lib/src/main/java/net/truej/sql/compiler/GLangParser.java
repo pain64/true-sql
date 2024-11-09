@@ -1,6 +1,6 @@
 package net.truej.sql.compiler;
 
-import net.truej.sql.compiler.InvocationsFinder.ValidationException;
+import net.truej.sql.compiler.TrueSqlPlugin.ValidationException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -13,6 +13,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class GLangParser {
+
+    public static class ParseException extends RuntimeException {
+        public ParseException(String message) { super(message); }
+    }
+
     public sealed interface Lexeme { }
     public record Text(String t) implements Lexeme {
         @Override public String toString() { return "TEXT(" + t + ")"; }
@@ -102,7 +107,7 @@ public class GLangParser {
 
         if (input.get(0) instanceof Colon) {
             if (!input.get(1).equals(new Text("t")))
-                throw new ValidationException(STR."Expected t but has \{input.get(1)}");
+                throw new ParseException(STR."Expected t but has \{input.get(1)}");
 
             switch (input.get(2)) {
                 case NullabilityMark m -> {
@@ -121,7 +126,7 @@ public class GLangParser {
                         next = 3;
                     }
                 }
-                default -> throw new ValidationException(
+                default -> throw new ParseException(
                     STR."Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has \{input.get(2)}"
                 );
             }
@@ -147,15 +152,15 @@ public class GLangParser {
                 case Text t2 -> switch (input.get(i + 2)) {
                     case End _ -> new Chain(t1.t, t2.t, null);
                     case Dot _ -> new Chain(t1.t, t2.t, parseChain(input, i + 3));
-                    default -> throw new ValidationException(
+                    default -> throw new ParseException(
                         STR."expected END or DOT but has \{input.get(i + 2)}"
                     );
                 };
-                default -> throw new ValidationException(
+                default -> throw new ParseException(
                     STR."expected END or DOT or TEXT but has \{input.get(i + 1)}"
                 );
             };
-            default -> throw new ValidationException(
+            default -> throw new ParseException(
                 STR."expected END or TEXT but has \{input.get(i)}"
             );
         };
@@ -196,7 +201,7 @@ public class GLangParser {
         var baseNumber = locals.getFirst().n;
         for (var i = 0; i < locals.size(); i++) {
             if (baseNumber + i != locals.get(i).n)
-                throw new ValidationException(
+                throw new ParseException(
                     "The declarations of the members of the group should run consecutively"
                 );
         }
@@ -204,14 +209,14 @@ public class GLangParser {
         var localsChecked = locals.stream().map(nl -> {
             if (nl.line.chain.fieldName == null)
                 if (nl.column.columnName == null)
-                    throw new ValidationException(
+                    throw new ParseException(
                         "Your database driver doest not provides column name" +
                         " (labels only). Field name required"
                     );
 
 
             if (nl.line.chain.fieldClassName != null)
-                throw new ValidationException("Aggregated java class name not expected here");
+                throw new ParseException("Aggregated java class name not expected here");
 
             var realFieldName = nl.line.chain.fieldName != null
                 ? nl.line.chain.fieldName : nl.column.columnName;
@@ -231,7 +236,7 @@ public class GLangParser {
                     nl -> {
                         var javaFieldName = nl.line.chain.fieldName;
                         if (javaFieldName == null)
-                            throw new ValidationException("Field name required");
+                            throw new ParseException("Field name required");
 
                         return javaFieldName;
                     },
@@ -244,13 +249,13 @@ public class GLangParser {
                 if (groupLines.size() == 1) {
                     var numbered = groupLines.getFirst();
                     if (numbered.line.chain.fieldClassName != null)
-                        throw new ValidationException(
+                        throw new ParseException(
                             "Dto class name not allowed for group with one element - " +
                             "thees groups converts to List<single group element class name>"
                         );
 
                     if (numbered.line.chain.next != null && numbered.line.chain.next.next != null)
-                        throw new ValidationException(
+                        throw new ParseException(
                             "Inner groups not allowed for group with one element"
                         );
 
@@ -270,7 +275,7 @@ public class GLangParser {
                         groupLines.getFirst().line.chain.fieldClassName;
 
                     if (aggregatedTypeName == null)
-                        throw new ValidationException("Aggregated java class name required");
+                        throw new ParseException("Aggregated java class name required");
 
                     return new Field(
                         new AggregatedType(aggregatedTypeName, buildGroup(

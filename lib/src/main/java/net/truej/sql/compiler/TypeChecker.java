@@ -13,28 +13,30 @@ import static net.truej.sql.compiler.DatabaseNames.*;
 
 class TypeChecker {
     static Standard.Binding getBindingForClass(
-        List<Standard.Binding> typeBindings,
+        JCTree tree, List<Standard.Binding> typeBindings,
         String javaClassName, GLangParser.NullMode nullMode
     ) {
         var binding = typeBindings.stream()
             .filter(b ->
                 b.className().equals(javaClassName) ||
                 b.className().endsWith(javaClassName)
-            ).findFirst().orElseThrow(() -> new InvocationsFinder.ValidationException(
-                "has no binding for type " + javaClassName
+            ).findFirst().orElseThrow(() -> new TrueSqlPlugin.ValidationException(
+                tree, "has no binding for type " + javaClassName
             ));
 
         if (
             !binding.mayBeNullable() && nullMode == GLangParser.NullMode.EXACTLY_NULLABLE
         )
-            throw new InvocationsFinder.ValidationException(
-                "type " + javaClassName + " cannot be marked as nullable"
+            throw new TrueSqlPlugin.ValidationException(
+                tree, "type " + javaClassName + " cannot be marked as nullable"
             );
 
         return binding;
-    };
+    }
+    ;
 
     static void assertTypesCompatible(
+        JCTree tree, // FIXME: refactor this out
         String onDatabase,
         int sqlIndex, // `sql column` or `sql parameter` index
         // column or parameter metadata
@@ -114,17 +116,17 @@ class TypeChecker {
         ) {
 
             if (sqlType == Types.TINYINT)
-                throw new InvocationsFinder.ValidationException(
-                    "type mismatch for column " + (sqlIndex + 1) +
-                    (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                    ". Expected " + javaBinding.className() + " but has java.lang.Byte"
+                throw new TrueSqlPlugin.ValidationException(
+                    tree, "type mismatch for column " + (sqlIndex + 1) +
+                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
+                          ". Expected " + javaBinding.className() + " but has java.lang.Byte"
                 );
 
             if (sqlType == Types.SMALLINT)
-                throw new InvocationsFinder.ValidationException(
-                    "type mismatch for column " + (sqlIndex + 1) +
-                    (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                    ". Expected " + javaBinding.className() + " but has java.lang.Short"
+                throw new TrueSqlPlugin.ValidationException(
+                    tree, "type mismatch for column " + (sqlIndex + 1) +
+                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
+                          ". Expected " + javaBinding.className() + " but has java.lang.Short"
                 );
         }
 
@@ -210,35 +212,34 @@ class TypeChecker {
             javaBinding.compatibleSqlTypeName() == null
         ) {
             if (!javaBinding.className().equals(sqlJavaClassName))
-                throw new InvocationsFinder.ValidationException(
-                    "type mismatch for column " + (sqlIndex + 1) +
-                    (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                    ". Expected " + javaBinding.className() + " but has " + sqlJavaClassName
+                throw new TrueSqlPlugin.ValidationException(
+                    tree, "type mismatch for column " + (sqlIndex + 1) +
+                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
+                          ". Expected " + javaBinding.className() + " but has " + sqlJavaClassName
                 );
         } else {
             if (javaBinding.compatibleSqlTypeName() != null) {
                 if (!javaBinding.compatibleSqlTypeName().equals(sqlTypeName))
-                    throw new InvocationsFinder.ValidationException(
-                        "Sql type name mismatch for column " + (sqlIndex + 1) +
-                        (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                        ". Expected " + javaBinding.compatibleSqlTypeName() + " but has " + sqlTypeName
+                    throw new TrueSqlPlugin.ValidationException(
+                        tree, "Sql type name mismatch for column " + (sqlIndex + 1) +
+                              (javaName != null ? " (for field `" + javaName + "`)" : "") +
+                              ". Expected " + javaBinding.compatibleSqlTypeName() + " but has " + sqlTypeName
                     );
             }
 
             if (javaBinding.compatibleSqlType() != null) {
                 if (javaBinding.compatibleSqlType() != sqlType)
-                    throw new InvocationsFinder.ValidationException(
-                        "Sql type id (java.sql.Types) mismatch for column " + (sqlIndex + 1) +
-                        (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                        ". Expected " + javaBinding.compatibleSqlType() + " but has " + sqlType
+                    throw new TrueSqlPlugin.ValidationException(
+                        tree, "Sql type id (java.sql.Types) mismatch for column " + (sqlIndex + 1) +
+                              (javaName != null ? " (for field `" + javaName + "`)" : "") +
+                              ". Expected " + javaBinding.compatibleSqlType() + " but has " + sqlType
                     );
             }
         }
     }
 
     static void assertNullabilityCompatible(
-        JCTree.JCCompilationUnit cu, CompilerMessages messages,
-        InvocationsFinder.ForPrepareInvocation forPrepare,
+        JCTree.JCCompilationUnit cu, CompilerMessages messages, JCTree tree,
         String fieldName, GLangParser.NullMode fieldNullMode,
         int columnIndex, GLangParser.ColumnMetadata column
     ) {
@@ -254,11 +255,11 @@ class TypeChecker {
             switch (m) {
                 case WARNING:
                     messages.write(
-                        cu, forPrepare.tree(), JCDiagnostic.DiagnosticType.WARNING, message
+                        cu, tree, JCDiagnostic.DiagnosticType.WARNING, message
                     );
                     break;
                 case ERROR:
-                    throw new InvocationsFinder.ValidationException(message);
+                    throw new TrueSqlPlugin.ValidationException(tree, message);
             }
         };
 

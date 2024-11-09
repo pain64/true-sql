@@ -7,16 +7,18 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.TrueSqlTests2.*;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Message;
 
 @ExtendWith(TrueSqlTests2.class) @Message(
-    kind = ERROR, text = "Expected identifier for source for `.q`"
+    kind = ERROR, text = "Expected identifier for source for `.q(...)`"
 )
-@TrueSql public class __03__BadSource_NotIdentifier {
+@EnableOn(HSQLDB) @TrueSql public class __03__BadSource_NotIdentifier {
     record Bar(MainConnection f) {}
 
     @TestTemplate public void test(MainConnection cn) {
         var bar = new Bar(cn);
-        bar.f.q("select 1");
+        bar.f.q("select 1").fetchNone();
     }
 }

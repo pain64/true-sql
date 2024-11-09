@@ -12,15 +12,12 @@ import java.util.*;
 import java.util.function.Function;
 
 import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
 
-import com.sun.source.util.Trees;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
-import com.sun.tools.javac.code.Types;
 
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.model.JavacElements;
@@ -28,8 +25,11 @@ import net.truej.sql.TrueSql;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeReadWrite;
 import net.truej.sql.fetch.*;
+import net.truej.sql.fetch.Parameters;
 import net.truej.sql.source.ConnectionW;
 import net.truej.sql.source.DataSourceW;
+
+import static net.truej.sql.compiler.TrueSqlPlugin.*;
 
 @SupportedAnnotationTypes({"net.truej.sql.TrueSql", "net.truej.sql.config.Configuration"})
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
@@ -61,12 +61,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
         var env = (JavacProcessingEnvironment) processingEnv;
         var context = env.getContext();
-        var types = Types.instance(context);
-
         var symtab = Symtab.instance(context);
-        var trees = Trees.instance(env);
-        var resolve = Resolve.instance(context);
-
         var names = Names.instance(context);
         var elements = JavacElements.instance(context);
 
@@ -115,11 +110,27 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 )
             );
 
-            var generatedClassFqn = elementSymbol.getQualifiedName() + GENERATED_CLASS_NAME_SUFFIX;
+            @SuppressWarnings("unchecked") var cuInfo = (
+                HashMap<
+                    JCTree.JCCompilationUnit,
+                    LinkedHashMap<JCTree.JCMethodInvocation, Object>
+                    >
+                ) context.get(HashMap.class);
 
+            if (cuInfo == null) {
+                cuInfo = new HashMap<>();
+                context.put(HashMap.class, cuInfo);
+            }
+
+            var generatedClassFqn = elementSymbol.getQualifiedName() + GENERATED_CLASS_NAME_SUFFIX;
             var invocations = InvocationsFinder.find(
                 env, context, symtab, names, maker, messages, cu, tree, generatedClassFqn
             );
+
+            cuInfo.put(cu, new LinkedHashMap<>() {{
+                for (var kv : invocations.entrySet())
+                    put(kv.getKey(), doofyEncode(kv.getValue()));
+            }});
 
             try {
                 var builderFile = env.getFiler().createSourceFile(
@@ -154,11 +165,13 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
                     // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
                     out.write("class %s { \n".formatted(
-                        elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX)
-                    );
+                        elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
+                    ));
 
-                    for (var invocation : invocations)
-                        out.write(invocation);
+                    for (var result : invocations.values()) {
+                        if (result instanceof FetchInvocation fi)
+                            out.write(fi.generatedCode());
+                    }
                     out.write("}");
                 }
             } catch (IOException e) {

@@ -2,7 +2,7 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.util.Name;
-import net.truej.sql.compiler.InvocationsFinder.ValidationException;
+import net.truej.sql.compiler.TrueSqlPlugin.ValidationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +16,10 @@ public class ExistingDtoParser {
     // FIXME: g and Nullable or NotNull annotation for dtoType
     //       is not compatible!!!
 
+    public static class ParseException extends RuntimeException {
+        public ParseException(String message) { super(message); }
+    }
+
     public static FieldType parse(
         NullMode nullMode,
         Function<String, Boolean> hasTypeBinding,
@@ -24,16 +28,16 @@ public class ExistingDtoParser {
     ) {
 
         if (dtoSymbol.isInterface())
-            throw new ValidationException("To Dto class cannot be interface");
+            throw new ParseException("To Dto class cannot be interface");
 
         if (!dtoSymbol.getTypeParameters().isEmpty())
-            throw new ValidationException("To Dto class cannot be generic");
+            throw new ParseException("To Dto class cannot be generic");
 
         if (hasTypeBinding.apply(dtoSymbol.className()))
             return new ScalarType(nullMode, dtoSymbol.className());
         else {
             if (nullMode != NullMode.DEFAULT_NOT_NULL)
-                throw new ValidationException(
+                throw new ParseException(
                     "Nullable or NotNull hint not allowed for aggregated DTO"
                 );
 
@@ -43,12 +47,12 @@ public class ExistingDtoParser {
             ).iterator();
 
             if (!allConstructors.hasNext())
-                throw new ValidationException("non-empty args constructor not found");
+                throw new ParseException("non-empty args constructor not found");
 
             var constructor = (Symbol.MethodSymbol) allConstructors.next();
 
             if (allConstructors.hasNext())
-                throw new ValidationException("has more then one non-empty args constructor");
+                throw new ParseException("has more then one non-empty args constructor");
 
             var fields = constructor.params.stream().map(p -> {
                 if (p.type.tsym instanceof Symbol.ClassSymbol cSym) {
@@ -81,11 +85,11 @@ public class ExistingDtoParser {
                             new ScalarType(fieldNullMode, className), p.name.toString()
                         );
                     } else
-                        throw new ValidationException(
+                        throw new ParseException(
                             "has no type binding for " + className
                         );
                 } else
-                    throw new ValidationException(
+                    throw new ParseException(
                         "unexpected constructor parameter of kind: " + p.type.tsym.kind
                     );
             }).toList();
