@@ -13,6 +13,8 @@ import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.fetch.Parameters;
+import net.truej.sql.source.ConnectionW;
+import net.truej.sql.source.DataSourceW;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -26,7 +28,6 @@ import java.util.stream.IntStream;
 
 import static java.sql.ParameterMetaData.*;
 import static net.truej.sql.compiler.ExistingDtoParser.flattedDtoType;
-import static net.truej.sql.compiler.ExistingDtoParser.parse;
 import static net.truej.sql.compiler.GLangParser.parseResultSetColumns;
 import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 import static net.truej.sql.compiler.TrueSqlPlugin.*;
@@ -57,6 +58,7 @@ public class InvocationsFinder {
 
     static StatementGenerator.QueryMode parseQuery(
         Symtab symtab, JCTree.JCCompilationUnit cu, Names names,
+        JCTree.JCMethodInvocation tree,
         // FIXME: two nullable parameters with corellation
         JCTree.JCExpression batchListDataExpression, JCTree.JCLambda batchLambda,
         String queryText, com.sun.tools.javac.util.List<JCTree.JCExpression> args
@@ -120,8 +122,15 @@ public class InvocationsFinder {
         var fragments = (queryText + " ").split("(?<=[\\s,=()])\\?");
         var result = new ArrayList<QueryPart>();
 
+        if (fragments.length - 1 != args.size())
+            throw new ValidationException(
+                tree, "parameter count mismatch. expected "
+                      + (fragments.length - 1) + " but has " + args.size()
+            );
+
         for (var i = 0; i < fragments.length; i++) {
             result.add(new TextPart(fragments[i]));
+
 
             if (i < args.size()) {
                 var expression = args.get(i);
@@ -517,7 +526,7 @@ public class InvocationsFinder {
                                 var queryText = tryAsQuery.apply(0);
                                 if (queryText != null) // single
                                     queryMode = parseQuery(
-                                        symtab, cu, names, null, null, queryText, inv.args.tail
+                                        symtab, cu, names, tree, null, null, queryText, inv.args.tail
                                     );
                                 else {
                                     queryText = tryAsQuery.apply(1);
@@ -532,7 +541,7 @@ public class InvocationsFinder {
                                             elementTypeId.name.equals(names.fromString("Object"))
                                         )
                                             queryMode = parseQuery(
-                                                symtab, cu, names, inv.args.head, lmb, queryText, array.elems
+                                                symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
                                             );
                                         else throw new ValidationException(
                                             tree,
@@ -548,10 +557,10 @@ public class InvocationsFinder {
                                 if (fa.selected instanceof JCTree.JCIdent processorId) {
                                     sourceExpression = processorId;
                                     var clConnectionW = symtab.enterClass(
-                                        cu.modle, names.fromString("net.truej.sql.source.ConnectionW")
+                                        cu.modle, names.fromString(ConnectionW.class.getName())
                                     );
                                     var clDataSourceW = symtab.enterClass(
-                                        cu.modle, names.fromString("net.truej.sql.source.DataSourceW")
+                                        cu.modle, names.fromString(DataSourceW.class.getName())
                                     );
 
 
@@ -589,7 +598,7 @@ public class InvocationsFinder {
                     } else return null;
 
                     var parseExistingDto = (Function<ExistingDto, GLangParser.FieldType>) existing ->
-                        parse(
+                        ExistingDtoParser.parse(
                             existing.nullMode,
                             cl -> parsedConfig.typeBindings().stream()
                                 .anyMatch(b -> b.className().equals(cl)),
@@ -597,7 +606,7 @@ public class InvocationsFinder {
                         );
 
                     final GLangParser.FieldType toDto;
-                    final List<ParameterMetadata> parametersMetadata;
+                    final List<SqlParameterMetadata> parametersMetadata;
                     final String onDatabase;
 
                     if (parsedConfig.url() != null) {
@@ -642,24 +651,22 @@ public class InvocationsFinder {
                             )
                                 parametersMetadata = null;
                             else {
-                                var parsed = new ArrayList<ParameterMetadata>();
+                                var parsed = new ArrayList<SqlParameterMetadata>();
                                 try {
                                     var pmt = stmt.getParameterMetaData();
 
                                     for (var i = 1; i < pmt.getParameterCount() + 1; i++)
                                         parsed.add(
-                                            new ParameterMetadata(
+                                            new SqlParameterMetadata(
                                                 pmt.getParameterClassName(i),
                                                 pmt.getParameterTypeName(i),
                                                 pmt.getParameterType(i),
                                                 pmt.getScale(i),
                                                 switch (pmt.getParameterMode(i)) {
-                                                    case parameterModeUnknown ->
-                                                        ParameterMode.UNKNOWN;
                                                     case parameterModeIn -> ParameterMode.IN;
                                                     case parameterModeInOut -> ParameterMode.INOUT;
                                                     case parameterModeOut -> ParameterMode.OUT;
-                                                    default ->
+                                                    default -> // parameterModeUnknown
                                                         throw new RuntimeException("unreachable");
                                                 }
                                             )
@@ -798,64 +805,12 @@ public class InvocationsFinder {
                                         throw new ValidationException(tree, "parameter count mismatch");
 
                                     var outParameterIndexes = IntStream.range(0, parameters.size())
-                                        .peek(i -> {
-                                            try {
-                                                if (onDatabase.equals(ORACLE_DB_NAME))
-                                                    return; // skip parameters check for oracle
-
-                                                var pMode = pMetadata.getParameterMode(i + 1);
-                                                var pModeText = switch (pMode) {
-                                                    case parameterModeIn -> "IN";
-                                                    case parameterModeInOut -> "INOUT";
-                                                    case parameterModeOut -> "OUT";
-                                                    case parameterModeUnknown -> "UNKNOWN";
-                                                    default ->
-                                                        throw new IllegalStateException("unreachable");
-                                                };
-
-                                                switch (parameters.get(i)) {
-                                                    case InParameter _ -> {
-                                                        if (
-                                                            pMode != parameterModeIn &&
-                                                            pMode != parameterModeUnknown
-                                                        )
-                                                            throw new ValidationException(
-                                                                tree, "For parameter " + (i + 1) +
-                                                                      " mode mismatch. Expected IN but has " + pModeText
-                                                            );
-                                                    }
-                                                    case InoutParameter _ -> {
-                                                        if (
-                                                            pMode != parameterModeInOut &&
-                                                            pMode != parameterModeUnknown
-                                                        )
-                                                            throw new ValidationException(
-                                                                tree, "For parameter " + (i + 1) +
-                                                                      " mode mismatch. Expected INOUT but has " + pModeText
-                                                            );
-                                                    }
-                                                    case OutParameter _ -> {
-                                                        if (
-                                                            pMode != parameterModeOut &&
-                                                            pMode != parameterModeUnknown
-                                                        )
-                                                            throw new ValidationException(
-                                                                tree, "For parameter " + (i + 1) +
-                                                                      " mode mismatch. Expected OUT but has " + pModeText
-                                                            );
-                                                    }
-                                                    default ->
-                                                        throw new IllegalStateException("unreachable");
-                                                }
-                                            } catch (SQLException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        })
                                         .filter(i -> !(parameters.get(i) instanceof InParameter))
                                         .map(i -> i + 1)
                                         .toArray();
 
-                                    if (onDatabase.equals(ORACLE_DB_NAME)) columns = null;
+                                    if (onDatabase.equals(ORACLE_DB_NAME))
+                                        columns = null;
                                     else
                                         columns = Arrays.stream(outParameterIndexes).mapToObj(i -> {
                                             try {
@@ -1075,7 +1030,11 @@ public class InvocationsFinder {
                     }
                 } catch (ValidationException e) {
                     result.put(tree, e);
-                } catch (GLangParser.ParseException | ExistingDtoParser.ParseException e) {
+                } catch (
+                    GLangParser.ParseException |
+                    ExistingDtoParser.ParseException |
+                    ConfigurationParser.ParseException e
+                ) {
                     result.put(tree, new ValidationException(tree, e.getMessage()));
                 }
 

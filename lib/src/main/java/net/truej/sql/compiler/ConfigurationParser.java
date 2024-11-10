@@ -20,6 +20,9 @@ import static net.truej.sql.config.Configuration.INT_NOT_DEFINED;
 import static net.truej.sql.config.Configuration.STRING_NOT_DEFINED;
 
 public class ConfigurationParser {
+    public static class ParseException extends RuntimeException {
+        public ParseException(String message) { super(message); }
+    }
     public record ParsedConfiguration(
         String url, String username, String password, List<Standard.Binding> typeBindings
     ) { }
@@ -58,6 +61,7 @@ public class ConfigurationParser {
             var bindings = new ArrayList<>(Standard.bindings);
 
             for (var tb : sourceConfig.typeBindings()) {
+
                 Symbol.ClassSymbol rwClassSym;
 
                 try {
@@ -74,25 +78,45 @@ public class ConfigurationParser {
                     rwClassSym
                 );
 
-                var emptyArgsConstructor = (rwClassSym)
-                    .members_field.getSymbols(sym ->
-                        sym instanceof Symbol.MethodSymbol m &&
-                        m.name.equals(names.fromString("<init>")) &&
-                        m.params.isEmpty()
-                    ).iterator();
+                var errors = new ArrayList<String>();
+                if (rwClassSym.isAbstract())
+                    errors.add("cannot be abstract");
 
-                if (!emptyArgsConstructor.hasNext())
-                    throw new RuntimeException(
-                        "rw class " + rwClassSym.flatName().toString() + " has no no-arg constructor"
+                if (rwClassSym.isInner() && !rwClassSym.isStatic())
+                    errors.add("if inner then required to be static also");
+
+                if (!rwClassSym.members_field.anyMatch(sym ->
+                    sym instanceof Symbol.MethodSymbol m &&
+                    m.name.equals(names.fromString("<init>")) &&
+                    m.params.isEmpty() &&
+                    m.isPublic()
+                ))
+                    errors.add("must have public no-arg constructor");
+
+                if (!errors.isEmpty())
+                    throw new ParseException(
+                        "For source " + sourceClassName + ": " +
+                        "RW class " + rwClassSym.flatName() + ": " +
+                        String.join(", ", errors)
                     );
 
+                var compatibleSqlType = tb.compatibleSqlType() == INT_NOT_DEFINED
+                    ? null : tb.compatibleSqlType();
+                var compatibleSqlTypeName = tb.compatibleSqlTypeName().equals(STRING_NOT_DEFINED)
+                    ? null : tb.compatibleSqlTypeName();
+
+                if (compatibleSqlType != null && compatibleSqlTypeName != null)
+                    throw new ParseException(
+                        "For source " + sourceClassName + ": " +
+                        "compatibleSqlType and compatibleSqlTypeName " +
+                        "cannot be specified at the same time"
+                    );
 
                 bindings.add(new Standard.Binding(
                     bound.tsym.flatName().toString(),
                     rwClassSym.flatName().toString(),
-                    true,
-                    tb.compatibleSqlType() != INT_NOT_DEFINED ? tb.compatibleSqlType() : null,
-                    !tb.compatibleSqlTypeName().equals(STRING_NOT_DEFINED) ? tb.compatibleSqlTypeName() : null
+                    compatibleSqlType,
+                    compatibleSqlTypeName
                 ));
             }
 

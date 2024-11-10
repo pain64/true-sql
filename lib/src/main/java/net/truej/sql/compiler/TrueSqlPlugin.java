@@ -17,6 +17,7 @@ import com.sun.tools.javac.util.Names;
 import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.NullParameter;
 import net.truej.sql.bindings.Standard;
+import net.truej.sql.compiler.InvocationsFinder.*;
 import net.truej.sql.fetch.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +28,9 @@ import java.util.HashSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.truej.sql.compiler.StatementGenerator.*;
 
@@ -110,73 +114,84 @@ public class TrueSqlPlugin implements Plugin {
         String onDatabase, java.util.List<Standard.Binding> bindings,
         String generatedClassName, String fetchMethodName, int lineNumber,
         JCTree.JCIdent sourceExpression, QueryMode queryMode,
-        @Nullable java.util.List<ParameterMetadata> parametersMetadata,
+        @Nullable java.util.List<SqlParameterMetadata> parametersMetadata,
         String generatedCode
     ) implements MethodInvocationResult { }
 
     enum ParameterMode {IN, INOUT, OUT, UNKNOWN}
 
-    public record ParameterMetadata(
+    public record SqlParameterMetadata(
         String javaClassName, String sqlTypeName, int sqlType, int scale, ParameterMode mode
     ) { }
 
     @Override public String getName() { return NAME; }
 
-    // FIXME: check parameter mode ???
     void checkParameters(Symtab symtab, JCTree.JCMethodInvocation tree, FetchInvocation invocation) {
         if (invocation.parametersMetadata == null) return;
 
-        var checkParameterType = (BiConsumer<Symbol.TypeSymbol, Integer>)
-            (parameterTsym, pIndex) -> {
-                // FIXME: reverse expected & has
-                var binding = TypeChecker.getBindingForClass(
-                    tree, invocation.bindings,
-                    parameterTsym.flatName().toString(),
-                    GLangParser.NullMode.DEFAULT_NOT_NULL
-                );
-                var pMetadata = invocation.parametersMetadata.get(pIndex);
+        interface ParameterChecker {
+            void check(
+                int parameterIndex, Symbol.TypeSymbol javaTypeSymbol, ParameterMode javaParameterMode
+            );
+        }
 
-                TypeChecker.assertTypesCompatible(
-                    tree,
-                    invocation.onDatabase,
-                    pIndex + 1,
-                    pMetadata.sqlType,
-                    pMetadata.sqlTypeName,
-                    pMetadata.javaClassName,
-                    pMetadata.scale,
-                    "parameter" + pIndex,
-                    binding
+        var checkParameter = (ParameterChecker) (pIndex, javaParameterTsym, javaParameterMode) -> {
+            var binding = TypeChecker.getBindingForClass(
+                tree, invocation.bindings,
+                javaParameterTsym.flatName().toString(),
+                GLangParser.NullMode.DEFAULT_NOT_NULL
+            );
+            var pMetadata = invocation.parametersMetadata.get(pIndex);
+
+            // FIXME: reverse expected & has
+            if (pMetadata.mode != javaParameterMode)
+                throw new ValidationException(
+                    tree, "for parameter " + (pIndex + 1) + " expected mode " +
+                          javaParameterMode + " but has " + pMetadata.mode
                 );
-            };
+
+            TypeChecker.assertTypesCompatible(
+                tree, invocation.onDatabase, pIndex + 1,
+                pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
+                pMetadata.scale, "parameter" + pIndex, binding
+            );
+        };
 
         var pIndex = 0;
 
         for (var part : invocation.queryMode.parts())
             switch (part) {
-                case InvocationsFinder.TextPart _ -> { }
-                case InvocationsFinder.InOrInoutParameter p -> {
+                case TextPart _ -> { }
+                case InOrInoutParameter p -> {
                     if (p.expression().type != symtab.botType)
-                        checkParameterType.accept(p.expression().type.tsym, pIndex);
+                        checkParameter.check(
+                            pIndex,
+                            p.expression().type.tsym,
+                            switch (p) {
+                                case InParameter _ -> ParameterMode.IN;
+                                case InoutParameter _ -> ParameterMode.INOUT;
+                            }
+                        );
                     pIndex++;
                 }
-                case InvocationsFinder.OutParameter p -> {
-                    checkParameterType.accept(p.toClass(), pIndex);
+                case OutParameter p -> {
+                    checkParameter.check(pIndex, p.toClass(), ParameterMode.OUT);
                     pIndex++;
                 }
-                case InvocationsFinder.UnfoldParameter p -> {
-                    var argumentCount = StatementGenerator.unfoldArgumentsCount(p.extractor());
+                case UnfoldParameter p -> {
+                    var argumentCount = unfoldArgumentsCount(p.extractor());
                     if (p.extractor() == null) {
                         if (p.expression().type == symtab.botType)
                             throw new ValidationException(tree, "null cannot be passed as argument for unfold parameter");
 
-                        checkParameterType.accept(
-                            p.expression().type.getTypeArguments().getFirst().tsym, pIndex
+                        checkParameter.check(
+                            pIndex, p.expression().type.getTypeArguments().getFirst().tsym, ParameterMode.IN
                         );
                     } else
                         for (var i = 0; i < argumentCount; i++)
-                            checkParameterType.accept(
-                                ((JCTree.JCNewArray) p.extractor().body)
-                                    .elems.get(i).type.tsym, pIndex + i
+                            checkParameter.check(
+                                pIndex + i, ((JCTree.JCNewArray) p.extractor().body)
+                                    .elems.get(i).type.tsym, ParameterMode.IN
                             );
 
                     pIndex += argumentCount;
@@ -265,7 +280,7 @@ public class TrueSqlPlugin implements Plugin {
 
                 for (var part : bq.parts())
                     switch (part) {
-                        case InvocationsFinder.InParameter p:
+                        case InParameter p:
                             var extractor = new JCTree.JCLambda(
                                 List.of(bq.extractor().params.head),
                                 p.expression()
@@ -285,29 +300,29 @@ public class TrueSqlPlugin implements Plugin {
                             tree.args = tree.args.append(extractor);
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
                             break;
-                        case InvocationsFinder.TextPart _:
+                        case TextPart _:
                             break;
-                        case InvocationsFinder.InoutParameter _,
-                             InvocationsFinder.OutParameter _,
-                             InvocationsFinder.UnfoldParameter _:
+                        case InoutParameter _,
+                             OutParameter _,
+                             UnfoldParameter _:
                             throw new RuntimeException("unreachable");
                     }
                 break;
             case SingleQuery sq:
                 for (var part : sq.parts())
                     switch (part) {
-                        case InvocationsFinder.InOrInoutParameter p:
+                        case InOrInoutParameter p:
                             tree.args = tree.args.append(p.expression());
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
                             break;
-                        case InvocationsFinder.OutParameter p:
+                        case OutParameter p:
                             tree.args = tree.args.append(
                                 createRwFor.apply(
                                     new Type.ClassType(Type.noType, List.nil(), p.toClass())
                                 )
                             );
                             break;
-                        case InvocationsFinder.UnfoldParameter p:
+                        case UnfoldParameter p:
                             var n = unfoldArgumentsCount(p.extractor());
                             var unfoldType = p.expression().type.allparams().head;
                             tree.args = tree.args.append(p.expression());
@@ -343,7 +358,7 @@ public class TrueSqlPlugin implements Plugin {
                                 }
 
                             break;
-                        case InvocationsFinder.TextPart _:
+                        case TextPart _:
                             break;
                     }
                 break;

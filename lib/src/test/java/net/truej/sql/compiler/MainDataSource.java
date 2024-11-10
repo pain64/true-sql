@@ -27,19 +27,12 @@ import java.sql.Types;
     ),
     typeBindings = {
         @TypeBinding(
-            compatibleSqlType = Types.OTHER,
             compatibleSqlTypeName = "point",
             rw = PgPointRW.class
         ),
         @TypeBinding(
-            compatibleSqlType = Types.VARCHAR,
             compatibleSqlTypeName = "enum_user_sex",
             rw = PgUserSexRW.class
-        ),
-        @TypeBinding(
-            compatibleSqlType = Types.OTHER, // TODO: remove
-            compatibleSqlTypeName = "point_nullable",
-            rw = PgPointNotNullableRW.class
         )
     }
 ) public class MainDataSource extends DataSourceW {

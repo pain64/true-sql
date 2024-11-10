@@ -21,16 +21,16 @@ import static net.truej.sql.fetch.Parameters.out;
 @TrueSql public class __17__TypeBindingsStoredProcedures_ORACLE {
     record DataTypes(
         @NotNull BigDecimal bigDecimalType, @Nullable BigDecimal bigDecimalTypeNull,
-        @NotNull boolean booleanType, @Nullable Boolean booleanTypeNull,
+        boolean booleanType, @Nullable Boolean booleanTypeNull,
         @NotNull LocalDate dateType, @Nullable LocalDate dateTypeNull,
-        @NotNull int integerType, @Nullable Integer integerTypeNull,
-        @NotNull long longType, @Nullable Long longTypeNull,
+        int integerType, @Nullable Integer integerTypeNull,
+        long longType, @Nullable Long longTypeNull,
         @NotNull String stringType, @Nullable String stringTypeNull,
-        @NotNull short shortType, @Nullable Short shortTypeNull,
-        @NotNull byte byteType, @Nullable Byte byteTypeNull,
+        short shortType, @Nullable Short shortTypeNull,
+        byte byteType, @Nullable Byte byteTypeNull,
         @NotNull LocalDateTime timestampType, @Nullable LocalDateTime timestampTypeNull,
-        @NotNull float floatType, @Nullable Float floatTypeNull,
-        @NotNull double doubleType, @Nullable Double doubleTypeNull
+        float floatType, @Nullable Float floatTypeNull,
+        double doubleType, @Nullable Double doubleTypeNull
     ) { }
 
     @TestTemplate public void test(MainDataSource ds) {

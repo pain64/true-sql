@@ -9,14 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @Message(
-    kind = ERROR, text = "For parameter 2 mode mismatch. Expected IN but has INOUT"
+    kind = ERROR, text = "for parameter 2 expected mode IN but has INOUT"
 )
-@TrueSql public class __22__InButHas {
+@TrueSql public class __22__ParameterModeMismatch {
     @TestTemplate public void test(MainConnection cn) {
-        cn.q("{ call digit_magic(?, ?, ?) }", 1L, 2L, 3L).asCall().fetchNone();
+        cn.q("{ call digit_magic(?, ?, ?) }", 1, 2, 3).asCall().fetchNone();
     }
 }

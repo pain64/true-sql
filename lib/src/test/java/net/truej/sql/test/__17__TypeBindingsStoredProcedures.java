@@ -23,13 +23,13 @@ import static net.truej.sql.fetch.Parameters.out;
 @TrueSql public class __17__TypeBindingsStoredProcedures {
     record DataTypes(
         @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,
-        @NotNull boolean boolean_type, @Nullable Boolean boolean_type_null,
+        boolean boolean_type, @Nullable Boolean boolean_type_null,
         @NotNull LocalDate date_type, @Nullable LocalDate date_type_null,
-        @NotNull int integer_type, @Nullable Integer integer_type_null,
-        @NotNull long long_type, @Nullable Long long_type_null,
+        int integer_type, @Nullable Integer integer_type_null,
+        long long_type, @Nullable Long long_type_null,
         @NotNull String string_type, @Nullable String string_type_null,
-        @NotNull short short_type, @Nullable Short short_type_null,
-        @NotNull byte byte_type, @Nullable Byte byte_type_null,
+        short short_type, @Nullable Short short_type_null,
+        byte byte_type, @Nullable Byte byte_type_null,
         @NotNull LocalTime time_type, @Nullable LocalTime time_type_null,
         @NotNull LocalDateTime timestamp_type, @Nullable LocalDateTime timestamp_type_null
     ) { }

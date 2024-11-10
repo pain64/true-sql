@@ -20,16 +20,14 @@ public class TestCompiler2 {
 
         var compiler = ToolProvider.getSystemJavaCompiler();
         var fileManager = new SimpleFileManager(
-            compiler.getStandardFileManager(new DiagnosticListener<JavaFileObject>() {
-                @Override public void report(Diagnostic<? extends JavaFileObject> diagnostic) {
-                    var xx = 1;
-                }
+            compiler.getStandardFileManager(diagnostic -> {
+                var xx = 1;
             }, null, null));
 
         var arguments = asList(
             "--enable-preview", "--source", "21",
             "-classpath", System.getProperty("java.class.path"),
-            "-Atruesql.printConfig=true",
+           // "-Atruesql.printConfig=true",
             "-Xplugin:" + TrueSqlPlugin.NAME
         );
 

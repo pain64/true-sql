@@ -2,7 +2,6 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.util.Name;
-import net.truej.sql.compiler.TrueSqlPlugin.ValidationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +20,7 @@ public class ExistingDtoParser {
     }
 
     public static FieldType parse(
-        NullMode nullMode,
+        NullMode artumentNullMode,
         Function<String, Boolean> hasTypeBinding,
         Name initName, // constructor method name
         Symbol.ClassSymbol dtoSymbol
@@ -33,10 +32,26 @@ public class ExistingDtoParser {
         if (!dtoSymbol.getTypeParameters().isEmpty())
             throw new ParseException("To Dto class cannot be generic");
 
-        if (hasTypeBinding.apply(dtoSymbol.className()))
+        if (hasTypeBinding.apply(dtoSymbol.className())) {
+            final NullMode nullMode;
+
+            if (dtoSymbol.type.isPrimitive()) {
+                if (artumentNullMode == NullMode.EXACTLY_NULLABLE)
+                    throw new ParseException(
+                        "result of primitive type cannot be marked as Nullable"
+                    );
+
+                if (artumentNullMode == NullMode.EXACTLY_NOT_NULL)
+                    throw new ParseException(
+                        "result of primitive type not needed to be marked as NotNull"
+                    );
+                nullMode = NullMode.EXACTLY_NOT_NULL;
+            } else
+                nullMode = artumentNullMode;
+
             return new ScalarType(nullMode, dtoSymbol.className());
-        else {
-            if (nullMode != NullMode.DEFAULT_NOT_NULL)
+        } else {
+            if (artumentNullMode != NullMode.DEFAULT_NOT_NULL)
                 throw new ParseException(
                     "Nullable or NotNull hint not allowed for aggregated DTO"
                 );
@@ -58,7 +73,7 @@ public class ExistingDtoParser {
                 if (p.type.tsym instanceof Symbol.ClassSymbol cSym) {
                     var className = cSym.className();
 
-                    if (className.equals("java.util.List")) {
+                    if (className.equals(List.class.getName())) {
                         var parsed = parse(
                             NullMode.DEFAULT_NOT_NULL,
                             hasTypeBinding,
@@ -73,10 +88,22 @@ public class ExistingDtoParser {
                             p.name.toString()
                         );
                     } else if (hasTypeBinding.apply(className)) {
-                        var fieldNullMode = p.getAnnotation(Nullable.class) != null
-                            ? NullMode.EXACTLY_NULLABLE :
-                            (
-                                p.getAnnotation(NotNull.class) != null
+                        var isMarkedAsNullable = p.getAnnotation(Nullable.class) != null;
+                        var isMarkedAsNotNull = p.getAnnotation(NotNull.class) != null;
+
+                        if (p.type.isPrimitive()) {
+                            if (isMarkedAsNullable) throw new ParseException(
+                                "Dto field of primitive type cannot be marked as @Nullable"
+                            );
+
+                            if (isMarkedAsNotNull) throw new ParseException(
+                                "Dto field of primitive type not needed to be marked as @NotNull"
+                            );
+                        }
+
+                        var fieldNullMode = p.type.isPrimitive() ? NullMode.EXACTLY_NOT_NULL :
+                            isMarkedAsNullable ? NullMode.EXACTLY_NULLABLE : (
+                                isMarkedAsNotNull
                                     ? NullMode.EXACTLY_NOT_NULL
                                     : NullMode.DEFAULT_NOT_NULL
                             );

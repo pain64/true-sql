@@ -31,8 +31,8 @@ import static net.truej.sql.fetch.Parameters.NotNull;
 @TrueSql public class __01__JDBCSpec_Byte_Short_bug {
     @TestTemplate public void test(MainConnection cn) {
         cn.q("values cast (1 as tinyint)").fetchOne(NotNull, Integer.class);
-        cn.q("values cast (1 as tinyint)").fetchOne(NotNull, int.class);
+        cn.q("values cast (1 as tinyint)").fetchOne(int.class);
         cn.q("values cast (1 as smallint)").fetchOne(NotNull, Integer.class);
-        cn.q("values cast (1 as smallint)").fetchOne(NotNull, int.class);
+        cn.q("values cast (1 as smallint)").fetchOne(int.class);
     }
 }

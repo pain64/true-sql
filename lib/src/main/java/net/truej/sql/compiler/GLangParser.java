@@ -1,6 +1,5 @@
 package net.truej.sql.compiler;
 
-import net.truej.sql.compiler.TrueSqlPlugin.ValidationException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;

@@ -16,24 +16,14 @@ class TypeChecker {
         JCTree tree, List<Standard.Binding> typeBindings,
         String javaClassName, GLangParser.NullMode nullMode
     ) {
-        var binding = typeBindings.stream()
+        return typeBindings.stream()
             .filter(b ->
                 b.className().equals(javaClassName) ||
                 b.className().endsWith(javaClassName)
             ).findFirst().orElseThrow(() -> new TrueSqlPlugin.ValidationException(
                 tree, "has no binding for type " + javaClassName
             ));
-
-        if (
-            !binding.mayBeNullable() && nullMode == GLangParser.NullMode.EXACTLY_NULLABLE
-        )
-            throw new TrueSqlPlugin.ValidationException(
-                tree, "type " + javaClassName + " cannot be marked as nullable"
-            );
-
-        return binding;
     }
-    ;
 
     static void assertTypesCompatible(
         JCTree tree, // FIXME: refactor this out

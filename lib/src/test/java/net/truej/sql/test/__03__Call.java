@@ -20,11 +20,9 @@ import static net.truej.sql.fetch.Parameters.*;
 // FIXME: MARIADB
 @ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
 @TrueSql public class __03__Call {
-    // fixme: make int
     // todo: подумать над nullability для out параметров???
     record IntPair(
-        @NotNull int first,
-        @NotNull int second
+        int first, int second
     ) { }
 
     @TestTemplate public void test(MainConnection cn) {

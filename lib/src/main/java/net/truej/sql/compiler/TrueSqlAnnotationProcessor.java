@@ -55,8 +55,6 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
     @Override public boolean process(
         Set<? extends TypeElement> annotations, RoundEnvironment roundEnv
     ) {
-
-
         System.out.println("annotation processor started!!!");
 
         var env = (JavacProcessingEnvironment) processingEnv;
