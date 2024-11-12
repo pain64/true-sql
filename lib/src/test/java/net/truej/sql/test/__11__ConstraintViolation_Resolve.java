@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
             try {
                 ds.q("insert into users values(1, 'Joe', null)").fetchNone();
             } catch (ConstraintViolationException ex) {
+                // Needs for coverage toString()
+                System.out.println(ex);
                 ex.when(
                     ds.constraint("users", "users_pk", () -> { throw new Handled(); })
                 );
