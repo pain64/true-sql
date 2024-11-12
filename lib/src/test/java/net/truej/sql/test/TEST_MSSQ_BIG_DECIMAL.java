@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
-import static net.truej.sql.source.Parameters.out;
+
 
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(MSSQL)
 @TrueSql public class TEST_MSSQ_BIG_DECIMAL {
