@@ -73,10 +73,13 @@ create table user_bills (
 ---
 create table all_default_data_types(
     byte_type tinyint not null,
-    byte_type_null tinyint
+    byte_type_null tinyint,
+    bytearray_type varbinary(200) not null,
+    bytearray_type_null varbinary(200),
+    datetime_offset datetimeoffset not null,
+    datetime_offset_null datetimeoffset
 );
 ---
-
 create procedure digit_magic @x int, @y int output, @z int output
     as begin
         set @y = @y + @x;
