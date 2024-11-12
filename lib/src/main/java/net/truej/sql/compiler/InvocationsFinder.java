@@ -609,6 +609,7 @@ public class InvocationsFinder {
                     final List<SqlParameterMetadata> parametersMetadata;
                     final String onDatabase;
 
+                    // TODO: MetadataFetcher returns parameterMetadata & columnMetadata
                     if (parsedConfig.url() != null) {
                         var query = queryMode.parts().stream()
                             .map(p -> switch (p) {
@@ -668,7 +669,8 @@ public class InvocationsFinder {
                                                     case parameterModeOut -> ParameterMode.OUT;
                                                     default -> // parameterModeUnknown
                                                         throw new RuntimeException("unreachable");
-                                                }
+                                                },
+                                                pmt.isNullable(i)
                                             )
                                         );
                                 } catch (SQLFeatureNotSupportedException e) {
@@ -795,6 +797,8 @@ public class InvocationsFinder {
                                 }
 
                                 case StatementGenerator.AsCall _ -> {
+                                    // FIXME: проверка call и unfold одновременно? ???
+                                    // FIXME: проверка batch и unfold одновременно? ???
                                     var pMetadata = stmt.getParameterMetaData();
                                     var parameters = queryMode.parts().stream()
                                         .filter(p ->
@@ -939,6 +943,7 @@ public class InvocationsFinder {
                                 }
 
                                 if (statementMode instanceof StatementGenerator.AsCall) {
+                                    // FIXME: deduplicate this logic
                                     var parameters = queryMode.parts().stream()
                                         .filter(p ->
                                             !(p instanceof TextPart)

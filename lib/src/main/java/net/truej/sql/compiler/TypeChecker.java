@@ -25,6 +25,7 @@ class TypeChecker {
             ));
     }
 
+    // FIXME: boolean isTypesCompatible
     static void assertTypesCompatible(
         JCTree tree, // FIXME: refactor this out
         String onDatabase,
@@ -228,6 +229,8 @@ class TypeChecker {
         }
     }
 
+    // FIXME: {OK, WARNING} isNullabilityCompatible
+    // TODO: для warning сделать отдельный канал 
     static void assertNullabilityCompatible(
         JCTree.JCCompilationUnit cu, CompilerMessages messages, JCTree tree,
         String fieldName, GLangParser.NullMode fieldNullMode,

@@ -22,6 +22,7 @@ import net.truej.sql.fetch.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
+import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,7 +122,8 @@ public class TrueSqlPlugin implements Plugin {
     enum ParameterMode {IN, INOUT, OUT, UNKNOWN}
 
     public record SqlParameterMetadata(
-        String javaClassName, String sqlTypeName, int sqlType, int scale, ParameterMode mode
+        String javaClassName, String sqlTypeName, int sqlType, int scale, ParameterMode mode,
+        int nullMode
     ) { }
 
     @Override public String getName() { return NAME; }
@@ -131,16 +133,11 @@ public class TrueSqlPlugin implements Plugin {
 
         interface ParameterChecker {
             void check(
-                int parameterIndex, Symbol.TypeSymbol javaTypeSymbol, ParameterMode javaParameterMode
+                int parameterIndex, Type javaParameterType, ParameterMode javaParameterMode
             );
         }
 
-        var checkParameter = (ParameterChecker) (pIndex, javaParameterTsym, javaParameterMode) -> {
-            var binding = TypeChecker.getBindingForClass(
-                tree, invocation.bindings,
-                javaParameterTsym.flatName().toString(),
-                GLangParser.NullMode.DEFAULT_NOT_NULL
-            );
+        var checkParameter = (ParameterChecker) (pIndex, javaParameterType, javaParameterMode) -> {
             var pMetadata = invocation.parametersMetadata.get(pIndex);
 
             // FIXME: reverse expected & has
@@ -150,11 +147,25 @@ public class TrueSqlPlugin implements Plugin {
                           javaParameterMode + " but has " + pMetadata.mode
                 );
 
-            TypeChecker.assertTypesCompatible(
-                tree, invocation.onDatabase, pIndex + 1,
-                pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
-                pMetadata.scale, "parameter" + pIndex, binding
-            );
+            if (javaParameterType == symtab.botType) {
+                if (pMetadata.nullMode == ParameterMetaData.parameterNoNulls)
+                    throw new ValidationException(
+                        tree, "for parameter " + (pIndex + 1) + " expected not-null values " +
+                              "but passed null literal"
+                    );
+            } else {
+                var binding = TypeChecker.getBindingForClass(
+                    tree, invocation.bindings,
+                    javaParameterType.tsym.flatName().toString(),
+                    GLangParser.NullMode.DEFAULT_NOT_NULL
+                );
+
+                TypeChecker.assertTypesCompatible(
+                    tree, invocation.onDatabase, pIndex + 1,
+                    pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
+                    pMetadata.scale, "parameter" + pIndex, binding
+                );
+            }
         };
 
         var pIndex = 0;
@@ -163,35 +174,31 @@ public class TrueSqlPlugin implements Plugin {
             switch (part) {
                 case TextPart _ -> { }
                 case InOrInoutParameter p -> {
-                    if (p.expression().type != symtab.botType)
-                        checkParameter.check(
-                            pIndex,
-                            p.expression().type.tsym,
-                            switch (p) {
-                                case InParameter _ -> ParameterMode.IN;
-                                case InoutParameter _ -> ParameterMode.INOUT;
-                            }
-                        );
+                    checkParameter.check(
+                        pIndex,
+                        p.expression().type,
+                        switch (p) {
+                            case InParameter _ -> ParameterMode.IN;
+                            case InoutParameter _ -> ParameterMode.INOUT;
+                        }
+                    );
                     pIndex++;
                 }
                 case OutParameter p -> {
-                    checkParameter.check(pIndex, p.toClass(), ParameterMode.OUT);
+                    checkParameter.check(pIndex, p.toClass().type, ParameterMode.OUT);
                     pIndex++;
                 }
                 case UnfoldParameter p -> {
                     var argumentCount = unfoldArgumentsCount(p.extractor());
-                    if (p.extractor() == null) {
-                        if (p.expression().type == symtab.botType)
-                            throw new ValidationException(tree, "null cannot be passed as argument for unfold parameter");
-
+                    if (p.extractor() == null)
                         checkParameter.check(
-                            pIndex, p.expression().type.getTypeArguments().getFirst().tsym, ParameterMode.IN
+                            pIndex, p.expression().type.getTypeArguments().getFirst(), ParameterMode.IN
                         );
-                    } else
+                    else
                         for (var i = 0; i < argumentCount; i++)
                             checkParameter.check(
                                 pIndex + i, ((JCTree.JCNewArray) p.extractor().body)
-                                    .elems.get(i).type.tsym, ParameterMode.IN
+                                    .elems.get(i).type, ParameterMode.IN
                             );
 
                     pIndex += argumentCount;
@@ -483,6 +490,7 @@ public class TrueSqlPlugin implements Plugin {
                                 var invocation = (MethodInvocationResult) doofyDecode(kv.getValue());
 
                                 try {
+                                    // FIXME: check that it is 'our' trees?
                                     switch (invocation) {
                                         case FetchInvocation fi ->
                                             handle(symtab, names, maker, tree, fi);

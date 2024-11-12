@@ -293,6 +293,7 @@ public class GLangParser {
         return Stream.concat(localsChecked, next).toList();
     }
 
+    // FIXME: remove this "abstraction"
     public record ColumnMetadata(
         NullMode nullMode, int sqlType,
         String sqlTypeName, String javaClassName,
@@ -300,6 +301,7 @@ public class GLangParser {
         int scale, int precision
     ) { }
 
+    // FIXME: pass index-only. No ColumnMetadata!
     public interface BindColumn {
         record Result(String javaClassName, NullMode nullMode) { }
         Result bind(
