@@ -1,6 +1,7 @@
 package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.util.Name;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -10,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static net.truej.sql.compiler.GLangParser.*;
+import static net.truej.sql.compiler.TrueSqlPlugin.typeToJavaClassName;
 
 public class ExistingDtoParser {
     // FIXME: g and Nullable or NotNull annotation for dtoType
@@ -70,8 +72,8 @@ public class ExistingDtoParser {
                 throw new ParseException("has more then one non-empty args constructor");
 
             var fields = constructor.params.stream().map(p -> {
-                if (p.type.tsym instanceof Symbol.ClassSymbol cSym) {
-                    var className = cSym.className();
+                if (p.type.tsym instanceof Symbol.ClassSymbol) {
+                    var className = typeToJavaClassName(p.type);
 
                     if (className.equals(List.class.getName())) {
                         var parsed = parse(

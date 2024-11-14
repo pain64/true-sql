@@ -11,7 +11,7 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 
 @ExtendWith(TrueSqlTests2.class)
 @TrueSqlTests2.Message(
-    kind = ERROR, text = "has no type binding for net.truej.sql.test.negative.__07__NoTypeBinding_.User.Trap"
+    kind = ERROR, text = "has no type binding for net.truej.sql.test.negative.__07__NoTypeBinding_$User$Trap"
 )
 @TrueSql public class __07__NoTypeBinding {
     record User(Long id, String name, Trap trap) {

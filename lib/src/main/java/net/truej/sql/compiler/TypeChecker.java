@@ -7,22 +7,23 @@ import net.truej.sql.bindings.Standard;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import static net.truej.sql.compiler.DatabaseNames.*;
 
 class TypeChecker {
     static Standard.Binding getBindingForClass(
-        JCTree tree, List<Standard.Binding> typeBindings,
-        String javaClassName, GLangParser.NullMode nullMode
+        JCTree tree, List<Standard.Binding> typeBindings, String javaClassName
     ) {
         return typeBindings.stream()
             .filter(b ->
                 b.className().equals(javaClassName) ||
-                b.className().endsWith(javaClassName)
-            ).findFirst().orElseThrow(() -> new TrueSqlPlugin.ValidationException(
-                tree, "has no binding for type " + javaClassName
-            ));
+                b.className().endsWith(javaClassName) // FIXME: this code is used only for G
+            ).findFirst().orElseThrow(() ->
+                new TrueSqlPlugin.ValidationException(
+                    tree, "has no binding for type " + javaClassName
+                ));
     }
 
     interface TypeMismatchExceptionMaker {
@@ -83,14 +84,35 @@ class TypeChecker {
             ) return;
         }
 
+        if (onDatabase.equals(MSSQL_DB_NAME)) {
+            if (
+                javaBinding.className().equals(OffsetDateTime.class.getName()) &&
+                sqlJavaClassName.equals("microsoft.sql.DateTimeOffset")
+            )
+                return;
+        }
+
+        if (onDatabase.equals(ORACLE_DB_NAME)) {
+            if (
+                javaBinding.className().equals(ZonedDateTime.class.getName()) &&
+                sqlJavaClassName.equals("oracle.sql.TIMESTAMPTZ")
+            )
+                return;
+        }
+
         // avoid JDBC 1.0 spec bug
         if (
             (
-                javaBinding.className().equals(Byte.class.getName()) &&
-                sqlType == Types.TINYINT
+                (
+                    javaBinding.className().equals(Byte.class.getName()) |
+                    javaBinding.className().equals(byte.class.getName())
+                ) && sqlType == Types.TINYINT
             ) ||
             (
-                javaBinding.className().equals(Short.class.getName()) &&
+                (
+                    javaBinding.className().equals(Short.class.getName()) |
+                    javaBinding.className().equals(short.class.getName())
+                ) &&
                 sqlType == Types.SMALLINT
             )
         ) return;

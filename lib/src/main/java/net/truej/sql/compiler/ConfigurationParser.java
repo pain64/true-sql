@@ -68,7 +68,8 @@ public class ConfigurationParser {
                     rwClassSym = symtab.enterClass(cu.modle, names.fromString(tb.rw().getName()));
                 } catch (MirroredTypeException mte) {
                     rwClassSym = symtab.enterClass(
-                        cu.modle, ((Type.ClassType) mte.getTypeMirror()).tsym.flatName());
+                        cu.modle, ((Type.ClassType) mte.getTypeMirror()).tsym.flatName()
+                    );
                 }
 
                 rwClassSym.complete();

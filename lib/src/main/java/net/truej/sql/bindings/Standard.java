@@ -38,6 +38,6 @@ public class Standard {
         new Binding("java.time.ZonedDateTime", ZonedDateTimeReadWrite.class.getName(), Types.TIMESTAMP_WITH_TIMEZONE, null),
 
         new Binding("java.math.BigDecimal", BigDecimalReadWrite.class.getName(), null, null),
-        new Binding("byte[]", ByteArrayReadWrite.class.getName(), null, null)
+        new Binding("[B", ByteArrayReadWrite.class.getName(), null, null)
     );
 }

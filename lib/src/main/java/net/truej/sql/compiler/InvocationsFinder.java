@@ -867,7 +867,7 @@ public class InvocationsFinder {
 
                                         // FIXME: deduplicate
                                         var binding = TypeChecker.getBindingForClass(
-                                            tree, parsedConfig.typeBindings(), field.st().javaClassName(), field.st().nullMode()
+                                            tree, parsedConfig.typeBindings(), field.st().javaClassName()
                                         );
 
                                         TypeChecker.assertNullabilityCompatible(
@@ -909,7 +909,7 @@ public class InvocationsFinder {
                                             final Standard.Binding binding;
                                             if (javaClassNameHint != null) {
                                                 binding = TypeChecker.getBindingForClass(
-                                                    tree, parsedConfig.typeBindings(), javaClassNameHint, nullMode
+                                                    tree, parsedConfig.typeBindings(), javaClassNameHint
                                                 );
 
                                                 TypeChecker.assertTypesCompatible(
@@ -923,7 +923,7 @@ public class InvocationsFinder {
                                                 );
                                             } else
                                                 binding = TypeChecker.getBindingForClass(
-                                                    tree, parsedConfig.typeBindings(), TypeChecker.inferType(parsedConfig, onDatabase, column, nullMode), nullMode
+                                                    tree, parsedConfig.typeBindings(), TypeChecker.inferType(parsedConfig, onDatabase, column, nullMode)
                                                 );
 
                                             return new GLangParser.BindColumn.Result(binding.className(), nullMode);
@@ -950,7 +950,7 @@ public class InvocationsFinder {
 
                                 for (var field : dtoFields) {
                                     var _ = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), field.st().javaClassName(), field.st().nullMode()
+                                        tree, parsedConfig.typeBindings(), field.st().javaClassName()
                                     );
                                 }
 

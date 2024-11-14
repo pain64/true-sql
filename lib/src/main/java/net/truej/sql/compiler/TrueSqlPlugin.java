@@ -5,6 +5,7 @@ import com.sun.source.util.Plugin;
 import com.sun.source.util.TaskEvent;
 import com.sun.source.util.TaskListener;
 import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.code.Printer;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -26,6 +27,7 @@ import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -124,6 +126,29 @@ public class TrueSqlPlugin implements Plugin {
 
     @Override public String getName() { return NAME; }
 
+    static String arrayTypeToJavaClassName(Type type) {
+        if (type instanceof Type.ArrayType at)
+            return "[" + arrayTypeToJavaClassName(at.elemtype);
+        else
+            return switch (type.getTag()) {
+                case BYTE -> "B";
+                case CHAR -> "C";
+                case SHORT -> "S";
+                case INT -> "I";
+                case LONG -> "J";
+                case FLOAT -> "F";
+                case DOUBLE -> "D";
+                case BOOLEAN -> "Z";
+                default -> "L" + type.tsym.flatName();
+            };
+    }
+
+    static String typeToJavaClassName(Type type) {
+        return type instanceof Type.ArrayType at
+            ? arrayTypeToJavaClassName(at)
+            : type.tsym.flatName().toString();
+    }
+
     void checkParameters(Symtab symtab, JCTree.JCMethodInvocation tree, FetchInvocation invocation) {
         if (invocation.parametersMetadata == null) return;
 
@@ -151,9 +176,7 @@ public class TrueSqlPlugin implements Plugin {
                     );
             } else {
                 var binding = TypeChecker.getBindingForClass(
-                    tree, invocation.bindings,
-                    javaParameterType.tsym.flatName().toString(),
-                    GLangParser.NullMode.DEFAULT_NOT_NULL
+                    tree, invocation.bindings, typeToJavaClassName(javaParameterType)
                 );
 
                 TypeChecker.assertTypesCompatible(
@@ -239,13 +262,11 @@ public class TrueSqlPlugin implements Plugin {
                     symtab.unnamedModule, names.fromString(NullParameter.class.getName())
                 );
             else {
-                var forClassName = type.tsym.flatName().toString();
+                var forClassName = typeToJavaClassName(type);
 
-                var binding = invocation.bindings.stream().filter(b ->
-                    b.className().equals(forClassName)
-                ).findFirst().orElseThrow(() -> new ValidationException(
-                    tree, "cannot find binding for " + forClassName
-                ));
+                var binding = TypeChecker.getBindingForClass(
+                    tree, invocation.bindings, forClassName
+                );
 
                 rwClassSymbol = symtab.getClass(
                     symtab.unnamedModule, names.fromString(binding.rwClassName())
