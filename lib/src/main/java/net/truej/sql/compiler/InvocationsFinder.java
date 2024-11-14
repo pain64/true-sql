@@ -861,6 +861,7 @@ public class InvocationsFinder {
                                         );
 
                                     for (var i = 0; i < dtoFields.size(); i++) {
+                                        var ii = i;
                                         var field = dtoFields.get(i);
                                         var column = columns.get(i);
 
@@ -875,8 +876,13 @@ public class InvocationsFinder {
                                         );
 
                                         TypeChecker.assertTypesCompatible(
-                                            tree, onDatabase, i, column.sqlType(), column.sqlTypeName(),
-                                            column.javaClassName(), column.scale(), field.name(), binding
+                                            onDatabase, column.sqlType(), column.sqlTypeName(),
+                                            column.javaClassName(), column.scale(), binding,
+                                            (typeKind, expected, has) -> new ValidationException(
+                                                tree, typeKind + " mismatch for column " + (ii + 1) +
+                                                      " (for field `" + field.name() + "`). Expected " +
+                                                      expected + " but has " + has
+                                            )
                                         );
                                     }
 
@@ -905,9 +911,15 @@ public class InvocationsFinder {
                                                 binding = TypeChecker.getBindingForClass(
                                                     tree, parsedConfig.typeBindings(), javaClassNameHint, nullMode
                                                 );
+
                                                 TypeChecker.assertTypesCompatible(
-                                                    tree, onDatabase, columnIndex, column.sqlType(), column.sqlTypeName(),
-                                                    column.javaClassName(), column.scale(), column.columnLabel(), binding
+                                                    onDatabase, column.sqlType(), column.sqlTypeName(),
+                                                    column.javaClassName(), column.scale(), binding,
+                                                    (typeKind, expected, has) -> new ValidationException(
+                                                        tree, typeKind + " mismatch for column " + (columnIndex + 1) +
+                                                              " (for generated dto field `" + column.columnLabel() +
+                                                              "`). Expected " + expected + " but has " + has
+                                                    )
                                                 );
                                             } else
                                                 binding = TypeChecker.getBindingForClass(

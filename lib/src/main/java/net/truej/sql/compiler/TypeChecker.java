@@ -25,19 +25,18 @@ class TypeChecker {
             ));
     }
 
-    // FIXME: boolean isTypesCompatible
+    interface TypeMismatchExceptionMaker {
+        RuntimeException make(String typeKing, String excepted, String has);
+    }
+
     static void assertTypesCompatible(
-        JCTree tree, // FIXME: refactor this out
         String onDatabase,
-        int sqlIndex, // `sql column` or `sql parameter` index
-        // column or parameter metadata
         int sqlType,
         String sqlTypeName,
         String sqlJavaClassName,
         int sqlScale,
-
-        String javaName, // `dto field name` or `java parameter 1`
-        Standard.Binding javaBinding
+        Standard.Binding javaBinding,
+        TypeMismatchExceptionMaker exceptionMaker
     ) {
         // vendor-specific
         if (
@@ -107,18 +106,10 @@ class TypeChecker {
         ) {
 
             if (sqlType == Types.TINYINT)
-                throw new TrueSqlPlugin.ValidationException(
-                    tree, "type mismatch for column " + (sqlIndex + 1) +
-                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                          ". Expected " + javaBinding.className() + " but has java.lang.Byte"
-                );
+                throw exceptionMaker.make("type", javaBinding.className(), "java.lang.Byte");
 
             if (sqlType == Types.SMALLINT)
-                throw new TrueSqlPlugin.ValidationException(
-                    tree, "type mismatch for column " + (sqlIndex + 1) +
-                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                          ". Expected " + javaBinding.className() + " but has java.lang.Short"
-                );
+                throw exceptionMaker.make("type", javaBinding.className(), "java.lang.Short");
         }
 
         // respect Java autoboxing
@@ -203,27 +194,20 @@ class TypeChecker {
             javaBinding.compatibleSqlTypeName() == null
         ) {
             if (!javaBinding.className().equals(sqlJavaClassName))
-                throw new TrueSqlPlugin.ValidationException(
-                    tree, "type mismatch for column " + (sqlIndex + 1) +
-                          (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                          ". Expected " + javaBinding.className() + " but has " + sqlJavaClassName
-                );
+                throw exceptionMaker.make("type", javaBinding.className(), sqlJavaClassName);
         } else {
             if (javaBinding.compatibleSqlTypeName() != null) {
                 if (!javaBinding.compatibleSqlTypeName().equals(sqlTypeName))
-                    throw new TrueSqlPlugin.ValidationException(
-                        tree, "Sql type name mismatch for column " + (sqlIndex + 1) +
-                              (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                              ". Expected " + javaBinding.compatibleSqlTypeName() + " but has " + sqlTypeName
+                    throw exceptionMaker.make(
+                        "sql type name", javaBinding.compatibleSqlTypeName(), sqlTypeName
                     );
             }
 
             if (javaBinding.compatibleSqlType() != null) {
                 if (javaBinding.compatibleSqlType() != sqlType)
-                    throw new TrueSqlPlugin.ValidationException(
-                        tree, "Sql type id (java.sql.Types) mismatch for column " + (sqlIndex + 1) +
-                              (javaName != null ? " (for field `" + javaName + "`)" : "") +
-                              ". Expected " + javaBinding.compatibleSqlType() + " but has " + sqlType
+                    throw exceptionMaker.make(
+                        "sql type id (java.sql.Types)",
+                        "" + javaBinding.compatibleSqlType(), "" + sqlType
                     );
             }
         }

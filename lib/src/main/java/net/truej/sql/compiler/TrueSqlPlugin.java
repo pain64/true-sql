@@ -26,12 +26,8 @@ import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static net.truej.sql.compiler.StatementGenerator.*;
 
@@ -161,9 +157,13 @@ public class TrueSqlPlugin implements Plugin {
                 );
 
                 TypeChecker.assertTypesCompatible(
-                    tree, invocation.onDatabase, pIndex + 1,
+                    invocation.onDatabase,
                     pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
-                    pMetadata.scale, "parameter" + pIndex, binding
+                    pMetadata.scale, binding,
+                    (typeKind, expected, has) -> new ValidationException(
+                        tree, typeKind + " mismatch for parameter " + (pIndex + 1) +
+                              ". Expected " + expected + " but has " + has
+                    )
                 );
             }
         };
