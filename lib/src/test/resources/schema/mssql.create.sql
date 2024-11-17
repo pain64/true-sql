@@ -163,3 +163,16 @@ create procedure test_types_procedure
        set @float_type_o       = @float_type      ;
        set @double_type_o      = @double_type     ;
    end;
+---
+create procedure test_types_procedure_extended
+    @datetimeoffset_type      datetimeoffset,
+    @datetimeoffset_type_o    datetimeoffset output,
+    @datetimeoffset_type_null datetimeoffset output,
+    @bytearray_type varbinary(200),
+    @bytearray_type_o varbinary(200) output,
+    @bytearray_type_null varbinary(200) output
+   as begin
+
+       set @datetimeoffset_type_o     = @datetimeoffset_type;
+       set @bytearray_type_o = @bytearray_type;
+   end;

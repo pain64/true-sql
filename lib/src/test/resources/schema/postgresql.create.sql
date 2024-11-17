@@ -55,7 +55,9 @@ create table all_default_data_types(
     float_type real not null,
     float_type_null real,
     double_type float not null,
-    double_type_null float
+    double_type_null float,
+    offset_time_type time with time zone not null,
+    offset_time_type_null time with time zone
 );
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);

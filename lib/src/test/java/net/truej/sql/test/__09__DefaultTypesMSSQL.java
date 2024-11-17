@@ -3,29 +3,33 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.shaded.org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
 import java.time.*;
 
 import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
+import static net.truej.sql.fetch.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class) @Disabled
+@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(MSSQL)
 @TrueSql public class __09__DefaultTypesMSSQL {
     record DataTypes(
         byte aByte, @Nullable Byte aByteNullable,
         byte[] bytes, @Nullable byte[] bytesNullable,
         OffsetDateTime offsetDateTime, @Nullable OffsetDateTime offsetDateTimeNullable
-        //,
-        //OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNullable
+    ) { }
+
+    record DataTypesSP(
+        byte[] bytes, @Nullable byte[] bytesNullable,
+        OffsetDateTime offsetDateTime, @Nullable OffsetDateTime offsetDateTimeNullable
     ) { }
 
     @TestTemplate
-    public void test(MainDataSource ds) {
+    public void testTables(MainDataSource ds) {
         ds.withConnection(cn -> {
             var data = new DataTypes(
                 (byte) 1, null,
@@ -34,9 +38,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
                     2024, 12, 31,
                     23, 59, 59, 0, ZoneOffset.ofHours(0)
                 ), null
-                //,
-                //OffsetTime.of(23,59,59,0, ZoneOffset.ofHours(5)), null
-
             );
             cn.q("""
                     insert into all_default_data_types values(
@@ -60,9 +61,43 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
                 from all_default_data_types
                 """
             ).fetchOne(DataTypes.class);
+            Assertions.assertEquals(data.aByte, fetched.aByte);
+            Assertions.assertEquals(data.aByteNullable, fetched.aByteNullable);
+            Assertions.assertArrayEquals(data.bytes, fetched.bytes);
+            Assertions.assertArrayEquals(data.bytesNullable, fetched.bytesNullable);
+            Assertions.assertEquals(data.offsetDateTime, fetched.offsetDateTime);
+            Assertions.assertEquals(data.offsetDateTimeNullable, fetched.offsetDateTimeNullable);
 
-            Assertions.assertEquals(data, fetched);
             return null;
         });
     }
+
+//    @TestTemplate
+//    public void testSP(MainDataSource ds) {
+//        ds.withConnection(cn -> {
+//            var data = new DataTypesSP(
+//                new byte[] {(byte) 1}, null,
+//                OffsetDateTime.of(
+//                    2024, 12, 31,
+//                    23, 59, 59, 0, ZoneOffset.ofHours(0)
+//                ), null
+//            );
+//            var fetched = cn.q("""
+//                    {call test_types_procedure_extended (
+//                        ?, ?,
+//                        ?, ?,
+//                        ?, ?)}
+//                    """,
+//                data.bytes, out(byte[].class), out(byte[].class),
+//                data.offsetDateTime, out(OffsetDateTime.class), out(OffsetDateTime.class)
+//            ).asCall().fetchOne(DataTypesSP.class);
+//
+//            Assertions.assertArrayEquals(data.bytes, fetched.bytes);
+//            Assertions.assertArrayEquals(data.bytesNullable, fetched.bytesNullable);
+//            Assertions.assertEquals(data.offsetDateTime, fetched.offsetDateTime);
+//            Assertions.assertEquals(data.offsetDateTimeNullable, fetched.offsetDateTimeNullable);
+//
+//            return null;
+//        });
+//    }
 }

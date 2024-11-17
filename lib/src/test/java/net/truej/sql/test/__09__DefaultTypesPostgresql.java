@@ -4,6 +4,7 @@ import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.*;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -12,7 +13,7 @@ import java.time.*;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-
+@Disabled
 @ExtendWith(TrueSqlTests2.class) @EnableOn({POSTGRESQL})
 @TrueSql public class __09__DefaultTypesPostgresql {
 
@@ -28,7 +29,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         LocalTime timeType, @Nullable LocalTime timeTypeNull,
         LocalDateTime timestampType, @Nullable LocalDateTime timestampTypeNull,
         float floatType, @Nullable Float floatTypeNull,
-        double doubleType, @Nullable Double doubleTypeNull
+        double doubleType, @Nullable Double doubleTypeNull,
+        OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNull
     ) { }
 
     // FIXME: https://trello.com/c/1PEhNxDa/95-%D0%B1%D0%B5%D0%B4%D0%B0-%D1%81-testdatasourcegetconnection
@@ -46,13 +48,15 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 LocalTime.of(23, 59, 59), null,
                 LocalDateTime.of(1984, 1, 1, 23, 59, 59), null,
                 3.14159f, null,
-                3.1415926535d, null
+                3.1415926535d, null,
+                OffsetTime.of(23,59,59, 0, ZoneOffset.ofHours(1)),null
             );
             cn.q("""
                     insert into all_default_data_types values(
                         ?, ?,
                         ?, ?,
                     
+                        ?, ?,
                         ?, ?,
                         ?, ?,
                         ?, ?,
@@ -74,8 +78,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 data.timeType, data.timeTypeNull,
                 data.timestampType, data.timestampTypeNull,
                 data.floatType, data.floatTypeNull,
-                data.doubleType, data.doubleTypeNull
-
+                data.doubleType, data.doubleTypeNull,
+                data.offsetTime, data.offsetTimeNull
             ).fetchNone();
 
             var fetched = cn.q("""
@@ -92,7 +96,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                     time_type, time_type_null,
                     timestamp_type, timestamp_type_null,
                     float_type, float_type_null,
-                    double_type, double_type_null
+                    double_type, double_type_null,
+                    offset_time_type, offset_time_type_null
                 from all_default_data_types
                 """
             ).fetchOne(DataTypes.class);

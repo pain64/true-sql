@@ -3,6 +3,7 @@ package net.truej.sql.fetch;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static net.truej.sql.fetch.Parameters.*;
@@ -21,6 +22,18 @@ public class __25__TrueSqlMissConfiguration {
         Assertions.assertThrows(
             MissConfigurationException.class,
             () -> out(Integer.class)
+        );
+        Assertions.assertThrows(
+            MissConfigurationException.class,
+            () -> inout(1)
+        );
+        Assertions.assertThrows(
+            MissConfigurationException.class,
+            () -> unfold(new ArrayList<>() )
+        );
+        Assertions.assertThrows(
+            MissConfigurationException.class,
+            () -> unfold(new ArrayList<Integer>(), (x) -> new Object[]{x} )
         );
         Assertions.assertThrows(
             MissConfigurationException.class,
