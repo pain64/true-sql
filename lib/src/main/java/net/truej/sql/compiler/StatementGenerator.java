@@ -35,15 +35,15 @@ public class StatementGenerator {
 
     public sealed interface FetchMode { }
     public sealed interface FetchTo extends FetchMode {
-        FieldType toType();
+        Field toField();
     }
 
     // FIXME: .g cannot have has none???
     public record FetchNone() implements FetchMode { }
-    public record FetchOne(FieldType toType) implements FetchTo { }
-    public record FetchOneOrZero(FieldType toType) implements FetchTo { }
-    public record FetchList(FieldType toType) implements FetchTo { }
-    public record FetchStream(FieldType toType) implements FetchTo { }
+    public record FetchOne(Field toField) implements FetchTo { }
+    public record FetchOneOrZero(Field toField) implements FetchTo { }
+    public record FetchList(Field toField) implements FetchTo { }
+    public record FetchStream(Field toField) implements FetchTo { }
 
     interface WriteNext {
         Void write(Out out);
@@ -131,7 +131,7 @@ public class StatementGenerator {
         if (
             generateDto &&
             fetchAs instanceof FetchTo to
-            && to.toType() instanceof AggregatedType agg
+            && to.toField() instanceof ListOfGroupField agg
         ) {
             DtoGenerator.generate(out, agg);
             var _ = out."\n";
@@ -162,13 +162,26 @@ public class StatementGenerator {
             case FetchStream _ -> "fetchStream";
         };
 
+        // int.class
+        // int[].class
+        // - List.class
+        // User.class
         var resultType = switch (fetchAs) {
             case FetchNone _ -> wrapTypeWithUpdateCount.apply(null, "Void");
-            case FetchList f -> wrapTypeWithUpdateCount.apply("List", f.toType.javaClassName());
-            case FetchOne f -> wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName());
-            case FetchOneOrZero f ->
-                wrapTypeWithUpdateCount.apply(null, f.toType.javaClassName()); // FIXME: nullable
-            case FetchStream f -> wrapTypeWithUpdateCount.apply("Stream", f.toType.javaClassName());
+            case FetchTo to -> {
+                var toClassName = switch (to.toField()) {
+                    case ScalarField sf -> sf.binding().className();
+                    case ListOfGroupField lgf -> lgf.newJavaClassName();
+                    case ListOfScalarField lsf -> throw new RuntimeException("unreachable. refactor this code");
+                };
+
+                var wrapWith = switch (to) {
+                    case FetchOne _, FetchOneOrZero _ -> null;
+                    case FetchList _ -> "List";
+                    case FetchStream _ -> "Stream";
+                };
+                yield wrapTypeWithUpdateCount.apply(wrapWith, toClassName);
+            }
         };
 
         final WriteNext typeParameters;
@@ -413,7 +426,7 @@ public class StatementGenerator {
                 : o."return null;";
             case FetchTo to -> {
                 MapperGenerator.generate(
-                    o, to.toType(), prepareAs instanceof AsCall ac ? ac.outParametersIndexes : null, typeToRwClass
+                    o, to.toField(), prepareAs instanceof AsCall ac ? ac.outParametersIndexes : null, typeToRwClass
                 );
 
                 yield switch (to) {

@@ -1,5 +1,7 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.code.Type;
+import net.truej.sql.bindings.Standard;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -10,6 +12,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static net.truej.sql.bindings.Standard.*;
 
 public class GLangParser {
 
@@ -83,11 +87,11 @@ public class GLangParser {
     }
 
     public record Chain(
-        @Nullable String fieldClassName,
+        @Nullable String groupClassName,
         @Nullable String fieldName,
         @Nullable Chain next
     ) { }
-    public record Line(NullMode nullMode, @Nullable String javaClassName, Chain chain) { }
+    public record Line(NullMode nullMode, @Nullable String javaClassNameHint, Chain chain) { }
 
     private static NullMode markToNullMode(NullabilityMark m) {
         return switch (m) {
@@ -96,8 +100,9 @@ public class GLangParser {
         };
     }
 
-    public static Line parse(
-        BindColumn bindColumn, ColumnMetadata column, int columnIndex, List<Lexeme> input
+    public static Line parseLine(
+        // BindColumn bindColumn, ColumnMetadata column, int columnIndex,
+        List<Lexeme> input
     ) {
 
         final NullMode nullMode;
@@ -135,10 +140,10 @@ public class GLangParser {
             next = 0;
         }
 
-        var bindResult = bindColumn.bind(column, columnIndex, javaClassNameHint, nullMode);
+        //var bindResult = bindColumn.bind(column, columnIndex, javaClassNameHint, nullMode);
 
         return new Line(
-            bindResult.nullMode, bindResult.javaClassName, parseChain(input, next)
+            nullMode, javaClassNameHint, parseChain(input, next)
         );
     }
 
@@ -165,22 +170,25 @@ public class GLangParser {
         };
     }
 
-    // FIXME: rename ???
-    public sealed interface FieldType {
-        String javaClassName();
-    }
     public enum NullMode {EXACTLY_NULLABLE, DEFAULT_NOT_NULL, EXACTLY_NOT_NULL}
 
-    public record ScalarType(
-        NullMode nullMode, String javaClassName
-    ) implements FieldType { }
+    public sealed interface Field {
+        String name();
+    }
+    sealed interface Aggregated extends Field { }
 
-    public record AggregatedType(
-        String javaClassName,
-        List<Field> fields
-    ) implements FieldType { }
+    public record ScalarField(
+        String name, NullMode nullMode, Binding binding
+    ) implements Field { }
 
-    public record Field(FieldType type, String name) { }
+    public record ListOfScalarField(
+        // FIXME: разве колонка после агрегации может быть null???
+        String name, NullMode nullMode, Binding binding
+    ) implements Aggregated { }
+
+    public record ListOfGroupField(
+        String name, String newJavaClassName, List<Field> fields
+    ) implements Aggregated { }
 
     public record NumberedColumn(int n, ColumnMetadata column, Line line) { }
 
@@ -192,7 +200,7 @@ public class GLangParser {
             .replaceAll(m -> m.group(1).toUpperCase());
     }
 
-    private static List<Field> buildGroup(List<NumberedColumn> lines) {
+    private static List<Field> buildGroup(BindColumn bindColumn, List<NumberedColumn> lines) {
         // FIXME: check that at least one local ???
         var locals = lines.stream()
             .filter(nl -> nl.line.chain.next == null).toList();
@@ -214,17 +222,18 @@ public class GLangParser {
                     );
 
 
-            if (nl.line.chain.fieldClassName != null)
+            if (nl.line.chain.groupClassName != null)
                 throw new ParseException("Aggregated java class name not expected here");
 
             var realFieldName = nl.line.chain.fieldName != null
                 ? nl.line.chain.fieldName : nl.column.columnName;
 
-            return new Field(
-                new ScalarType(
-                    nl.line.nullMode, nl.line.javaClassName
-                ),
-                makeFieldName(realFieldName)
+            var bound = bindColumn.bind(
+                nl.column, nl.n, nl.line.javaClassNameHint, nl.line.nullMode
+            );
+
+            return (Field) new ScalarField(
+                makeFieldName(realFieldName), bound.nullMode, bound.binding
             );
         });
 
@@ -247,7 +256,7 @@ public class GLangParser {
 
                 if (groupLines.size() == 1) {
                     var numbered = groupLines.getFirst();
-                    if (numbered.line.chain.fieldClassName != null)
+                    if (numbered.line.chain.groupClassName != null)
                         throw new ParseException(
                             "Dto class name not allowed for group with one element - " +
                             "thees groups converts to List<single group element class name>"
@@ -258,34 +267,35 @@ public class GLangParser {
                             "Inner groups not allowed for group with one element"
                         );
 
-                    return new Field(
-                        new AggregatedType(
-                            "List<" + groupLines.getFirst().line.javaClassName + ">",
-                            List.of(new Field(
-                                new ScalarType(
-                                    numbered.line.nullMode, numbered.line.javaClassName
-                                ), ""
-                            ))
-                        ),
-                        groupFieldName
+                    var bound = bindColumn.bind(
+                        numbered.column, numbered.n,
+                        numbered.line.javaClassNameHint, numbered.line.nullMode
+                    );
+
+                    return new ListOfScalarField(
+                        groupFieldName, bound.nullMode, bound.binding
                     );
                 } else {
-                    var aggregatedTypeName =
-                        groupLines.getFirst().line.chain.fieldClassName;
+                    var groupClassName =
+                        groupLines.getFirst().line.chain.groupClassName;
 
-                    if (aggregatedTypeName == null)
+                    if (groupClassName == null)
                         throw new ParseException("Aggregated java class name required");
 
-                    return new Field(
-                        new AggregatedType(aggregatedTypeName, buildGroup(
-                            groupLines.stream().map(nl -> new NumberedColumn(
-                                nl.n, nl.column,
-                                new Line(
-                                    nl.line.nullMode, nl.line.javaClassName, nl.line.chain.next
+                    return new ListOfGroupField(
+                        groupFieldName, groupClassName,
+                        buildGroup(
+                            bindColumn, groupLines.stream().map(nl ->
+                                new NumberedColumn(
+                                    nl.n, nl.column,
+                                    new Line(
+                                        nl.line.nullMode,
+                                        nl.line.javaClassNameHint,
+                                        nl.line.chain.next
+                                    )
                                 )
-                            )).toList()
-                        )),
-                        groupFieldName
+                            ).toList()
+                        )
                     );
                 }
             });
@@ -303,7 +313,7 @@ public class GLangParser {
 
     // FIXME: pass index-only. No ColumnMetadata!
     public interface BindColumn {
-        record Result(String javaClassName, NullMode nullMode) { }
+        record Result(Binding binding, NullMode nullMode) { }
         Result bind(
             ColumnMetadata column, int columnIndex, @Nullable String javaClassNameHint, NullMode nullModeHint
         );
@@ -313,13 +323,12 @@ public class GLangParser {
         List<ColumnMetadata> columns, BindColumn bindColumn
     ) {
         return buildGroup(
-            IntStream
+            bindColumn, IntStream
                 .range(0, columns.size())
                 .mapToObj(n -> {
                     var column = columns.get(n);
-                    return new NumberedColumn(n, column, parse(bindColumn, column, n, lex(column.columnLabel)));
-                })
-                .toList()
+                    return new NumberedColumn(n, column, parseLine(lex(column.columnLabel)));
+                }).toList()
         );
     }
 }

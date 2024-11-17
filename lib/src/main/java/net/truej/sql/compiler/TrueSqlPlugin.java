@@ -5,7 +5,6 @@ import com.sun.source.util.Plugin;
 import com.sun.source.util.TaskEvent;
 import com.sun.source.util.TaskListener;
 import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.code.Printer;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -27,7 +26,6 @@ import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -208,7 +206,7 @@ public class TrueSqlPlugin implements Plugin {
                     pIndex++;
                 }
                 case OutParameter p -> {
-                    checkParameter.check(pIndex, p.toClass().type, ParameterMode.OUT);
+                    checkParameter.check(pIndex, p.toType(), ParameterMode.OUT);
                     pIndex++;
                 }
                 case UnfoldParameter p -> {
@@ -346,7 +344,7 @@ public class TrueSqlPlugin implements Plugin {
                         case OutParameter p:
                             tree.args = tree.args.append(
                                 createRwFor.apply(
-                                    new Type.ClassType(Type.noType, List.nil(), p.toClass())
+                                    new Type.ClassType(Type.noType, List.nil(), p.toType().tsym)
                                 )
                             );
                             break;

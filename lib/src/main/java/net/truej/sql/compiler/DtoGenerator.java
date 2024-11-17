@@ -1,27 +1,26 @@
 package net.truej.sql.compiler;
 
-import java.util.function.Function;
-
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
 import static net.truej.sql.compiler.StatementGenerator.Out.each;
 
 public class DtoGenerator {
 
-    public static void generate(Out out, AggregatedType forType) {
-        var declType = (Function<Field, String>) f -> switch (f.type()) {
-            case AggregatedType _ -> f.type().javaClassName().startsWith("List<")
-                ? f.type().javaClassName()
-                : STR."List<\{f.type().javaClassName()}>";
-            case ScalarType _ -> f.type().javaClassName();
+    private static String javaClassNameForField(Field field) {
+        return switch (field) {
+            case Aggregated ag -> "List<" + switch (ag) {
+                case ListOfGroupField lgf -> lgf.newJavaClassName();
+                case ListOfScalarField lsf -> lsf.binding().className();
+            } + ">";
+            case ScalarField sf -> sf.binding().className();
         };
+    }
 
-        var nestedTypes = forType.fields().stream()
-            .filter(f ->
-                f.type() instanceof AggregatedType at &&
-                !at.javaClassName().startsWith("List<")
-            )
-            .map(f -> (AggregatedType) f.type())
+    public static void generate(Out out, ListOfGroupField forGroup) {
+
+        var nestedTypes = forGroup.fields().stream()
+            .filter(f -> f instanceof ListOfGroupField)
+            .map(f -> (ListOfGroupField) f)
             .toList();
 
         var nestedDto = each(nestedTypes, "\n", (o, _, at) -> {
@@ -29,39 +28,39 @@ public class DtoGenerator {
             return null;
         });
 
-        var fieldDefinitions = each(forType.fields(), "\n", (o, _, f) -> {
-            var nullability = f.type() instanceof ScalarType st ?
+        var fieldDefinitions = each(forGroup.fields(), "\n", (o, _, f) -> {
+            var nullability = f instanceof ScalarField st ?
                 switch (st.nullMode()) {
                     case EXACTLY_NULLABLE -> "@Nullable ";
                     case DEFAULT_NOT_NULL -> "";
                     case EXACTLY_NOT_NULL -> "@NotNull ";
                 } : "";
 
-            return ((Out) o)."\{nullability}public final \{declType.apply(f)} \{f.name()};";
+            return ((Out) o)."\{nullability}public final \{javaClassNameForField(f)} \{f.name()};";
         });
 
-        var constructorParameters = each(forType.fields(), ",\n", (o, _, f) ->
-            o."\{declType.apply(f)} \{f.name()}"
+        var constructorParameters = each(forGroup.fields(), ",\n", (o, _, f) ->
+            o."\{javaClassNameForField(f)} \{f.name()}"
         );
 
-        var constructorFieldAssignments = each(forType.fields(), "\n", (o, _, f) ->
+        var constructorFieldAssignments = each(forGroup.fields(), "\n", (o, _, f) ->
             o."this.\{f.name()} = \{f.name()};"
         );
 
-        var equalsFieldComparisons = each(forType.fields(), " &&\n", (o, _, f) ->
+        var equalsFieldComparisons = each(forGroup.fields(), " &&\n", (o, _, f) ->
             o."java.util.Objects.equals(this.\{f.name()}, o.\{f.name()})"
         );
 
-        var hashCodeCalculations = each(forType.fields(), "\n", (o, _, f) ->
+        var hashCodeCalculations = each(forGroup.fields(), "\n", (o, _, f) ->
             o."h = h * 59 + java.util.Objects.hashCode(this.\{f.name()});"
         );
 
         var _ = out."""
             \{nestedDto}
-            public static class \{forType.javaClassName()} {
+            public static class \{forGroup.newJavaClassName()} {
                 \{fieldDefinitions}
 
-                public \{forType.javaClassName()}(
+                public \{forGroup.newJavaClassName()}(
                     \{constructorParameters}
                 ) {
                     \{constructorFieldAssignments}
@@ -69,7 +68,7 @@ public class DtoGenerator {
 
                 @Override public boolean equals(Object other) {
                     return this == other || (
-                        other instanceof \{forType.javaClassName()} o &&
+                        other instanceof \{forGroup.newJavaClassName()} o &&
                         \{equalsFieldComparisons}
                     );
                 }

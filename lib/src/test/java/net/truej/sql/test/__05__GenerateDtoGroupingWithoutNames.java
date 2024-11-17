@@ -55,7 +55,7 @@ import static net.truej.sql.test.__05__GenerateDtoGroupingWithoutNamesTrueSql.*;
                             u.name                   ,
                             u.info                   ,
                             b.date   as "Bill2 bills.",
-                            b.amount as "     bills."
+                            b.amount as "      bills."
                         from users u
                             left join user_bills   ub  on ub.user_id    = u.id
                             left join bill         b   on b.id          = ub.bill_id

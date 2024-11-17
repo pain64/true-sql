@@ -24,8 +24,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
         //OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNullable
     ) { }
 
-    @TestTemplate
-    public void test(MainDataSource ds) {
+    @TestTemplate public void test(MainDataSource ds) {
+
         ds.withConnection(cn -> {
             var data = new DataTypes(
                 (byte) 1, null,
@@ -34,9 +34,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
                     2024, 12, 31,
                     23, 59, 59, 0, ZoneOffset.ofHours(0)
                 ), null
-                //,
-                //OffsetTime.of(23,59,59,0, ZoneOffset.ofHours(5)), null
-
             );
             cn.q("""
                     insert into all_default_data_types values(

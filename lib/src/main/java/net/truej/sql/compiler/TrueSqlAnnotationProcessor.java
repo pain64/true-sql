@@ -166,12 +166,13 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                         elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
                     ));
 
-                    for (var result : invocations.values()) {
+                    for (var result : invocations.values())
                         if (result instanceof FetchInvocation fi)
                             out.write(fi.generatedCode());
-                    }
+
                     out.write("}");
                 }
+                var xxx = 1;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

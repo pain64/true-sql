@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static javax.tools.Diagnostic.Kind.ERROR;
 
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.Message(
-    kind = ERROR, text = "has more then one non-empty args constructor"
+    kind = ERROR, text = "has more than one non-empty args constructor"
 )
 @TrueSql public class __06__TooMuchNonEmptyConstructors {
     class User {

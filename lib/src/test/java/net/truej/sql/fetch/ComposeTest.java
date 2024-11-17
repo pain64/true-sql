@@ -40,8 +40,8 @@ public class ComposeTest {
 //        });
 //    }
 //
-//    <T> T map(ResultSet rs, Class<T> toClass) {
-//        if(toClass == String.class)
+//    <T> T map(ResultSet rs, Class<T> toType) {
+//        if(toType == String.class)
 //            return (T) "42";
 //
 //        throw new RuntimeException("unreachable");

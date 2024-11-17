@@ -2,64 +2,83 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeScanner;
+import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Names;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 public class TypeFinder {
-    public static Symbol.ClassSymbol resolve(
+
+    static RuntimeException badFormat() {
+        return new RuntimeException(
+            "expected Name.class or full.qualified.Name.class or array[].class"
+        );
+    }
+
+    static Type mapArrayOrScalarType(
+        Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
+    ) {
+        if (tree instanceof JCTree.JCArrayTypeTree at)
+            return new Type.ArrayType(mapArrayOrScalarType(symtab, cu, at.elemtype), symtab.arrayClass);
+        else {
+            var found = find(symtab, cu, tree);
+            if (found == null) throw badFormat();
+            return found;
+        }
+    }
+
+    public static Type resolve(
         Names names, Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
     ) {
-        var badFormat = (Supplier<RuntimeException>) () ->
-            new RuntimeException("expected %SimpleName%.class or %full.qualified.Name%.class");
 
         if (tree instanceof JCTree.JCFieldAccess fa) {
             if (!fa.name.equals(names.fromString("class")))
-                throw badFormat.get();
-
-            var found = find(symtab, cu, fa.selected);
-            if (found == null)
-                throw badFormat.get();
-
-            return found;
+                throw badFormat();
+            return mapArrayOrScalarType(symtab, cu, fa.selected);
         } else
-            throw badFormat.get();
+            throw badFormat();
     }
 
-    public static @Nullable Symbol.ClassSymbol find(
+    public static @Nullable Type find(
         Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
     ) {
         Predicate<Symbol> isClass = s -> s instanceof Symbol.ClassSymbol;
 
         if (tree instanceof JCTree.JCPrimitiveTypeTree primitive) {
-           return (Symbol.ClassSymbol) switch (primitive.typetag) {
-               case BYTE -> symtab.byteType.tsym;
-               case CHAR -> symtab.charType.tsym;
-               case SHORT -> symtab.shortType.tsym;
-               case LONG -> symtab.longType.tsym;
-               case FLOAT -> symtab.floatType.tsym;
-               case INT -> symtab.intType.tsym;
-               case DOUBLE -> symtab.doubleType.tsym;
-               case BOOLEAN -> symtab.booleanType.tsym;
-               default -> null;
-           };
+            return new Type.JCPrimitiveType(
+                primitive.typetag,
+                switch (primitive.typetag) {
+                    case BYTE -> symtab.byteType.tsym;
+                    case CHAR -> symtab.charType.tsym;
+                    case SHORT -> symtab.shortType.tsym;
+                    case LONG -> symtab.longType.tsym;
+                    case FLOAT -> symtab.floatType.tsym;
+                    case INT -> symtab.intType.tsym;
+                    case DOUBLE -> symtab.doubleType.tsym;
+                    case BOOLEAN -> symtab.booleanType.tsym;
+                    default -> null;
+                }
+            );
         } if (tree instanceof JCTree.JCIdent id) {
             var found = new Symbol.ClassSymbol[]{null};
             found[0] = (Symbol.ClassSymbol) cu.toplevelScope.findFirst(id.name, isClass);
 
+            // FIXME: use SimpleTreeVisitor
             if (found[0] == null || found[0].type.isErroneous())
-                cu.accept(new TreeScanner() {
-                    @Override public void visitClassDef(JCTree.JCClassDecl tree) {
-                        if (tree.name.equals(id.name) && tree.sym != null)
-                            found[0] = tree.sym;
+                cu.accept(
+                    new TreeScanner() {
+                        @Override public void visitClassDef(JCTree.JCClassDecl tree) {
+                            if (tree.name.equals(id.name) && tree.sym != null)
+                                found[0] = tree.sym;
 
-                        super.visitClassDef(tree);
+                            super.visitClassDef(tree);
+                        }
                     }
-                });
+                );
 
             if (found[0] == null || found[0].type.isErroneous())
                 found[0] = (Symbol.ClassSymbol) cu.namedImportScope.findFirst(id.name, isClass);
@@ -73,7 +92,7 @@ public class TypeFinder {
             if (found[0] == null || found[0].type.isErroneous())
                 return null;
 
-            return found[0];
+            return new Type.ClassType(Type.noType, List.nil(), found[0]);
 
         } else if (tree instanceof JCTree.JCFieldAccess tail) {
             var fqn = tail.name;
@@ -94,7 +113,7 @@ public class TypeFinder {
             if (found == null || found.type.isErroneous())
                 return null;
 
-            return found;
+            return new Type.ClassType(Type.noType, List.nil(), found);
         } else
             return null;
     }

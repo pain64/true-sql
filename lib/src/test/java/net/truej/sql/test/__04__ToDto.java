@@ -15,13 +15,13 @@ import java.util.List;
 @ExtendWith(TrueSqlTests2.class)
 @TrueSql public class __04__ToDto {
 
-    record City(Long id, String name) { }
-    record CityClinics(String city, List<String> clinics) { }
+    public record City(Long id, String name) { }
+    public record CityClinics(String city, List<String> clinics) { }
 
-    record User(String name, @Nullable String info, @NotNull BigDecimal amount) { }
-    record Report(String city, List<String> clinics, List<User> users) { }
-    record User2(@Nullable String name, @Nullable String info, @Nullable BigDecimal amount) { }
-    record Report2(String city, List<String> clinics, List<User2> users) { }
+    public record User(String name, @Nullable String info, @NotNull BigDecimal amount) { }
+    public record Report(String city, List<String> clinics, List<User> users) { }
+    public record User2(@Nullable String name, @Nullable String info, @Nullable BigDecimal amount) { }
+    public record Report2(String city, List<String> clinics, List<User2> users) { }
 
     @TestTemplate public void test(MainConnection cn) {
 

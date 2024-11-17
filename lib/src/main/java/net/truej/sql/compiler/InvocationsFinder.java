@@ -2,6 +2,7 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.sql.ParameterMetaData.*;
-import static net.truej.sql.compiler.ExistingDtoParser.flattedDtoType;
+import static net.truej.sql.compiler.ExistingDtoParser.flattenedDtoType;
 import static net.truej.sql.compiler.GLangParser.parseResultSetColumns;
 import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 import static net.truej.sql.compiler.TrueSqlPlugin.*;
@@ -43,13 +44,13 @@ public class InvocationsFinder {
 
     public record InParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
     public record InoutParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
-    public record OutParameter(Symbol.ClassSymbol toClass) implements QueryPart { }
+    public record OutParameter(Type toType) implements QueryPart { }
     public record UnfoldParameter(
         JCTree.JCExpression expression, @Nullable JCTree.JCLambda extractor
     ) implements QueryPart { }
 
     record ExistingDto(
-        GLangParser.NullMode nullMode, Symbol.ClassSymbol symbol
+        GLangParser.NullMode nullMode, Type toType
     ) implements DtoMode { }
 
     record GenerateDto(Name dtoClassName) implements DtoMode { }
@@ -177,12 +178,13 @@ public class InvocationsFinder {
 
             @Override public void visitVarDef(JCTree.JCVariableDecl tree) {
                 if (tree.sym == null) {
-                    if (tree.vartype != null)
-                        varTypes.put(tree.name, TypeFinder.find(symtab, cu, tree.vartype));
-                    else {
-                        if (tree.init instanceof JCTree.JCNewClass cl)
-                            varTypes.put(tree.name, TypeFinder.find(symtab, cu, cl.clazz));
-                    }
+                    var exprTree = tree.vartype != null ? tree.vartype :
+                        tree.init instanceof JCTree.JCNewClass cl ? cl.clazz : null;
+
+                    var found = exprTree == null ? null : TypeFinder.find(symtab, cu, exprTree);
+
+                    if (found != null && found.tsym instanceof Symbol.ClassSymbol cl)
+                        varTypes.put(tree.name, cl);
                 } else if (
                     tree.sym.owner instanceof Symbol.MethodSymbol &&
                     tree.sym.type.tsym instanceof Symbol.ClassSymbol vTypeSym
@@ -442,6 +444,7 @@ public class InvocationsFinder {
                             } else
                                 return null;
 
+                            // FIXME: deduplicate with line 423
                             dtoMode = f.name.equals(names.fromString("fetchNone")) ? null :
                                 new ExistingDto(
                                     nullMode, TypeFinder.resolve(names, symtab, cu, tree.args.get(1))
@@ -597,15 +600,15 @@ public class InvocationsFinder {
                         } else return null;
                     } else return null;
 
-                    var parseExistingDto = (Function<ExistingDto, GLangParser.FieldType>) existing ->
+                    var parseExistingDto = (Function<ExistingDto, GLangParser.Field>) existing ->
                         ExistingDtoParser.parse(
+                            parsedConfig.typeBindings(),
+                            "result",
                             existing.nullMode,
-                            cl -> parsedConfig.typeBindings().stream()
-                                .anyMatch(b -> b.className().equals(cl)),
-                            names.init, existing.symbol
+                            names.init, existing.toType
                         );
 
-                    final GLangParser.FieldType toDto;
+                    final GLangParser.Field toDto;
                     final List<SqlParameterMetadata> parametersMetadata;
                     final String onDatabase;
 
@@ -849,7 +852,7 @@ public class InvocationsFinder {
                                 case null -> null;
                                 case ExistingDto existing -> {
                                     var parsed = parseExistingDto.apply(existing);
-                                    var dtoFields = flattedDtoType(parsed);
+                                    var dtoFields = flattenedDtoType(parsed);
 
                                     // skip check if metadata is not available
                                     if (columns == null) yield parsed;
@@ -865,19 +868,14 @@ public class InvocationsFinder {
                                         var field = dtoFields.get(i);
                                         var column = columns.get(i);
 
-                                        // FIXME: deduplicate
-                                        var binding = TypeChecker.getBindingForClass(
-                                            tree, parsedConfig.typeBindings(), field.st().javaClassName()
-                                        );
-
                                         TypeChecker.assertNullabilityCompatible(
                                             cu, messages, tree,
-                                            field.name(), field.st().nullMode(), i, column
+                                            field.name(), field.nullMode(), i, column
                                         );
 
                                         TypeChecker.assertTypesCompatible(
                                             onDatabase, column.sqlType(), column.sqlTypeName(),
-                                            column.javaClassName(), column.scale(), binding,
+                                            column.javaClassName(), column.scale(), field.binding(),
                                             (typeKind, expected, has) -> new ValidationException(
                                                 tree, typeKind + " mismatch for column " + (ii + 1) +
                                                       " (for field `" + field.name() + "`). Expected " +
@@ -926,11 +924,15 @@ public class InvocationsFinder {
                                                     tree, parsedConfig.typeBindings(), TypeChecker.inferType(parsedConfig, onDatabase, column, nullMode)
                                                 );
 
-                                            return new GLangParser.BindColumn.Result(binding.className(), nullMode);
+                                            return new GLangParser.BindColumn.Result(
+                                                binding, nullMode
+                                            );
                                         }
                                     );
 
-                                    yield new GLangParser.AggregatedType(gDto.dtoClassName.toString(), fields);
+                                    yield new GLangParser.ListOfGroupField(
+                                        "result", gDto.dtoClassName.toString(), fields
+                                    );
                                 }
                             };
 
@@ -946,13 +948,7 @@ public class InvocationsFinder {
                             case null -> null;
                             case ExistingDto existing -> {
                                 var parsed = parseExistingDto.apply(existing);
-                                var dtoFields = flattedDtoType(parsed);
-
-                                for (var field : dtoFields) {
-                                    var _ = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), field.st().javaClassName()
-                                    );
-                                }
+                                var dtoFields = flattenedDtoType(parsed);
 
                                 if (statementMode instanceof StatementGenerator.AsCall) {
                                     // FIXME: deduplicate this logic
