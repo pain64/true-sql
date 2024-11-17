@@ -25,6 +25,7 @@ drop procedure if exists digit_magic;
 drop procedure if exists bill_zero;
 drop procedure if exists discount_bill;
 drop procedure if exists test_types_procedure;
+drop procedure if exists test_types_procedure_extended;
 ---
 
 CREATE SEQUENCE users_id_seq
@@ -165,14 +166,13 @@ create procedure test_types_procedure
    end;
 ---
 create procedure test_types_procedure_extended
-    @datetimeoffset_type      datetimeoffset,
+    @bytearray_type           varbinary(200)       ,
+    @bytearray_type_o         varbinary(200) output,
+    @bytearray_type_null      varbinary(200) output,
+    @datetimeoffset_type      datetimeoffset       ,
     @datetimeoffset_type_o    datetimeoffset output,
-    @datetimeoffset_type_null datetimeoffset output,
-    @bytearray_type varbinary(200),
-    @bytearray_type_o varbinary(200) output,
-    @bytearray_type_null varbinary(200) output
+    @datetimeoffset_type_null datetimeoffset output
    as begin
-
-       set @datetimeoffset_type_o     = @datetimeoffset_type;
-       set @bytearray_type_o = @bytearray_type;
+       set @bytearray_type_o      = @bytearray_type;
+       set @datetimeoffset_type_o = @datetimeoffset_type;
    end;

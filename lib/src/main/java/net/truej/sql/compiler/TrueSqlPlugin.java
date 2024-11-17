@@ -343,9 +343,7 @@ public class TrueSqlPlugin implements Plugin {
                             break;
                         case OutParameter p:
                             tree.args = tree.args.append(
-                                createRwFor.apply(
-                                    new Type.ClassType(Type.noType, List.nil(), p.toType().tsym)
-                                )
+                                createRwFor.apply(p.toType())
                             );
                             break;
                         case UnfoldParameter p:
