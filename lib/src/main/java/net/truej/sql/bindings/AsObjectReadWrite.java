@@ -5,7 +5,7 @@ import java.sql.*;
 
 public abstract class AsObjectReadWrite<A> implements TypeReadWrite<A> {
     public abstract Class<A> aClass();
-    public int sqlType() { return Types.OTHER; }
+    public abstract int sqlType();
 
     @Override public A get(
         ResultSet rs, int columnIndex

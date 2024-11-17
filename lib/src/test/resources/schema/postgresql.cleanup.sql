@@ -5,6 +5,7 @@ truncate clinic cascade;
 truncate city cascade;
 truncate users restart identity cascade;
 truncate all_default_data_types cascade;
+truncate grouped_dto cascade;
 
 insert into users(name, info, sex) values('Joe', null, 'MALE');
 insert into users(name, info, sex) values('Donald', 'Do not disturb', 'MALE');

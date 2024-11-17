@@ -7,6 +7,7 @@ import net.truej.sql.bindings.Standard;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -81,6 +82,11 @@ class TypeChecker {
             if (
                 javaBinding.className().equals(OffsetDateTime.class.getName()) &&
                 sqlTypeName.equals("timestamptz")
+            ) return;
+
+            if (
+                javaBinding.className().equals(OffsetTime.class.getName()) &&
+                sqlTypeName.equals("timetz")
             ) return;
         }
 

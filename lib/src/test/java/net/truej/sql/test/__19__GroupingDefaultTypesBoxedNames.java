@@ -8,6 +8,7 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.__05__GenerateDtoTrueSql.GroupTest;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests2.Database.MYSQL;
 
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(HSQLDB)
 @TrueSql public class __19__GroupingDefaultTypesBoxedNames  {
@@ -22,7 +23,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
                     long as     "  a.  b.  c.  d.E e.f1",
                     flo as      "  a.  b.  c.  d.  e.F f.g1",
                     doub as     "  a.  b.  c.  d.  e.  f.G g.h1",
-                    1    as     "  a.  b.  c.  d.  e.  f.  g.value"
+                    1    as     "  a.  b.  c.  d.  e.  f.  g.H h.j1",
+                    1    as     "  a.  b.  c.  d.  e.  f.  g.  h.p"
                 from grouped_dto
                 """).g.fetchOneOrZero(GroupTest.class);
 

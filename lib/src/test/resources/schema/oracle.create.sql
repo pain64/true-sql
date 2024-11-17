@@ -146,7 +146,10 @@ begin
            float_type_null     out    binary_float,
 
            double_type         in out binary_double,
-           double_type_null    out    binary_double
+           double_type_null    out    binary_double,
+
+           zoned_datetime_type         in out timestamp with time zone,
+           zoned_datetime_type_null    out    timestamp with time zone
 
        ) is begin
            null;

@@ -13,7 +13,8 @@ import java.time.*;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-@Disabled
+
+
 @ExtendWith(TrueSqlTests2.class) @EnableOn({POSTGRESQL})
 @TrueSql public class __09__DefaultTypesPostgresql {
 
@@ -33,7 +34,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNull
     ) { }
 
-    // FIXME: https://trello.com/c/1PEhNxDa/95-%D0%B1%D0%B5%D0%B4%D0%B0-%D1%81-testdatasourcegetconnection
+
     @TestTemplate public void test(MainDataSource ds) {
         ds.withConnection(cn -> {
             var data = new DataTypes(

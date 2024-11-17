@@ -81,3 +81,8 @@ create procedure discount_bill(in datedisc timestamp)
 language plpgsql AS $$ begin
     update bill set discount = amount * 0.1 where date = datedisc;
 end; $$;
+
+create table grouped_dto(
+    gg varchar(50) not null,
+    flo real not null
+)
