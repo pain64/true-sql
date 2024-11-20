@@ -9,6 +9,8 @@ psql
 create database truesqldb;
 create user sa with password '1234';
 grant all privileges on database truesqldb to sa;
+\c truesqldb
+GRANT CREATE ON SCHEMA public TO sa;
 ```
 
 schema and test data:

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import com.example.demo.DemoApplication.MainDb;
-import com.example.demo.ControllerTrueSql.*;
+import com.example.demo.ControllerG.*;
 
 @TrueSql @RestController public class Controller {
 

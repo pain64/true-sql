@@ -8,10 +8,11 @@ group = "net.truej"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
-var trueSqlVersion = "3.0.0-beta2"
+var trueSqlVersion = "3.0.0-beta3"
 
 dependencies {
 	annotationProcessor("net.truej:sql:$trueSqlVersion")

@@ -8,10 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.Function;
 
 import static net.truej.sql.compiler.GLangParser.*;
-import static net.truej.sql.compiler.TrueSqlPlugin.typeToJavaClassName;
+import static net.truej.sql.compiler.TrueSqlPlugin.typeToClassName;
 
 public class ExistingDtoParser {
     // FIXME: g and Nullable or NotNull annotation for dtoType
@@ -39,7 +38,7 @@ public class ExistingDtoParser {
             throw new ParseException("To Dto class cannot be generic");
 
         var binding = bindings.stream()
-            .filter(b -> b.className().equals(typeToJavaClassName(dtoType)))
+            .filter(b -> b.className().equals(typeToClassName(dtoType)))
             .findFirst().orElse(null);
 
         if (binding != null) {
@@ -81,7 +80,7 @@ public class ExistingDtoParser {
 
             var fields = constructor.params.stream().map(p -> {
                 if (p.type.tsym instanceof Symbol.ClassSymbol clSym) {
-                    var className = typeToJavaClassName(p.type);
+                    var className = typeToClassName(p.type);
 
                     // FIXME: perf
                     if (clSym.flatname.toString().equals(List.class.getName()))

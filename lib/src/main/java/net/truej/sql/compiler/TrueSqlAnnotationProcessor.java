@@ -172,7 +172,6 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                     out.write("}");
                 }
-                var xxx = 1;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

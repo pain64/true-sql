@@ -1,5 +1,6 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.api.Messages;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -7,9 +8,11 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.bindings.Standard;
+import net.truej.sql.compiler.GLangParser.NullMode;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
 import net.truej.sql.config.Configuration;
@@ -22,6 +25,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,7 +54,7 @@ public class InvocationsFinder {
     ) implements QueryPart { }
 
     record ExistingDto(
-        GLangParser.NullMode nullMode, Type toType
+        NullMode nullMode, Type toType
     ) implements DtoMode { }
 
     record GenerateDto(Name dtoClassName) implements DtoMode { }
@@ -386,7 +390,8 @@ public class InvocationsFinder {
                 // bad tree
             }
 
-            @Nullable FetchInvocation handleFetch(JCTree.JCMethodInvocation tree, JCTree.JCFieldAccess f) {
+            @Nullable FetchInvocation handleFetch(CompilerMessages messages, JCTree.JCMethodInvocation tree, JCTree.JCFieldAccess f) {
+                var warnings = new ArrayList<CompilationWarning>();
                 // FIXME: split to parse tree and handle
                 var fetchMethodName = f.name.toString();
 
@@ -423,24 +428,24 @@ public class InvocationsFinder {
                             dtoMode = null;
                         } else if (tree.args.size() == 1) {
                             dtoMode = new ExistingDto(
-                                GLangParser.NullMode.DEFAULT_NOT_NULL,
+                                NullMode.DEFAULT_NOT_NULL,
                                 TypeFinder.resolve(names, symtab, cu, tree.args.head)
                             );
                         } else if (tree.args.size() == 2) {
-                            final GLangParser.NullMode nullMode;
+                            final NullMode nullMode;
                             if (
                                 (tree.args.head instanceof JCTree.JCIdent id &&
                                  id.name.equals(names.fromString("Nullable"))) ||
                                 // FIXME: use FQN
                                 tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.Nullable")
                             ) {
-                                nullMode = GLangParser.NullMode.EXACTLY_NULLABLE;
+                                nullMode = NullMode.EXACTLY_NULLABLE;
                             } else if (
                                 (tree.args.head instanceof JCTree.JCIdent id &&
                                  id.name.equals(names.fromString("NotNull"))) ||
                                 tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.NotNull")
                             ) {
-                                nullMode = GLangParser.NullMode.EXACTLY_NOT_NULL;
+                                nullMode = NullMode.EXACTLY_NOT_NULL;
                             } else
                                 return null;
 
@@ -749,12 +754,12 @@ public class InvocationsFinder {
                                                     return new GLangParser.ColumnMetadata(
                                                         switch (rMetadata.isNullable(i)) {
                                                             case ResultSetMetaData.columnNoNulls ->
-                                                                GLangParser.NullMode.EXACTLY_NOT_NULL;
+                                                                NullMode.EXACTLY_NOT_NULL;
                                                             case ResultSetMetaData.columnNullable ->
-                                                                GLangParser.NullMode.EXACTLY_NULLABLE;
+                                                                NullMode.EXACTLY_NULLABLE;
                                                             case
                                                                 ResultSetMetaData.columnNullableUnknown ->
-                                                                GLangParser.NullMode.DEFAULT_NOT_NULL;
+                                                                NullMode.DEFAULT_NOT_NULL;
                                                             default ->
                                                                 throw new IllegalStateException("unreachable");
                                                         },
@@ -824,11 +829,11 @@ public class InvocationsFinder {
                                                 return new GLangParser.ColumnMetadata(
                                                     switch (pMetadata.isNullable(i)) {
                                                         case parameterNoNulls ->
-                                                            GLangParser.NullMode.EXACTLY_NOT_NULL;
+                                                            NullMode.EXACTLY_NOT_NULL;
                                                         case parameterNullable ->
-                                                            GLangParser.NullMode.EXACTLY_NULLABLE;
+                                                            NullMode.EXACTLY_NULLABLE;
                                                         case parameterNullableUnknown ->
-                                                            GLangParser.NullMode.DEFAULT_NOT_NULL;
+                                                            NullMode.DEFAULT_NOT_NULL;
                                                         default ->
                                                             throw new IllegalStateException("unreachable");
                                                     },
@@ -847,6 +852,14 @@ public class InvocationsFinder {
                                     statementMode = new StatementGenerator.AsCall(outParameterIndexes);
                                 }
                             }
+
+                            var handleNullabilityMismatch = (BiConsumer<Boolean, String>)
+                                (isWarningOnly, message) -> {
+                                    if (isWarningOnly)
+                                        warnings.add(new CompilationWarning(tree, message));
+                                    else
+                                        throw new ValidationException(tree, message);
+                                };
 
                             toDto = switch (dtoMode) {
                                 case null -> null;
@@ -869,8 +882,15 @@ public class InvocationsFinder {
                                         var column = columns.get(i);
 
                                         TypeChecker.assertNullabilityCompatible(
-                                            cu, messages, tree,
-                                            field.name(), field.nullMode(), i, column
+                                            column.nullMode(),
+                                            field.nullMode(),
+                                            (isWarningOnly, sqlNullMode, javaNullMode) ->
+                                                handleNullabilityMismatch.accept(
+                                                    isWarningOnly,
+                                                    "nullability mismatch for column " + (ii + 1) +
+                                                    " (for field `" + field.name() + "`). Your decision is " +
+                                                    javaNullMode + " but driver infers " + sqlNullMode
+                                                )
                                         );
 
                                         TypeChecker.assertTypesCompatible(
@@ -894,11 +914,18 @@ public class InvocationsFinder {
                                     var fields = parseResultSetColumns(
                                         columns, (column, columnIndex, javaClassNameHint, nullModeHint) -> {
 
-                                            final GLangParser.NullMode nullMode;
-                                            if (nullModeHint != GLangParser.NullMode.DEFAULT_NOT_NULL) {
+                                            final NullMode nullMode;
+                                            if (nullModeHint != NullMode.DEFAULT_NOT_NULL) {
                                                 TypeChecker.assertNullabilityCompatible(
-                                                    cu, messages, tree,
-                                                    column.columnLabel(), nullModeHint, columnIndex, column
+                                                    column.nullMode(), nullModeHint,
+                                                    (isWarningOnly, sqlNullMode, javaNullMode) ->
+                                                        handleNullabilityMismatch.accept(
+                                                            // FIXME: deduplicate message common part
+                                                            isWarningOnly,
+                                                            "nullability mismatch for column " + (columnIndex + 1) +
+                                                            " (for generated dto field `" + column.columnLabel() + "`). Your decision is " +
+                                                            javaNullMode + " but driver infers " + sqlNullMode
+                                                        )
                                                 );
                                                 nullMode = nullModeHint;
                                             } else
@@ -937,6 +964,12 @@ public class InvocationsFinder {
                             };
 
                         } catch (SQLException e) {
+                            // FIXME: эту ошибку нужно отдать в javac именно в этот момент
+                            // Если закончится раунд процессинга аннотаций, а ошибка не записана
+                            // то у нас не сгенерируются Dto и будет ошибка компиляции
+                            // и до плагина компилятора мы не дойдем!
+                            // Нужно подумать о новой стратегии вывода ошибок компиляции (когда и какие)
+                            messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
                             // FIXME: split this with `getConnection`
                             // isolate preparedStatement
                             throw new ValidationException(tree, e.getMessage());
@@ -1003,7 +1036,7 @@ public class InvocationsFinder {
 
                     return new FetchInvocation(
                         onDatabase, parsedConfig.typeBindings(),
-                        generatedClassName, fetchMethodName, lineNumber,
+                        generatedClassName, fetchMethodName, lineNumber, warnings,
                         sourceExpression, queryMode, parametersMetadata, generatedCode
                     );
                 }
@@ -1037,7 +1070,7 @@ public class InvocationsFinder {
                     ) {
                         handleConstraint(tree, fa.selected);
                     } else if (tree.meth instanceof JCTree.JCFieldAccess f) {
-                        var fetchInvocation = handleFetch(tree, f);
+                        var fetchInvocation = handleFetch(messages, tree, f);
                         if (fetchInvocation != null)
                             result.put(tree, fetchInvocation);
                     }

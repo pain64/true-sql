@@ -107,9 +107,12 @@ public class TrueSqlPlugin implements Plugin {
         }
     }
 
+    public record CompilationWarning(JCTree tree, String message) { }
+
     public record FetchInvocation(
         String onDatabase, java.util.List<Standard.Binding> bindings,
         String generatedClassName, String fetchMethodName, int lineNumber,
+        java.util.List<CompilationWarning> warnings,
         JCTree.JCIdent sourceExpression, QueryMode queryMode,
         @Nullable java.util.List<SqlParameterMetadata> parametersMetadata,
         String generatedCode
@@ -124,9 +127,31 @@ public class TrueSqlPlugin implements Plugin {
 
     @Override public String getName() { return NAME; }
 
-    static String arrayTypeToJavaClassName(Type type) {
+
+    static String arrayClassNameToSourceCodeType(String className) {
+        return switch (className.charAt(0)) {
+            case '[' -> arrayClassNameToSourceCodeType(className.substring(1)) + "[]";
+            case 'B' -> "byte";
+            case 'C' -> "char";
+            case 'S' -> "short";
+            case 'I' -> "int";
+            case 'J' -> "long";
+            case 'F' -> "float";
+            case 'D' -> "double";
+            case 'Z' -> "boolean";
+            default -> // 'L'
+                className.substring(1, className.length() - 1);
+        };
+    }
+
+    static String classNameToSourceCodeType(String className) {
+        return className.startsWith("[") ?
+            arrayClassNameToSourceCodeType(className) : className;
+    }
+
+    static String arrayTypeToClassName(Type type) {
         if (type instanceof Type.ArrayType at)
-            return "[" + arrayTypeToJavaClassName(at.elemtype);
+            return "[" + arrayTypeToClassName(at.elemtype);
         else
             return switch (type.getTag()) {
                 case BYTE -> "B";
@@ -137,13 +162,13 @@ public class TrueSqlPlugin implements Plugin {
                 case FLOAT -> "F";
                 case DOUBLE -> "D";
                 case BOOLEAN -> "Z";
-                default -> "L" + type.tsym.flatName();
+                default -> "L" + type.tsym.flatName() + ";";
             };
     }
 
-    static String typeToJavaClassName(Type type) {
+    static String typeToClassName(Type type) {
         return type instanceof Type.ArrayType at
-            ? arrayTypeToJavaClassName(at)
+            ? arrayTypeToClassName(at)
             : type.tsym.flatName().toString();
     }
 
@@ -168,13 +193,14 @@ public class TrueSqlPlugin implements Plugin {
 
             if (javaParameterType == symtab.botType) {
                 if (pMetadata.nullMode == ParameterMetaData.parameterNoNulls)
+                    // FIXME: warning ???
                     throw new ValidationException(
                         tree, "for parameter " + (pIndex + 1) + " expected not-null values " +
                               "but passed null literal"
                     );
             } else {
                 var binding = TypeChecker.getBindingForClass(
-                    tree, invocation.bindings, typeToJavaClassName(javaParameterType)
+                    tree, invocation.bindings, typeToClassName(javaParameterType)
                 );
 
                 TypeChecker.assertTypesCompatible(
@@ -182,8 +208,9 @@ public class TrueSqlPlugin implements Plugin {
                     pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
                     pMetadata.scale, binding,
                     (typeKind, expected, has) -> new ValidationException(
+                        // FIXME: разобраться с именами expected и has
                         tree, typeKind + " mismatch for parameter " + (pIndex + 1) +
-                              ". Expected " + expected + " but has " + has
+                              ". Expected " + has + " but has " + expected
                     )
                 );
             }
@@ -260,7 +287,7 @@ public class TrueSqlPlugin implements Plugin {
                     symtab.unnamedModule, names.fromString(NullParameter.class.getName())
                 );
             else {
-                var forClassName = typeToJavaClassName(type);
+                var forClassName = typeToClassName(type);
 
                 var binding = TypeChecker.getBindingForClass(
                     tree, invocation.bindings, forClassName
@@ -413,14 +440,29 @@ public class TrueSqlPlugin implements Plugin {
         return to;
     }
 
-    void assertHasNoDanglingTrueSqlCalls(
-        Symtab symtab, Names names, JCTree.JCCompilationUnit cu
-    ) {
+    boolean isTrueSqlDslInvocation(Symtab symtab, Names names, JCTree.JCMethodInvocation tree) {
         if (trueSqlDslMethods == null)
             trueSqlDslMethods = parseDslMethods(
                 symtab, names, As.class, Q.class,
                 Parameters.class, UpdateCount.class, NoUpdateCount.class
             );
+
+        final Symbol symbol;
+
+        if (tree.meth instanceof JCTree.JCIdent id)
+            symbol = id.sym;
+        else if (tree.meth instanceof JCTree.JCFieldAccess fa)
+            symbol = fa.sym;
+        else
+            return false;
+
+        return symbol instanceof Symbol.MethodSymbol mt && trueSqlDslMethods.contains(mt);
+    }
+
+    void assertHasNoDanglingTrueSqlCalls(
+        Symtab symtab, Names names, JCTree.JCCompilationUnit cu
+    ) {
+
         var hasTrueSqlAnnotation = new boolean[]{false};
 
         cu.accept(
@@ -445,18 +487,7 @@ public class TrueSqlPlugin implements Plugin {
                 @Override public void visitApply(JCTree.JCMethodInvocation tree) {
                     super.visitApply(tree);
 
-                    final Symbol symbol;
-
-                    if (tree.meth instanceof JCTree.JCIdent id)
-                        symbol = id.sym;
-                    else if (tree.meth instanceof JCTree.JCFieldAccess fa)
-                        symbol = fa.sym;
-                    else
-                        return;
-
-                    if (
-                        symbol instanceof Symbol.MethodSymbol mt && trueSqlDslMethods.contains(mt)
-                    ) {
+                    if (isTrueSqlDslInvocation(symtab, names, tree)) {
                         if (!hasTrueSqlAnnotation[0])
                             throw new ValidationException(
                                 tree, "TrueSql DSL used but class not annotated with @TrueSql"
@@ -492,7 +523,7 @@ public class TrueSqlPlugin implements Plugin {
                         ) context.get(HashMap.class);
 
                     var hasNoErrors = true;
-                    var logError = (Consumer<ValidationException>) ex ->
+                    var sendCompilationError = (Consumer<ValidationException>) ex ->
                         messages.write(
                             (JCTree.JCCompilationUnit) e.getCompilationUnit(),
                             ex.tree, JCDiagnostic.DiagnosticType.ERROR, ex.getMessage()
@@ -506,19 +537,28 @@ public class TrueSqlPlugin implements Plugin {
                                 var tree = kv.getKey();
                                 var invocation = (MethodInvocationResult) doofyDecode(kv.getValue());
 
+                                if (!isTrueSqlDslInvocation(symtab, names, tree))
+                                    continue;
+
                                 try {
-                                    // FIXME: check that it is 'our' trees?
                                     switch (invocation) {
-                                        case FetchInvocation fi ->
+                                        case FetchInvocation fi -> {
+                                            for (var warning : fi.warnings)
+                                                messages.write(
+                                                    (JCTree.JCCompilationUnit) e.getCompilationUnit(),
+                                                    warning.tree, JCDiagnostic.DiagnosticType.WARNING, warning.message
+                                                );
+
                                             handle(symtab, names, maker, tree, fi);
+                                        }
                                         case ValidationException ex -> {
                                             hasNoErrors = false;
-                                            logError.accept(ex);
+                                            sendCompilationError.accept(ex);
                                         }
                                     }
                                 } catch (ValidationException ex) {
                                     hasNoErrors = false;
-                                    logError.accept(ex);
+                                    sendCompilationError.accept(ex);
                                 }
                             }
                     }
@@ -527,7 +567,7 @@ public class TrueSqlPlugin implements Plugin {
                         if (hasNoErrors)
                             assertHasNoDanglingTrueSqlCalls(symtab, names, cu);
                     } catch (ValidationException ex) {
-                        logError.accept(ex);
+                        sendCompilationError.accept(ex);
                     }
                 }
             }

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static net.truej.sql.compiler.GLangParser.*;
+import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
 
 public class StatementGenerator {
 
@@ -162,17 +163,15 @@ public class StatementGenerator {
             case FetchStream _ -> "fetchStream";
         };
 
-        // int.class
-        // int[].class
-        // - List.class
-        // User.class
         var resultType = switch (fetchAs) {
             case FetchNone _ -> wrapTypeWithUpdateCount.apply(null, "Void");
             case FetchTo to -> {
-                var toClassName = switch (to.toField()) {
-                    case ScalarField sf -> sf.binding().className();
+                var toSourceCodeType = switch (to.toField()) {
+                    case ScalarField sf ->
+                        classNameToSourceCodeType(sf.binding().className());
                     case ListOfGroupField lgf -> lgf.newJavaClassName();
-                    case ListOfScalarField lsf -> throw new RuntimeException("unreachable. refactor this code");
+                    case ListOfScalarField lsf ->
+                        throw new RuntimeException("unreachable. refactor this code");
                 };
 
                 var wrapWith = switch (to) {
@@ -180,7 +179,7 @@ public class StatementGenerator {
                     case FetchList _ -> "List";
                     case FetchStream _ -> "Stream";
                 };
-                yield wrapTypeWithUpdateCount.apply(wrapWith, toClassName);
+                yield wrapTypeWithUpdateCount.apply(wrapWith, toSourceCodeType);
             }
         };
 

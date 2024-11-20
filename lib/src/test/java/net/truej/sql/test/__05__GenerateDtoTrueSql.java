@@ -14,4 +14,5 @@ public class __05__GenerateDtoTrueSql {
     class TypeTest {}
     class GroupTest {}
     class GroupTest2 {}
+    class ByteArrayWrapper {}
 }

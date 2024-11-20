@@ -13,8 +13,7 @@ import static javax.tools.Diagnostic.Kind.WARNING;
 
 @ExtendWith(TrueSqlTests2.class) @Message(
     kind = WARNING, text =
-    "nullability mismatch for column 3 (for field `info`)  " +
-    "your decision: EXACTLY_NOT_NULL driver infers: EXACTLY_NULLABLE"
+    "nullability mismatch for column 3 (for field `info`). Your decision is EXACTLY_NOT_NULL but driver infers EXACTLY_NULLABLE"
 )
 @TrueSql public class __01__NullabilityWarning {
     record User(Long id, String name, @NotNull String info) { }

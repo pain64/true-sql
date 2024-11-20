@@ -1,8 +1,8 @@
 package net.truej.sql.compiler;
 
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.util.JCDiagnostic;
 import net.truej.sql.bindings.Standard;
+import net.truej.sql.compiler.GLangParser.NullMode;
 
 import java.sql.Types;
 import java.time.LocalDate;
@@ -27,8 +27,8 @@ class TypeChecker {
                 ));
     }
 
-    interface TypeMismatchExceptionMaker {
-        RuntimeException make(String typeKing, String excepted, String has);
+    interface TypeMismatchHandler {
+        RuntimeException onError(String typeKing, String expected, String has);
     }
 
     static void assertTypesCompatible(
@@ -38,7 +38,7 @@ class TypeChecker {
         String sqlJavaClassName,
         int sqlScale,
         Standard.Binding javaBinding,
-        TypeMismatchExceptionMaker exceptionMaker
+        TypeMismatchHandler handler
     ) {
         // vendor-specific
         if (
@@ -134,10 +134,10 @@ class TypeChecker {
         ) {
 
             if (sqlType == Types.TINYINT)
-                throw exceptionMaker.make("type", javaBinding.className(), "java.lang.Byte");
+                throw handler.onError("type", javaBinding.className(), "java.lang.Byte");
 
             if (sqlType == Types.SMALLINT)
-                throw exceptionMaker.make("type", javaBinding.className(), "java.lang.Short");
+                throw handler.onError("type", javaBinding.className(), "java.lang.Short");
         }
 
         // respect Java autoboxing
@@ -222,18 +222,18 @@ class TypeChecker {
             javaBinding.compatibleSqlTypeName() == null
         ) {
             if (!javaBinding.className().equals(sqlJavaClassName))
-                throw exceptionMaker.make("type", javaBinding.className(), sqlJavaClassName);
+                throw handler.onError("type", javaBinding.className(), sqlJavaClassName);
         } else {
             if (javaBinding.compatibleSqlTypeName() != null) {
                 if (!javaBinding.compatibleSqlTypeName().equals(sqlTypeName))
-                    throw exceptionMaker.make(
+                    throw handler.onError(
                         "sql type name", javaBinding.compatibleSqlTypeName(), sqlTypeName
                     );
             }
 
             if (javaBinding.compatibleSqlType() != null) {
                 if (javaBinding.compatibleSqlType() != sqlType)
-                    throw exceptionMaker.make(
+                    throw handler.onError(
                         "sql type id (java.sql.Types)",
                         "" + javaBinding.compatibleSqlType(), "" + sqlType
                     );
@@ -241,67 +241,36 @@ class TypeChecker {
         }
     }
 
-    // FIXME: {OK, WARNING} isNullabilityCompatible
-    // TODO: для warning сделать отдельный канал 
+    interface NullabilityMismatchHandler {
+        void onMismatch(boolean isWarningOnly, NullMode sqlNullMode, NullMode javaNullMode);
+    }
+
     static void assertNullabilityCompatible(
-        JCTree.JCCompilationUnit cu, CompilerMessages messages, JCTree tree,
-        String fieldName, GLangParser.NullMode fieldNullMode,
-        int columnIndex, GLangParser.ColumnMetadata column
+        NullMode sqlNullMode, NullMode javaNullMode, NullabilityMismatchHandler handler
     ) {
-        enum ReportMode {WARNING, ERROR}
-        interface Reporter {
-            void report(ReportMode mode, GLangParser.NullMode you, GLangParser.NullMode driver);
-        }
-
-        var doReport = (Reporter) (m, you, driver) -> {
-            var message = "nullability mismatch for column " + (columnIndex + 1) +
-                          (fieldName != null ? " (for field `" + fieldName + "`) " : "") +
-                          " your decision: " + you + " driver infers: " + driver;
-            switch (m) {
-                case WARNING:
-                    messages.write(
-                        cu, tree, JCDiagnostic.DiagnosticType.WARNING, message
-                    );
-                    break;
-                case ERROR:
-                    throw new TrueSqlPlugin.ValidationException(tree, message);
-            }
-        };
-
-        switch (fieldNullMode) {
+        switch (javaNullMode) {
             case EXACTLY_NULLABLE:
-                switch (column.nullMode()) {
+                switch (sqlNullMode) {
                     case EXACTLY_NULLABLE,
                          DEFAULT_NOT_NULL: { } break;
                     case EXACTLY_NOT_NULL:
-                        doReport.report(
-                            ReportMode.WARNING,
-                            GLangParser.NullMode.EXACTLY_NULLABLE,
-                            GLangParser.NullMode.EXACTLY_NOT_NULL
-                        );
+                        handler.onMismatch(true, sqlNullMode, javaNullMode);
+                        break;
                 }
                 break;
             case DEFAULT_NOT_NULL:
-                switch (column.nullMode()) {
+                switch (sqlNullMode) {
                     case EXACTLY_NULLABLE:
-                        doReport.report(
-                            ReportMode.ERROR,
-                            GLangParser.NullMode.DEFAULT_NOT_NULL,
-                            GLangParser.NullMode.EXACTLY_NULLABLE
-                        );
+                        handler.onMismatch(false, sqlNullMode, javaNullMode);
                         break;
                     case DEFAULT_NOT_NULL,
                          EXACTLY_NOT_NULL: { } break;
                 }
                 break;
             case EXACTLY_NOT_NULL:
-                switch (column.nullMode()) {
+                switch (sqlNullMode) {
                     case EXACTLY_NULLABLE:
-                        doReport.report(
-                            ReportMode.WARNING,
-                            GLangParser.NullMode.EXACTLY_NOT_NULL,
-                            GLangParser.NullMode.EXACTLY_NULLABLE
-                        );
+                        handler.onMismatch(true, sqlNullMode, javaNullMode);
                         break;
                     case DEFAULT_NOT_NULL,
                          EXACTLY_NOT_NULL: { } break;
@@ -314,12 +283,12 @@ class TypeChecker {
         ConfigurationParser.ParsedConfiguration parsedConfig,
         String onDatabase,
         GLangParser.ColumnMetadata column,
-        GLangParser.NullMode nullMode
+        NullMode nullMode
     ) {
         // нужно как-то понять что пользователь не создал конфликт по биндам ???
         if (
-            nullMode == GLangParser.NullMode.DEFAULT_NOT_NULL ||
-            nullMode == GLangParser.NullMode.EXACTLY_NOT_NULL
+            nullMode == NullMode.DEFAULT_NOT_NULL ||
+            nullMode == NullMode.EXACTLY_NOT_NULL
         ) {
             if (
                 column.javaClassName().equals(Boolean.class.getName()) ||

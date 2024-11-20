@@ -3,16 +3,17 @@ package net.truej.sql.compiler;
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
 import static net.truej.sql.compiler.StatementGenerator.Out.each;
+import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
 
 public class DtoGenerator {
 
-    private static String javaClassNameForField(Field field) {
+    private static String sourceCodeTypeForField(Field field) {
         return switch (field) {
             case Aggregated ag -> "List<" + switch (ag) {
                 case ListOfGroupField lgf -> lgf.newJavaClassName();
-                case ListOfScalarField lsf -> lsf.binding().className();
+                case ListOfScalarField lsf -> classNameToSourceCodeType(lsf.binding().className());
             } + ">";
-            case ScalarField sf -> sf.binding().className();
+            case ScalarField sf -> classNameToSourceCodeType(sf.binding().className());
         };
     }
 
@@ -36,11 +37,11 @@ public class DtoGenerator {
                     case EXACTLY_NOT_NULL -> "@NotNull ";
                 } : "";
 
-            return ((Out) o)."\{nullability}public final \{javaClassNameForField(f)} \{f.name()};";
+            return ((Out) o)."\{nullability}public final \{sourceCodeTypeForField(f)} \{f.name()};";
         });
 
         var constructorParameters = each(forGroup.fields(), ",\n", (o, _, f) ->
-            o."\{javaClassNameForField(f)} \{f.name()}"
+            o."\{sourceCodeTypeForField(f)} \{f.name()}"
         );
 
         var constructorFieldAssignments = each(forGroup.fields(), "\n", (o, _, f) ->
