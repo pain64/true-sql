@@ -38,13 +38,14 @@ public class MapperGenerator {
                 .map(f -> (ScalarField) f).toList();
 
             var groupKeys = Out.each(locals, ",\n", (o, i, field) ->
-                o."\{boxedClassName(field.binding().className())} c\{offset + i + 1}"
+                o.w(boxedClassName(field.binding().className()), " c", offset + i + 1)
             );
-            var _ = out."""
-                record G\{level}(
-                    \{groupKeys}
-                ) {}
-                """;
+
+            out.w(
+                "record G", level, "(\n",
+                "    ", groupKeys, "\n",
+                ") {}\n"
+            );
 
             // FIXME: use each ???
             var baseOffset = offset + locals.size();
@@ -83,44 +84,45 @@ public class MapperGenerator {
             .map(f -> (Aggregated) f).toList();
 
         var getField = (BiFunction<String, ScalarField, String>) (expr, st) ->
-            STR."\{wrapWithActualNullCheck(expr, st.nullMode())}";
+            wrapWithActualNullCheck(expr, st.nullMode());
 
         if (next.isEmpty()) {
-            var dtoFilter = Out.each(locals, " ||\n", (o, i, _) ->
-                o."java.util.Objects.nonNull(r.c\{offset + i + 1})"
+            var dtoFilter = Out.each(locals, " ||\n", (o, i, __) ->
+                o.w("java.util.Objects.nonNull(r.c", offset + i + 1, ")")
             );
 
             var dtoFieldsMapper = Out.each(locals, ",\n", (o, i, f) -> {
-                var expr = STR."r.c\{offset + i + 1}";
-                return ((Out) o)."\{getField.apply(expr, f)}";
+                var expr = "r.c" + (offset + i + 1);
+                return o.w(getField.apply(expr, f));
             });
 
-            var dtoMapper = dtoJavaClassName.startsWith("List<")
-                ? dtoFieldsMapper : (WriteNext) o -> o."""
-                    new \{dtoJavaClassName}(
-                        \{dtoFieldsMapper}
-                    )""";
+            var dtoMapper = dtoJavaClassName.startsWith("List<") ?
+                dtoFieldsMapper :
+                (WriteNext) o -> o.w(
+                    "new ", dtoJavaClassName, "(\n",
+                    "    ", dtoFieldsMapper, "\n",
+                    ")"
+                );
 
-            var _ = out."""
-                .filter(r ->
-                    \{dtoFilter}
-                ).map(r ->
-                    \{dtoMapper}
-                ).distinct()""";
+            out.w(
+                ".filter(r ->\n",
+                "    ", dtoFilter, "\n",
+                ").map(r ->\n",
+                "    ", dtoMapper, "\n",
+                ").distinct()"
+            );
         } else {
-            var keysFilter = Out.each(locals, " ||\n", (o, i, _) ->
-                o."java.util.Objects.nonNull(g\{level}.getKey().c\{offset + i + 1})"
+            var keysFilter = Out.each(locals, " ||\n", (o, i, __) ->
+                o.w("java.util.Objects.nonNull(g", level, ".getKey().c", offset + i + 1, ")")
             );
 
-            var keysMapper = Out.each(locals, ",\n", (o, i, _) ->
-                o."r.c\{offset + i + 1}"
+            var keysMapper = Out.each(locals, ",\n", (o, i, __) ->
+                o.w("r.c", offset + i + 1)
             );
 
             var dtoMapper = Out.each(locals, ",\n", (o, i, f) -> {
-                var expr = STR."g\{level}.getKey().c\{offset + i + 1}";
-                return
-                    ((Out) o)
-                        ."\{getField.apply(expr, f)}";
+                var expr = "g" + level + ".getKey().c" + (offset + i + 1);
+                return o.w(getField.apply(expr, f));
             });
 
             var nextTransform = (WriteNext) o -> {
@@ -143,7 +145,7 @@ public class MapperGenerator {
                         );
                     };
 
-                    var _ = o."g\{level}.getValue().stream()";
+                    o.w("g", level, ".getValue().stream()");
                     nextOperations(
                         out, level + 1, baseOffset,
                         switch (n) {
@@ -152,11 +154,11 @@ public class MapperGenerator {
                         },
                         nextFields
                     );
-                    var _ = o.".toList()";
 
-                    if (i != next.size() - 1) {
-                        var _ = o.",\n";
-                    }
+                    o.w(".toList()");
+
+                    if (i != next.size() - 1)
+                        o.w(",\n");
 
                     baseOffset += nextFields.size();
                 }
@@ -164,22 +166,23 @@ public class MapperGenerator {
                 return null;
             };
 
-            var _ = out."""
-                .collect(
-                    java.util.stream.Collectors.groupingBy(
-                        r -> new G\{level}(
-                            \{keysMapper}
-                        ), java.util.LinkedHashMap::new, Collectors.toList()
-                    )
-                ).entrySet().stream()
-                .filter(g\{level} ->
-                    \{keysFilter}
-                ).map(g\{level} ->
-                    new \{dtoJavaClassName}(
-                        \{dtoMapper},
-                        \{nextTransform}
-                    )
-                )""";
+            out.w(
+                ".collect(\n",
+                "    java.util.stream.Collectors.groupingBy(\n",
+                "        r -> new G", level, "(\n",
+                "            ", keysMapper, "\n",
+                "        ), java.util.LinkedHashMap::new, Collectors.toList()\n",
+                "    )\n",
+                ").entrySet().stream()\n",
+                ".filter(g", level, " ->\n",
+                "    ", keysFilter, "\n",
+                ").map(g", level, " ->\n",
+                "    new ", dtoJavaClassName, "(\n",
+                "        ", dtoMapper, ",\n",
+                "        ", nextTransform, "\n",
+                "    )\n",
+                ")"
+            );
         }
 
         return null;
@@ -187,7 +190,7 @@ public class MapperGenerator {
 
     private static String wrapWithActualNullCheck(String expr, NullMode nullMode) {
         return nullMode != NullMode.EXACTLY_NULLABLE ?
-            STR."EvenSoNullPointerException.check(\{expr})" : expr;
+            "EvenSoNullPointerException.check(" + expr + ")" : expr;
     }
 
     static String boxedClassName(String className) {
@@ -214,7 +217,8 @@ public class MapperGenerator {
 
         var getField = (BiFunction<ScalarField, Integer, String>) (t, i) -> {
             var j = outParametersIndexes == null ? i : outParametersIndexes[i - 1];
-            return STR."new \{typeToRwClass.apply(t.binding().className())}().get(\{from}, \{j}";
+            return "new " + typeToRwClass.apply(t.binding().className())
+                   + "().get(" + from + "," + j + ")";
         };
 
         final WriteNext extraDto;
@@ -239,71 +243,72 @@ public class MapperGenerator {
 
                 var eachField = Out.each(flattened, ",\n", (o, i, field) -> {
                     var expr = getField.apply(field, i + 1);
-                    return ((Out) o)."\{hasInnerAggregating ? expr : wrapWithActualNullCheck(expr, field.nullMode())})";
+                    return o.w(
+                        hasInnerAggregating ? expr : wrapWithActualNullCheck(expr, field.nullMode())
+                    );
                 });
 
                 if (hasInnerAggregating) {
                     var rowFields = Out.each(flattened, ",\n", (o, i, field) ->
-                        ((Out) o)."\{boxedClassName(field.binding().className())} c\{i + 1}"
+                        o.w(boxedClassName(field.binding().className()), " c", i + 1)
                     );
 
                     var groupKeysDto = (WriteNext) o ->
                         dtoForGroupKeys(o, 1, 0, fields);
 
                     toDto = "Row";
-                    extraDto = o -> o."""
-                        record Row(
-                            \{rowFields}
-                        ) {}
-                        \{groupKeysDto}
-                        """;
+                    extraDto = o -> o.w(
+                        "record Row(\n",
+                        "    ", rowFields, "\n",
+                        ") {}\n",
+                        groupKeysDto, "\n",
+                        "\n"
+                    );
                     groupTransform = o ->
                         nextOperations(o, 1, 0, javaClassName, fields);
 
                 } else {
                     toDto = javaClassName;
-                    extraDto = _ -> null;
-                    groupTransform = _ -> null;
+                    extraDto = __ -> null;
+                    groupTransform = __ -> null;
                 }
 
-                mapFields = o -> o."""
-                    new \{toDto} (
-                        \{eachField}
-                    )""";
+                mapFields = o -> o.w(
+                    "new ", toDto, " (\n",
+                    "    ", eachField, "\n",
+                    ")"
+                );
             }
             case ScalarField sf -> {
                 mapFields = o ->
-                    o."\{wrapWithActualNullCheck(getField.apply(sf, 1), sf.nullMode())})";
-                extraDto = _ -> null;
-                groupTransform = _ -> null;
+                    o.w(wrapWithActualNullCheck(getField.apply(sf, 1), sf.nullMode()));
+                extraDto = __ -> null;
+                groupTransform = __ -> null;
             }
         }
 
-        if (outParametersIndexes != null) {
-            var _ = out."""
-                var mapped = \{mapFields};
-                """;
-        } else {
-            var _ = out."""
-            \{extraDto}
-            var mapped = Stream.iterate(
-                rs, t -> {
-                    try {
-                        return t.next();
-                    } catch (SQLException e) {
-                        throw source.mapException(e);
-                    }
-                }, t -> t
-            ).map(t -> {
-                try {
-                    return
-                        \{mapFields};
-                } catch (SQLException e) {
-                    throw source.mapException(e);
-                }
-            })
-            \{groupTransform};
-            """;
-        }
+        if (outParametersIndexes != null)
+            out.w("var mapped = ", mapFields, ";");
+        else
+            out.w(
+                extraDto, "\n",
+                "var mapped = Stream.iterate(\n",
+                "    rs, t -> {\n",
+                "        try {\n",
+                "            return t.next();\n",
+                "        } catch (SQLException e) {\n",
+                "            throw source.mapException(e);\n",
+                "        }\n",
+                "    }, t -> t\n",
+                ").map(t -> {\n",
+                "    try {\n",
+                "        return\n",
+                "            ", mapFields, ";\n",
+                "    } catch (SQLException e) {\n",
+                "        throw source.mapException(e);\n",
+                "    }\n",
+                "})\n",
+                groupTransform, ";\n"
+            );
     }
 }

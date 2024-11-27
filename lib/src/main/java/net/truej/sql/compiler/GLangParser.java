@@ -95,8 +95,8 @@ public class GLangParser {
 
     private static NullMode markToNullMode(NullabilityMark m) {
         return switch (m) {
-            case ExclamationMark _ -> NullMode.EXACTLY_NOT_NULL;
-            case QuestionMark _ -> NullMode.EXACTLY_NULLABLE;
+            case ExclamationMark __ -> NullMode.EXACTLY_NOT_NULL;
+            case QuestionMark __ -> NullMode.EXACTLY_NULLABLE;
         };
     }
 
@@ -111,7 +111,7 @@ public class GLangParser {
 
         if (input.get(0) instanceof Colon) {
             if (!input.get(1).equals(new Text("t")))
-                throw new ParseException(STR."Expected t but has \{input.get(1)}");
+                throw new ParseException("Expected t but has " + input.get(1));
 
             switch (input.get(2)) {
                 case NullabilityMark m -> {
@@ -131,7 +131,7 @@ public class GLangParser {
                     }
                 }
                 default -> throw new ParseException(
-                    STR."Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has \{input.get(2)}"
+                    "Expected TEXT or QUESTION_MARK or EXCLAMATION_MARK but has " + input.get(2)
                 );
             }
         } else {
@@ -149,23 +149,23 @@ public class GLangParser {
 
     public static Chain parseChain(List<Lexeme> input, int i) {
         return switch (input.get(i)) {
-            case End _ -> new Chain(null, null, null);
+            case End __ -> new Chain(null, null, null);
             case Text t1 -> switch (input.get(i + 1)) {
-                case End _ -> new Chain(null, t1.t, null);
-                case Dot _ -> new Chain(null, t1.t, parseChain(input, i + 2));
+                case End __ -> new Chain(null, t1.t, null);
+                case Dot __ -> new Chain(null, t1.t, parseChain(input, i + 2));
                 case Text t2 -> switch (input.get(i + 2)) {
-                    case End _ -> new Chain(t1.t, t2.t, null);
-                    case Dot _ -> new Chain(t1.t, t2.t, parseChain(input, i + 3));
+                    case End __ -> new Chain(t1.t, t2.t, null);
+                    case Dot __ -> new Chain(t1.t, t2.t, parseChain(input, i + 3));
                     default -> throw new ParseException(
-                        STR."expected END or DOT but has \{input.get(i + 2)}"
+                        "expected END or DOT but has " + input.get(i + 2)
                     );
                 };
                 default -> throw new ParseException(
-                    STR."expected END or DOT or TEXT but has \{input.get(i + 1)}"
+                    "expected END or DOT or TEXT but has " + input.get(i + 1)
                 );
             };
             default -> throw new ParseException(
-                STR."expected END or TEXT but has \{input.get(i)}"
+                "expected END or TEXT but has " + input.get(i)
             );
         };
     }

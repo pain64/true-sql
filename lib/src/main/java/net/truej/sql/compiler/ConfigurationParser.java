@@ -45,14 +45,14 @@ public class ConfigurationParser {
     ) {
         var parseProperty = (BiFunction<String, String, String>)
             (parameterName, defaultValue) -> {
-                var propertyName = STR."truesql.\{sourceClassName}.\{parameterName}";
+                var propertyName = "truesql." + sourceClassName + "." + parameterName;
                 var prop = findProperty(env, propertyName);
 
                 if (prop == null)
                     if (!defaultValue.equals(Configuration.STRING_NOT_DEFINED))
                         prop = defaultValue;
 
-                if (doPrint) System.out.println(STR."\{propertyName}=\{prop}");
+                if (doPrint) System.out.println(propertyName + "=" + prop);
 
                 return prop;
             };

@@ -61,7 +61,7 @@ tasks.withType<JavaCompile> {
     exports.forEach { v ->
         options.compilerArgs.add("--add-exports=${v}")
     }
-    options.compilerArgs.add("--enable-preview")
+    //options.compilerArgs.add("--enable-preview")
 }
 
 
@@ -75,13 +75,13 @@ tasks.withType<Javadoc> {
 
     opt.addMultilineStringsOption("-add-exports").value = exports
     opt.addStringOption("-source", "21")
-    opt.addBooleanOption("-enable-preview", true)
+    //opt.addBooleanOption("-enable-preview", true)
 }
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
     jvmArgs = listOf(
-        "--enable-preview",
+        // "--enable-preview",
         "--add-opens", "java.base/java.lang=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",

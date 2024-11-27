@@ -29,10 +29,12 @@ public class StatementGenerator {
     public record SingleQuery(List<InvocationsFinder.QueryPart> parts) implements QueryMode { }
 
     public sealed interface StatementMode { }
-    public record AsDefault() implements StatementMode { }
+    public sealed interface StatementLike extends StatementMode { }
+    public record AsDefault() implements StatementLike { }
     public record AsCall(int[] outParametersIndexes) implements StatementMode { }
-    public record AsGeneratedKeysIndices(int... columnIndexes) implements StatementMode { }
-    public record AsGeneratedKeysColumnNames(String... columnNames) implements StatementMode { }
+    public sealed interface AsGeneratedKeys extends StatementLike { }
+    public record AsGeneratedKeysIndices(int... columnIndexes) implements AsGeneratedKeys { }
+    public record AsGeneratedKeysColumnNames(String... columnNames) implements AsGeneratedKeys { }
 
     public sealed interface FetchMode { }
     public sealed interface FetchTo extends FetchMode {
@@ -50,7 +52,7 @@ public class StatementGenerator {
         Void write(Out out);
     }
 
-    public static class Out implements StringTemplate.Processor<Void, RuntimeException> {
+    public static class Out {
         public final StringBuilder buffer;
         int offset = 0;
         int currentColumn = 0;
@@ -73,22 +75,15 @@ public class StatementGenerator {
                 writeChar(part.charAt(j));
         }
 
-        @Override public Void process(StringTemplate template) throws RuntimeException {
-
-            for (var i = 0; i < template.fragments().size(); i++) {
-                writePart(template.fragments().get(i));
-
-                if (i != template.fragments().size() - 1) {
-                    var value = template.values().get(i);
-
-                    if (value instanceof WriteNext next) {
-                        var oldOffset = offset;
-                        offset = currentColumn;
-                        next.write(this);
-                        offset = oldOffset;
-                    } else
-                        writePart(value.toString());
-                }
+        public Void w(Object... fragments) throws RuntimeException {
+            for (var value : fragments) {
+                if (value instanceof WriteNext next) {
+                    var oldOffset = offset;
+                    offset = currentColumn;
+                    next.write(this);
+                    offset = oldOffset;
+                } else
+                    writePart(value.toString());
             }
 
             return null;
@@ -135,7 +130,7 @@ public class StatementGenerator {
             && to.toField() instanceof ListOfGroupField agg
         ) {
             DtoGenerator.generate(out, agg);
-            var _ = out."\n";
+            out.w("\n");
         }
 
         var updateCountType = query instanceof BatchedQuery ? "long[]" : "Long";
@@ -150,34 +145,34 @@ public class StatementGenerator {
             if (!withUpdateCount) return toCollectionType.get();
 
             return fetchAs instanceof FetchStream
-                ? STR."UpdateResultStream<\{updateCountType}, \{boxed}>"
-                : STR."UpdateResult<\{updateCountType}, \{toCollectionType.get()}>";
+                ? "UpdateResultStream<" + updateCountType + ", " + boxed + ">"
+                : "UpdateResult<" + updateCountType + ", " + toCollectionType.get() + ">";
         };
 
         // FIXME: remove duplication with AnnotationProcessor
         var methodName = switch (fetchAs) {
-            case FetchNone _ -> "fetchNone";
-            case FetchList _ -> "fetchList";
-            case FetchOne _ -> "fetchOne";
-            case FetchOneOrZero _ -> "fetchOneOrZero";
-            case FetchStream _ -> "fetchStream";
+            case FetchNone __ -> "fetchNone";
+            case FetchList __ -> "fetchList";
+            case FetchOne __ -> "fetchOne";
+            case FetchOneOrZero __ -> "fetchOneOrZero";
+            case FetchStream __ -> "fetchStream";
         };
 
         var resultType = switch (fetchAs) {
-            case FetchNone _ -> wrapTypeWithUpdateCount.apply(null, "Void");
+            case FetchNone __ -> wrapTypeWithUpdateCount.apply(null, "Void");
             case FetchTo to -> {
                 var toSourceCodeType = switch (to.toField()) {
-                    case ScalarField sf ->
-                        classNameToSourceCodeType(sf.binding().className());
+                    case ScalarField sf -> classNameToSourceCodeType(sf.binding().className());
                     case ListOfGroupField lgf -> lgf.newJavaClassName();
                     case ListOfScalarField lsf ->
                         throw new RuntimeException("unreachable. refactor this code");
                 };
 
                 var wrapWith = switch (to) {
-                    case FetchOne _, FetchOneOrZero _ -> null;
-                    case FetchList _ -> "List";
-                    case FetchStream _ -> "Stream";
+                    case FetchOne __ -> null;
+                    case FetchOneOrZero __ -> null;
+                    case FetchList __ -> "List";
+                    case FetchStream __ -> "Stream";
                 };
                 yield wrapTypeWithUpdateCount.apply(wrapWith, toSourceCodeType);
             }
@@ -197,52 +192,52 @@ public class StatementGenerator {
                     .filter(p -> p instanceof InvocationsFinder.InParameter).toList();
 
                 var tpList = Out.each(
-                    simpleParameters, ", ", (o, i, _) ->
-                        o."P\{i + 1}, E\{i + 1} extends Exception"
+                    simpleParameters, ", ", (o, i, __) ->
+                        o.w("P", i + 1, ", E", i + 1, " extends Exception")
                 );
 
-                typeParameters = o -> o."<B, \{tpList}>";
+                typeParameters = o -> o.w("<B, ", tpList, ">");
 
                 throwsClause = o -> {
                     var body = Out.each(
-                        simpleParameters, ", ", (oo, i, _) -> oo."E\{i + 1}"
+                        simpleParameters, ", ", (oo, i, __) -> oo.w("E", i + 1)
                     );
-                    return o."throws \{body}";
+                    return o.w("throws ", body);
                 };
 
-                var eachParameterDecl = Out.each(simpleParameters, ", ", (o, i, _) ->
-                    o."""
-                        Function<B, P\{i + 1}> pe\{i + 1},
-                        TypeReadWrite<P\{i + 1}> prw\{i + 1}"""
+                var eachParameterDecl = Out.each(simpleParameters, ", ", (o, i, __) ->
+                    o.w(
+                        "Function<B, P", i + 1, "> pe", i + 1, ",\n",
+                        "TypeReadWrite<P", i + 1, "> prw", i + 1
+                    )
                 );
 
-                parametersCode = o -> o."""
-                    List<B> batch,
-                    \{eachParameterDecl},""";
+                parametersCode = o -> o.w(
+                    "List<B> batch,\n",
+                    eachParameterDecl, ","
+                );
 
-                var queryAgg = Out.each(bp.parts, "", (o, _, p) ->
-                    p instanceof InvocationsFinder.TextPart tp ? o."\{tp.text()}" : o."?"
+                var queryAgg = Out.each(bp.parts, "", (o, __, p) ->
+                    p instanceof InvocationsFinder.TextPart tp ? o.w(tp.text()) : o.w("?")
                 );
 
                 // FIXME: check escaping
-                queryText = o -> o."""
-                    var query = ""\"
-                        \{queryAgg}
-                        ""\";
-                    """;
+                queryText = o -> o.w("var query = \"\"\"\n", queryAgg, "\"\"\"");
 
                 var eachSetParameter = Out.each(
-                    simpleParameters, "\n", (o, i, p) -> o."""
-                        var p\{i + 1} = pe\{i + 1}.apply(element);
-                        prw\{i + 1}.set(stmt, \{i + 1}, p\{i + 1});"""
+                    simpleParameters, "\n", (o, i, __) -> o.w(
+                        "var p", i + 1, " = pe", i + 1, ".apply(element);\n",
+                        "prw", i + 1, ".set(stmt, ", i + 1, ", p", i + 1, ");\n"
+                    )
                 );
-                setParameters = o -> o."""
-                    for (var element : batch) {
-                        \{eachSetParameter}
-                        stmt.addBatch();
-                    }""";
+                setParameters = o -> o.w(
+                    "for (var element : batch) {\n",
+                    "    ", eachSetParameter, "\n",
+                    "    stmt.addBatch();\n",
+                    "}"
+                );
 
-                execute = o -> o."var updateCount = stmt.executeLargeBatch();";
+                execute = o -> o.w("var updateCount = stmt.executeLargeBatch();");
                 updateCount = "updateCount";
             }
             case SingleQuery sp -> {
@@ -251,132 +246,137 @@ public class StatementGenerator {
 
                 var eachTypeParameter = Out.each(
                     nonTextParts, ", ", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart _ ->
+                        case InvocationsFinder.TextPart __ ->
                             throw new IllegalStateException("unreachable");
-                        case InvocationsFinder.InParameter _,
-                             InvocationsFinder.InoutParameter _,
-                             InvocationsFinder.OutParameter _ -> o."P\{i + 1}";
+                        case InvocationsFinder.SingleParameter __ -> o.w("P", i + 1);
                         case InvocationsFinder.UnfoldParameter up -> {
                             var n = unfoldArgumentsCount(up.extractor());
 
-                            if (up.extractor() == null) yield o."P\{i + 1}";
+                            if (up.extractor() == null) yield o.w("P", i + 1);
 
                             var elements = Out.each(
                                 IntStream.range(0, n).boxed().toList(),
-                                ", ", (oo, j, _) -> oo."P\{i + 1}E\{j + 1}"
+                                ", ", (oo, j, __) -> oo.w("P", i + 1, "E", j + 1)
                             );
-                            yield o."P\{i + 1}, \{elements}";
+                            yield o.w("P", i + 1, ", ", elements);
                         }
                     }
                 );
 
-                typeParameters = nonTextParts.isEmpty() ? o -> o."" : o -> o."<\{eachTypeParameter}>";
+                typeParameters = nonTextParts.isEmpty()
+                    ? o -> o.w("") : o -> o.w("<", eachTypeParameter, ">");
 
                 var eachParameter = Out.each(
                     nonTextParts, ",\n", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart _ ->
+                        case InvocationsFinder.TextPart __ ->
                             throw new IllegalStateException("unreachable");
-                        case InvocationsFinder.InParameter _,
-                             InvocationsFinder.InoutParameter _ -> o."""
-                            P\{i + 1} p\{i + 1},
-                            TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
-                        case InvocationsFinder.OutParameter _ -> o."""
-                            TypeReadWrite<P\{i + 1}> prw\{i + 1}""";
+                        case InvocationsFinder.InOrInoutParameter __ -> o.w(
+                            "P", i + 1, " p", i + 1, " ,\n",
+                            "TypeReadWrite<P", i + 1, "> prw", i + 1
+                        );
+                        case InvocationsFinder.OutParameter __ ->
+                            o.w("TypeReadWrite<P", i + 1, "> prw", i + 1);
                         case InvocationsFinder.UnfoldParameter up -> {
                             var n = unfoldArgumentsCount(up.extractor());
-                            if (up.extractor() == null) yield o."""
-                                List<P\{i + 1}> p\{i + 1},
-                                TypeReadWrite<P\{i + 1}> prw\{i + 1}e1""";
+                            if (up.extractor() == null) yield o.w(
+                                "List<P", i + 1, "> p", i + 1, ",\n",
+                                "TypeReadWrite<P", i + 1, "> prw", i + 1, "e1"
+                            );
 
                             var extractorsAndRw = Out.each(
                                 IntStream.range(0, n).boxed().toList(),
-                                ",\n", (oo, j, _) -> oo."""
-                                    Function<P\{i + 1}, P\{i + 1}E\{j + 1}> p\{i + 1}e\{j + 1},
-                                    TypeReadWrite<P\{i + 1}E\{j + 1}> prw\{i + 1}e\{j + 1}"""
+                                ",\n", (oo, j, __) -> oo.w(
+                                    "Function<P", i + 1, ", P", i + 1, "E", j + 1, "> p", i + 1, "e", j + 1, ",\n",
+                                    "TypeReadWrite<P", i + 1, "E", j + 1, "> prw", i + 1, "e", j + 1
+                                )
                             );
 
-                            yield o."""
-                                List<P\{i + 1}> p\{i + 1},
-                                \{extractorsAndRw}""";
+                            yield o.w(
+                                "List<P", i + 1, "> p", i + 1, ",\n",
+                                extractorsAndRw
+                            );
                         }
                     }
                 );
 
-                parametersCode = nonTextParts.isEmpty() ? o -> o."" : o -> o."\{eachParameter},";
+                parametersCode = nonTextParts.isEmpty()
+                    ? o -> o.w("") : o -> o.w(eachParameter, ",");
 
                 throwsClause = o -> null;
                 queryText = o -> {
                     var pIndex = new int[]{1};
 
                     var generator = Out.each(
-                        sp.parts, "\n", (oo, _, p) -> switch (p) {
-                            case InvocationsFinder.TextPart t -> oo."""
-                                buffer.append(""\"
-                                    \{t.text()}""\");""";
-                            case InvocationsFinder.InParameter _,
-                                 InvocationsFinder.InoutParameter _,
-                                 InvocationsFinder.OutParameter _ -> {
+                        sp.parts, "\n", (oo, __, p) -> switch (p) {
+                            case InvocationsFinder.TextPart t -> oo.w(
+                                "buffer.append(\"\"\"\n", t.text(), "\"\"\");"
+                            );
+                            case InvocationsFinder.SingleParameter ___ -> {
                                 pIndex[0]++;
-                                yield oo."buffer.append(\" ? \");";
+                                yield oo.w("buffer.append(\" ? \");");
                             }
                             case InvocationsFinder.UnfoldParameter up -> {
                                 var n = unfoldArgumentsCount(up.extractor());
                                 var unfolded = Out.each(
                                     IntStream.range(0, n).boxed().toList(),
-                                    ", ", (ooo, _, _) -> ooo."?"
+                                    ", ", (ooo, ___, ____) -> ooo.w("?")
                                 );
 
-                                yield oo."""
-                                    for (var i = 0; i < p\{pIndex[0]}.size(); i++) {
-                                        buffer.append(" (\{unfolded}) ");
-                                        if (i != p\{pIndex[0]++}.size() - 1)
-                                            buffer.append(", ");
-                                    }""";
+                                yield oo.w(
+                                    "for (var i = 0; i < p", pIndex[0], ".size(); i++) {\n",
+                                    "    buffer.append(\" (", unfolded, ") \");\n",
+                                    "    if (i != p", pIndex[0]++, ".size() - 1)\n",
+                                    "        buffer.append(\", \");\n",
+                                    "}"
+                                );
                             }
                         }
                     );
 
-                    return o."""
-                        var buffer = new StringBuilder();
-
-                        \{generator}
-
-                        var query = buffer.toString();
-                        """;
+                    return o.w(
+                        "var buffer = new StringBuilder();\n\n",
+                        generator, "\n\n",
+                        "var query = buffer.toString()"
+                    );
                 };
 
                 setParameters = o -> {
                     var setters = Out.each(
                         nonTextParts, "\n", (oo, i, p) -> switch (p) {
-                            case InvocationsFinder.TextPart _ ->
+                            case InvocationsFinder.TextPart __ ->
                                 throw new IllegalStateException("unreachable");
-                            case InvocationsFinder.InParameter _,
-                                 InvocationsFinder.InoutParameter _ ->
-                                oo."prw\{i + 1}.set(stmt, ++n, p\{i + 1});";
-                            case InvocationsFinder.OutParameter _ ->
-                                oo."prw\{i + 1}.registerOutParameter(stmt, ++n);";
+                            case InvocationsFinder.InOrInoutParameter __ ->
+                                oo.w("prw", i + 1, ".set(stmt, ++n, p", i + 1, ");");
+                            case InvocationsFinder.OutParameter __ ->
+                                oo.w("prw", i + 1, ".registerOutParameter(stmt, ++n);");
                             case InvocationsFinder.UnfoldParameter up -> {
                                 var n = unfoldArgumentsCount(up.extractor());
                                 var unfolded = Out.each(
                                     IntStream.range(0, n).boxed().toList(),
-                                    "\n", (ooo, j, _) -> ooo."""
-                                        prw\{i + 1}e\{j + 1}.set(stmt, ++n, \{up.extractor() == null ? "element" : STR."p\{i + 1}e\{j + 1}.apply(element)"});"""
+                                    "\n", (ooo, j, __) -> ooo.w(
+                                        "prw", i + 1, "e", j + 1, ".set(stmt, ++n, ",
+                                        up.extractor() == null
+                                            ? "element"
+                                            : "p" + (i + 1) + "e" + (j + 1) + ".apply(element)",
+                                        ");")
                                 );
-                                yield oo."""
-
-                                    for (var element : p\{i + 1}) {
-                                        \{unfolded}
-                                    }""";
+                                yield oo.w(
+                                    "\n",
+                                    "for (var element : p", i + 1, ") {\n",
+                                    "    ", unfolded, "\n",
+                                    "}"
+                                );
                             }
                         }
                     );
 
-                    return o."""
-                        var n = 0;
-                        \{setters}""";
+                    return o.w(
+                        "var n = 0;\n",
+                        setters
+                    );
                 };
 
-                execute = o -> o."stmt.execute();";
+                execute = o -> o.w("stmt.execute();");
                 updateCount = "stmt.getLargeUpdateCount()";
             }
         }
@@ -387,139 +387,142 @@ public class StatementGenerator {
         };
 
         var prepare = (WriteNext) o -> switch (prepareAs) {
-            case AsCall _ -> o."prepareCall(query)";
-            case AsDefault _ -> o."prepareStatement(query)";
+            case AsCall __ -> o.w("prepareCall(query)");
+            case AsDefault __ -> o.w("prepareStatement(query)");
             case AsGeneratedKeysColumnNames gk -> {
                 var names = Arrays.stream(gk.columnNames).map(
-                    cn -> STR."\"\{cn}\""
+                    cn -> "\"" + cn + "\""
                 ).collect(Collectors.joining(", "));
 
-                yield o."prepareStatement(query, new String[] { \{names} })";
+                yield o.w("prepareStatement(query, new String[] { ", names, " })");
 
             }
             case AsGeneratedKeysIndices gk -> {
                 var indexes = Arrays.stream(gk.columnIndexes)
                     .mapToObj(String::valueOf)
                     .collect(Collectors.joining(", "));
-                yield o."prepareStatement(query, new int[] { \{indexes} })";
+                yield o.w("prepareStatement(query, new int[] { ", indexes, " })");
             }
         };
 
         // Generate DTO (recursive version)
         // Fetch single, Fetch from out parameters
         var getResultSet = (WriteNext) o -> switch (prepareAs) {
-            case AsCall _ -> null;
-            case AsDefault _ -> o."var rs = stmt.getResultSet();";
-            case AsGeneratedKeysColumnNames _,
-                 AsGeneratedKeysIndices _ -> o."var rs = stmt.getGeneratedKeys();";
+            case AsCall __ -> null;
+            case AsDefault __ -> o.w("var rs = stmt.getResultSet();");
+            case AsGeneratedKeys __ -> o.w("var rs = stmt.getGeneratedKeys();");
         };
 
         var wrapResultWithUpdateCount = (Function<String, String>) result -> {
             var wrapper = fetchAs instanceof FetchStream ? "UpdateResultStream" : "UpdateResult";
-            return withUpdateCount ? STR."new \{wrapper}<>(\{updateCount}, \{result})" : result;
+            return withUpdateCount
+                ? "new " + wrapper + "<>(" + updateCount + ", " + result + ")" : result;
         };
 
         var doFetch = (WriteNext) o -> switch (fetchAs) {
-            case FetchNone _ -> withUpdateCount
-                ? o."return \{updateCount};"
-                : o."return null;";
+            case FetchNone __ -> withUpdateCount
+                ? o.w("return ", updateCount, ";")
+                : o.w("return null;");
             case FetchTo to -> {
                 MapperGenerator.generate(
                     o, to.toField(), prepareAs instanceof AsCall ac ? ac.outParametersIndexes : null, typeToRwClass
                 );
 
                 yield switch (to) {
-                    case FetchList _ -> o."""
-                        return \{wrapResultWithUpdateCount.apply("mapped.toList()")};""";
-                    case FetchOne _ -> prepareAs instanceof AsCall ?
-                        o."""
-                            return \{wrapResultWithUpdateCount.apply("mapped")};
-                            """
-                        : o."""
-                        var iterator = mapped.iterator();
-                        if (iterator.hasNext()) {
-                            var result = iterator.next();
-                            if (iterator.hasNext())
-                                throw new TooMuchRowsException();
-
-                            return \{wrapResultWithUpdateCount.apply("result")};
-                        } else
-                            throw new TooFewRowsException();
-                        """;
-                    case FetchOneOrZero _ -> o."""
-                        var iterator = mapped.iterator();
-                        if (iterator.hasNext()) {
-                            var result = iterator.next();
-                            if (iterator.hasNext())
-                                throw new TooMuchRowsException();
-                            return \{wrapResultWithUpdateCount.apply("result")};
-                        }
-
-                        return \{wrapResultWithUpdateCount.apply("null")};""";
-                    case FetchStream _ -> o."""
-                        return \{wrapResultWithUpdateCount.apply("mapped")};""";
+                    case FetchList __ ->
+                        o.w("return ", wrapResultWithUpdateCount.apply("mapped.toList()"), ";");
+                    case FetchOne __ -> prepareAs instanceof AsCall ?
+                        o.w("return ", wrapResultWithUpdateCount.apply("mapped"), ";\n") :
+                        o.w(
+                            "var iterator = mapped.iterator();\n",
+                            "if (iterator.hasNext()) {\n",
+                            "    var result = iterator.next();\n",
+                            "    if (iterator.hasNext())\n",
+                            "        throw new TooMuchRowsException();\n",
+                            "\n",
+                            "    return ", wrapResultWithUpdateCount.apply("result"), ";\n",
+                            "} else\n",
+                            "    throw new TooFewRowsException();\n"
+                        );
+                    case FetchOneOrZero __ -> o.w(
+                        "var iterator = mapped.iterator();\n",
+                        "if (iterator.hasNext()) {\n",
+                        "    var result = iterator.next();\n",
+                        "    if (iterator.hasNext())\n",
+                        "        throw new TooMuchRowsException();\n",
+                        "    return ", wrapResultWithUpdateCount.apply("result"), ";\n",
+                        "}\n",
+                        "\n",
+                        "return ", wrapResultWithUpdateCount.apply("null"), ";"
+                    );
+                    case FetchStream __ ->
+                        o.w("return ", wrapResultWithUpdateCount.apply("mapped"), ";");
                 };
             }
         };
 
-        var doWithPrepared = (WriteNext) o -> o."""
-             \{setParameters}
-
-             \{execute}
-
-             \{getResultSet}
-
-             \{doFetch}""";
+        var doWithPrepared = (WriteNext) o -> o.w(
+            setParameters, "\n",
+            "\n",
+            execute, "\n",
+            "\n",
+            getResultSet, "\n",
+            "\n",
+            doFetch
+        );
 
         var acquireStatement = (WriteNext) o ->
-            fetchAs instanceof FetchStream
-                ? o."""
-                var stmt = connection.\{prepare};
-                try {
-
-                   \{doWithPrepared}
-
-                } catch (Exception e) {
-                    try {
-                        stmt.close();
-                    } catch (Exception e2) {
-                        e.addSuppressed(e2);
-                    }
-                    throw e;
-                }"""
-                : o."""
-                try (var stmt = connection.\{prepare}) {
-
-                    \{doWithPrepared}
-
-                }""";
+            fetchAs instanceof FetchStream ?
+                o.w(
+                    "var stmt = connection.", prepare, ";\n",
+                    "try {\n",
+                    "\n",
+                    "    ", doWithPrepared, "\n",
+                    "\n",
+                    "} catch (Exception e) {\n",
+                    "    try {\n",
+                    "        stmt.close();\n",
+                    "    } catch (Exception e2) {\n",
+                    "        e.addSuppressed(e2);\n",
+                    "    }\n",
+                    "    throw e;\n",
+                    "}"
+                ) :
+                o.w(
+                    "try (var stmt = connection.", prepare, ") {\n",
+                    "\n",
+                    "    ", doWithPrepared, "\n",
+                    "}"
+                );
 
         var doWithSource = (WriteNext) o -> switch (source) {
-            case DATASOURCE -> o."""
-                try (var connection = source.w.getConnection()) {
-                    \{acquireStatement}
-                } catch (SQLException e) {
-                    throw source.mapException(e);
-                }""";
-            case CONNECTION -> o."""
-                try {
-                    var connection = source.w;
-                    \{acquireStatement}
-                } catch (SQLException e) {
-                    throw source.mapException(e);
-                }""";
+            case DATASOURCE -> o.w(
+                "try (var connection = source.w.getConnection()) {\n",
+                "    ", acquireStatement, "\n",
+                "} catch (SQLException e) {\n",
+                "    throw source.mapException(e);\n",
+                "}"
+            );
+            case CONNECTION -> o.w(
+                "try {\n",
+                "    var connection = source.w;\n",
+                "    ", acquireStatement, "\n",
+                "} catch (SQLException e) {\n",
+                "    throw source.mapException(e);\n",
+                "}"
+            );
         };
 
-        var _ = out."""
-            public static \{typeParameters}
-            \{resultType} \{methodName}__line\{lineNumber}__(
-                \{parametersCode}
-                \{from}
-            ) \{throwsClause} {
-                \{queryText}
-                \{doWithSource}
-            }
-            """;
+        out.w(
+            "public static ", typeParameters, "\n",
+            resultType, " ", methodName, "__line", lineNumber, "__(\n",
+            "    ", parametersCode, "\n",
+            "    ", from, "\n",
+            ") ", throwsClause, " {\n",
+            "    ", queryText, ";\n",
+            "    ", doWithSource, "\n",
+            "}\n"
+        );
 
         return out.buffer.toString();
     }

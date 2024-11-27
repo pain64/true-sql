@@ -105,7 +105,7 @@ public class ExistingDtoParser {
                             // Scalar: Aggregatable - то что биндится напрямую
                             // Dto: Aggregatable - одно или несколько полей
                             // Aggregation: (name, List<Aggregatable>)
-                            case ListOfScalarField _ -> throw new ParseException("forbidden List<Lust<...");
+                            case ListOfScalarField __ -> throw new ParseException("forbidden List<Lust<...");
                             case ListOfGroupField lgf -> (Field) lgf;
                             case ScalarField sf -> (Field) new ListOfScalarField(
                                 sf.name(), sf.nullMode(), sf.binding()

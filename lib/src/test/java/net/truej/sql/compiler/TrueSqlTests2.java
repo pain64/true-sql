@@ -155,13 +155,13 @@ public class TrueSqlTests2 implements
 
         try {
             var uri = new URI(
-                STR."file://\{System.getProperty("user.dir")}/src/test/java/" +
+                "file://" + System.getProperty("user.dir") + "/src/test/java/" +
                 className.replace(".", "/") + "_.java"
             );
 
             var code = Files.readString(
                 Paths.get(
-                    STR."\{System.getProperty("user.dir")}/src/test/java/\{classFile}.java"
+                    System.getProperty("user.dir") + "/src/test/java/" + classFile + ".java"
                 )
             );
 

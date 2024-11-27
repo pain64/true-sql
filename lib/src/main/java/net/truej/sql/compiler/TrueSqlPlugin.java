@@ -220,14 +220,14 @@ public class TrueSqlPlugin implements Plugin {
 
         for (var part : invocation.queryMode.parts())
             switch (part) {
-                case TextPart _ -> { }
+                case TextPart __ -> { }
                 case InOrInoutParameter p -> {
                     checkParameter.check(
                         pIndex,
                         p.expression().type,
                         switch (p) {
-                            case InParameter _ -> ParameterMode.IN;
-                            case InoutParameter _ -> ParameterMode.INOUT;
+                            case InParameter __ -> ParameterMode.IN;
+                            case InoutParameter __ -> ParameterMode.INOUT;
                         }
                     );
                     pIndex++;
@@ -353,11 +353,13 @@ public class TrueSqlPlugin implements Plugin {
                             tree.args = tree.args.append(extractor);
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
                             break;
-                        case TextPart _:
+                        case TextPart __:
                             break;
-                        case InoutParameter _,
-                             OutParameter _,
-                             UnfoldParameter _:
+                        case InoutParameter __:
+                            throw new RuntimeException("unreachable");
+                        case OutParameter __:
+                            throw new RuntimeException("unreachable");
+                        case UnfoldParameter __:
                             throw new RuntimeException("unreachable");
                     }
                 break;
@@ -409,7 +411,7 @@ public class TrueSqlPlugin implements Plugin {
                                 }
 
                             break;
-                        case TextPart _:
+                        case TextPart __:
                             break;
                     }
                 break;

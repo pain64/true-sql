@@ -42,13 +42,14 @@ import static net.truej.sql.compiler.DatabaseNames.*;
 public class InvocationsFinder {
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
-    sealed interface InOrInoutParameter extends QueryPart {
+    sealed interface SingleParameter extends QueryPart {}
+    sealed interface InOrInoutParameter extends SingleParameter {
         JCTree.JCExpression expression();
     }
 
     public record InParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
     public record InoutParameter(JCTree.JCExpression expression) implements InOrInoutParameter { }
-    public record OutParameter(Type toType) implements QueryPart { }
+    public record OutParameter(Type toType) implements SingleParameter { }
     public record UnfoldParameter(
         JCTree.JCExpression expression, @Nullable JCTree.JCLambda extractor
     ) implements QueryPart { }
@@ -316,7 +317,7 @@ public class InvocationsFinder {
                                         realCatalog = "";
                                     }
 
-                                    var _ = findConstraint.apply(
+                                    var __ = findConstraint.apply(
                                         defaultQuery, List.of(
                                             realCatalog, realSchema,
                                             tableName, constraintName
@@ -346,7 +347,7 @@ public class InvocationsFinder {
                                     if (onDatabase.equals(ORACLE_DB_NAME))
                                         realCatalog = ""; // unused
 
-                                    var _ = findConstraint.apply(
+                                    var __ = findConstraint.apply(
                                         defaultQuery, List.of(
                                             realCatalog, schemaName,
                                             tableName, constraintName
@@ -372,7 +373,7 @@ public class InvocationsFinder {
                                     l4.getValue() instanceof String constraintName
                                 ) {
                                     // TODO: not supported in oracle
-                                    var _ = findConstraint.apply(
+                                    var __ = findConstraint.apply(
                                         defaultQuery, List.of(
                                             catalogName, schemaName, tableName, constraintName
                                         )
@@ -621,14 +622,12 @@ public class InvocationsFinder {
                     if (parsedConfig.url() != null) {
                         var query = queryMode.parts().stream()
                             .map(p -> switch (p) {
-                                case InoutParameter _,
-                                     OutParameter _,
-                                     InParameter _ -> "?";
+                                case SingleParameter __ -> "?";
                                 case TextPart tp -> tp.text;
                                 case UnfoldParameter u -> {
                                     var n = unfoldArgumentsCount(u.extractor);
                                     yield IntStream.range(0, n)
-                                        .mapToObj(_ -> "?")
+                                        .mapToObj(__ -> "?")
                                         .collect(Collectors.joining(
                                             ", ", "(", ")"
                                         ));
@@ -641,9 +640,9 @@ public class InvocationsFinder {
                                 parsedConfig.url(), parsedConfig.username(), parsedConfig.password()
                             );
                             var stmt = switch (statementMode) {
-                                case StatementGenerator.AsDefault _ ->
+                                case StatementGenerator.AsDefault __ ->
                                     connection.prepareStatement(query);
-                                case StatementGenerator.AsCall _ -> connection.prepareCall(query);
+                                case StatementGenerator.AsCall __ -> connection.prepareCall(query);
                                 case AsGeneratedKeysIndices gk -> connection.prepareStatement(
                                     query, gk.columnIndexes()
                                 );
@@ -693,9 +692,7 @@ public class InvocationsFinder {
                             final List<GLangParser.ColumnMetadata> columns;
 
                             switch (statementMode) {
-                                case StatementGenerator.AsDefault _,
-                                     AsGeneratedKeysColumnNames _,
-                                     AsGeneratedKeysIndices _ -> {
+                                case StatementGenerator.StatementLike __ -> {
 
                                     var makeColumns = (Function<ResultSetMetaData, List<GLangParser.ColumnMetadata>>) rMetadata -> {
                                         if (rMetadata == null) return List.of();
@@ -804,7 +801,7 @@ public class InvocationsFinder {
                                         columns = makeColumns.apply(stmt.getMetaData());
                                 }
 
-                                case StatementGenerator.AsCall _ -> {
+                                case StatementGenerator.AsCall __ -> {
                                     // FIXME: проверка call и unfold одновременно? ???
                                     // FIXME: проверка batch и unfold одновременно? ???
                                     var pMetadata = stmt.getParameterMetaData();
@@ -1004,7 +1001,7 @@ public class InvocationsFinder {
 
                                 yield parsed;
                             }
-                            case GenerateDto _ -> throw new ValidationException(
+                            case GenerateDto __ -> throw new ValidationException(
                                 tree, "compile time checks must be enabled for .g"
                             );
                         };
