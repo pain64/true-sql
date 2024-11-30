@@ -28,10 +28,10 @@ public class ConfigurationParser {
     ) { }
 
     public static @Nullable String findProperty(ProcessingEnvironment env, String propertyName) {
-        var prop = env.getOptions().get(propertyName);
-        if (prop != null) return prop;
+//        var prop = env.getOptions().get(propertyName);
+//        if (prop != null) return prop;
 
-        prop = System.getProperty(propertyName);
+        var prop = System.getProperty(propertyName);
         if (prop != null) return prop;
 
         prop = System.getenv(propertyName);

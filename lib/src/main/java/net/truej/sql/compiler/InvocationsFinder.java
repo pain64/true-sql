@@ -1,6 +1,5 @@
 package net.truej.sql.compiler;
 
-import com.sun.tools.javac.api.Messages;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -323,13 +322,6 @@ public class InvocationsFinder {
                                             tableName, constraintName
                                         )
                                     );
-
-                                    tree.args = com.sun.tools.javac.util.List.<JCTree.JCExpression>of(
-                                            maker.Literal(realCatalog)
-                                        )
-                                        .append(maker.Literal(realSchema))
-                                        .appendList(tree.args);
-
                                 } else
                                     throw new RuntimeException("bad tree");
                                 break;
@@ -353,13 +345,8 @@ public class InvocationsFinder {
                                             tableName, constraintName
                                         )
                                     );
-
-                                    tree.args = com.sun.tools.javac.util.List.<JCTree.JCExpression>of(
-                                            maker.Literal(realCatalog)
-                                        )
-                                        .appendList(tree.args);
-
-                                } else throw new RuntimeException("bad tree");
+                                } else
+                                    throw new RuntimeException("bad tree");
                                 break;
                             default:  // 5 - catalogName + schemaName + tableName + constraintName
                                 if (
@@ -618,7 +605,7 @@ public class InvocationsFinder {
                     final List<SqlParameterMetadata> parametersMetadata;
                     final String onDatabase;
 
-                    // TODO: MetadataFetcher returns parameterMetadata & columnMetadata
+                    // TODO: MetadataParser returns parameterMetadata & columnMetadata
                     if (parsedConfig.url() != null) {
                         var query = queryMode.parts().stream()
                             .map(p -> switch (p) {
@@ -708,6 +695,7 @@ public class InvocationsFinder {
                                             try {
                                                 return switch (onDatabase) {
                                                     case POSTGRESQL_DB_NAME ->
+                                                        // FIXME: cast to PGResultSetMetaData ???
                                                         (String) mt.getClass().getMethod("getBaseColumnName", int.class)
                                                             .invoke(mt, i);
                                                     case HSQL_DB_NAME -> {
@@ -829,10 +817,8 @@ public class InvocationsFinder {
                                                             NullMode.EXACTLY_NOT_NULL;
                                                         case parameterNullable ->
                                                             NullMode.EXACTLY_NULLABLE;
-                                                        case parameterNullableUnknown ->
+                                                        default -> // parameterNullableUnknown
                                                             NullMode.DEFAULT_NOT_NULL;
-                                                        default ->
-                                                            throw new IllegalStateException("unreachable");
                                                     },
                                                     pMetadata.getParameterType(i),
                                                     pMetadata.getParameterTypeName(i),
@@ -991,6 +977,8 @@ public class InvocationsFinder {
                                         .filter(i -> !(parameters.get(i) instanceof InParameter))
                                         .map(i -> i + 1)
                                         .toArray();
+
+                                    // FIXME: check out / inout parameter too ???
 
                                     if (outParameterIndexes.length != dtoFields.size())
                                         throw new ValidationException(
