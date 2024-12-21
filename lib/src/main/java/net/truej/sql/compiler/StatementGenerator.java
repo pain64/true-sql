@@ -31,7 +31,7 @@ public class StatementGenerator {
     public sealed interface StatementMode { }
     public sealed interface StatementLike extends StatementMode { }
     public record AsDefault() implements StatementLike { }
-    public record AsCall(int[] outParametersIndexes) implements StatementMode { }
+    public record AsCall() implements StatementMode { }
     public sealed interface AsGeneratedKeys extends StatementLike { }
     public record AsGeneratedKeysIndices(int... columnIndexes) implements AsGeneratedKeys { }
     public record AsGeneratedKeysColumnNames(String... columnNames) implements AsGeneratedKeys { }
@@ -425,7 +425,8 @@ public class StatementGenerator {
                 : o.w("return null;");
             case FetchTo to -> {
                 MapperGenerator.generate(
-                    o, to.toField(), prepareAs instanceof AsCall ac ? ac.outParametersIndexes : null, typeToRwClass
+                    o, to.toField(), prepareAs instanceof AsCall ?
+                        InvocationsFinder.getOutParametersNumbers(query) : null, typeToRwClass
                 );
 
                 yield switch (to) {

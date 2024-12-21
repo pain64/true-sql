@@ -256,7 +256,7 @@ class TypeChecker {
                     case EXACTLY_NOT_NULL:
                         handler.onMismatch(true, sqlNullMode, javaNullMode);
                         break;
-                }
+                } 
                 break;
             case DEFAULT_NOT_NULL:
                 switch (sqlNullMode) {

@@ -38,6 +38,7 @@ public record TestDataSource(
         try (
             var connection = DriverManager.getConnection(jdbcUrl, username, password)
         ) {
+
             var sql = new String(
                 TestDataSource.class.getResourceAsStream(
                     "/schema/" + databaseName + ".create.sql"

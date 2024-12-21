@@ -114,16 +114,11 @@ public class TrueSqlPlugin implements Plugin {
         String generatedClassName, String fetchMethodName, int lineNumber,
         java.util.List<CompilationWarning> warnings,
         JCTree.JCIdent sourceExpression, QueryMode queryMode,
-        @Nullable java.util.List<SqlParameterMetadata> parametersMetadata,
+        @Nullable java.util.List<JdbcMetadataFetcher.SqlParameterMetadata> parametersMetadata,
         String generatedCode
     ) implements MethodInvocationResult { }
 
     enum ParameterMode {IN, INOUT, OUT, UNKNOWN}
-
-    public record SqlParameterMetadata(
-        String javaClassName, String sqlTypeName, int sqlType, int scale, ParameterMode mode,
-        int nullMode
-    ) { }
 
     @Override public String getName() { return NAME; }
 
@@ -185,14 +180,14 @@ public class TrueSqlPlugin implements Plugin {
             var pMetadata = invocation.parametersMetadata.get(pIndex);
 
             // FIXME: reverse expected & has
-            if (pMetadata.mode != javaParameterMode)
+            if (pMetadata.mode() != javaParameterMode)
                 throw new ValidationException(
                     tree, "for parameter " + (pIndex + 1) + " expected mode " +
-                          javaParameterMode + " but has " + pMetadata.mode
+                          javaParameterMode + " but has " + pMetadata.mode()
                 );
 
             if (javaParameterType == symtab.botType) {
-                if (pMetadata.nullMode == ParameterMetaData.parameterNoNulls)
+                if (pMetadata.nullMode() == GLangParser.NullMode.EXACTLY_NOT_NULL)
                     // FIXME: warning ???
                     throw new ValidationException(
                         tree, "for parameter " + (pIndex + 1) + " expected not-null values " +
@@ -205,8 +200,8 @@ public class TrueSqlPlugin implements Plugin {
 
                 TypeChecker.assertTypesCompatible(
                     invocation.onDatabase,
-                    pMetadata.sqlType, pMetadata.sqlTypeName, pMetadata.javaClassName,
-                    pMetadata.scale, binding,
+                    pMetadata.sqlType(), pMetadata.sqlTypeName(), pMetadata.javaClassName(),
+                    pMetadata.scale(), binding,
                     (typeKind, expected, has) -> new ValidationException(
                         // FIXME: разобраться с именами expected и has
                         tree, typeKind + " mismatch for parameter " + (pIndex + 1) +

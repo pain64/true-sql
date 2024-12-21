@@ -209,14 +209,14 @@ public class MapperGenerator {
 
     public static void generate(
         Out out, Field toType,
-        int[] outParametersIndexes,
+        int[] outParametersNumbers,
         Function<String, String> typeToRwClass
     ) {
 
-        var from = outParametersIndexes != null ? "stmt" : "rs"; // FIXME: rs vs t
+        var from = outParametersNumbers != null ? "stmt" : "rs"; // FIXME: rs vs t
 
         var getField = (BiFunction<ScalarField, Integer, String>) (t, i) -> {
-            var j = outParametersIndexes == null ? i : outParametersIndexes[i - 1];
+            var j = outParametersNumbers == null ? i : outParametersNumbers[i - 1];
             return "new " + typeToRwClass.apply(t.binding().className())
                    + "().get(" + from + "," + j + ")";
         };
@@ -287,7 +287,7 @@ public class MapperGenerator {
             }
         }
 
-        if (outParametersIndexes != null)
+        if (outParametersNumbers != null)
             out.w("var mapped = ", mapFields, ";");
         else
             out.w(

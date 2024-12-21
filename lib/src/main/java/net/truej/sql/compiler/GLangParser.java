@@ -1,7 +1,5 @@
 package net.truej.sql.compiler;
 
-import com.sun.tools.javac.code.Type;
-import net.truej.sql.bindings.Standard;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;

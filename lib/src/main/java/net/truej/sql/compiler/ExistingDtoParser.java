@@ -158,21 +158,6 @@ public class ExistingDtoParser {
         }
     }
 
-
-    //    public sealed interface EntryName { }
-//    public record ReturnValue() implements EntryName { }
-//    public record FieldName(String name) implements EntryName { }
-//    public record FlattenedDtoEntry(String name, ScalarField st) { }
-//
-//    private static List<FlattenedDtoEntry> flattenAggregatedType(GroupedType at) {
-//        return at.fields().stream().flatMap(f ->
-//            switch (f.type()) {
-//                case ScalarType t -> Stream.of(new FlattenedDtoEntry(f.name(), t));
-//                case GroupedType t -> flattenAggregatedType(t).stream();
-//            }
-//        ).toList();
-//    }
-
     public static List<ScalarField> flattenedDtoType(Field field) {
         return switch (field) {
             case ScalarField sf -> List.of(sf);

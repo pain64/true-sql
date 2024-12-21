@@ -92,7 +92,8 @@ public class TrueSqlTests2 implements
                 pgContainer.getPassword(),
                 "postgresql"
             )
-            , Database.MYSQL, new TestDataSource(
+            ,
+            Database.MYSQL, new TestDataSource(
                 mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
                 mysqlContainer.getUsername(),
                 mysqlContainer.getPassword(),
@@ -104,13 +105,15 @@ public class TrueSqlTests2 implements
                 mariaDbContainer.getPassword(),
                 "mysql"
             )
-            , Database.MSSQL, new TestDataSource(
+            ,
+            Database.MSSQL, new TestDataSource(
                 mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
                 mssqlContainer.getUsername(),
                 mssqlContainer.getPassword(),
                 "mssql"
             )
-            , Database.ORACLE, new TestDataSource(
+            ,
+            Database.ORACLE, new TestDataSource(
                 oracleContainer.getJdbcUrl(),
                 oracleContainer.getUsername(),
                 oracleContainer.getPassword(),

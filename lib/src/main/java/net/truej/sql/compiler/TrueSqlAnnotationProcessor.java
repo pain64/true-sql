@@ -5,9 +5,6 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -37,25 +34,9 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
     static final String GENERATED_CLASS_NAME_SUFFIX = "G";
 
-    @Override public synchronized void init(ProcessingEnvironment processingEnv) {
-
-        ServiceLoader.load(
-            Driver.class, TrueSqlAnnotationProcessor.class.getClassLoader()
-        ).forEach(driver -> {
-            try {
-                DriverManager.registerDriver(driver);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        super.init(processingEnv);
-    }
-
     @Override public boolean process(
         Set<? extends TypeElement> annotations, RoundEnvironment roundEnv
     ) {
-        System.out.println("annotation processor started!!!");
 
         var env = (JavacProcessingEnvironment) processingEnv;
         var context = env.getContext();
@@ -172,7 +153,6 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
                     out.write("}");
                 }
-                var zz = 1;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
