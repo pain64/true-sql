@@ -404,7 +404,7 @@ public class InvocationsFinder {
                         )
                             dtoMode = new GenerateDto(gid.name);
                         else
-                            return null; // TODO: check that .class literal
+                            throw new ValidationException(tree.args.head, "Expected %NewDtoClassName%.class");
 
                         f = fa;
                     } else {

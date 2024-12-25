@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
+import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
 import net.truej.sql.test.__05__GenerateDtoTrueSql.TypeTest;
@@ -20,7 +21,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
-@Disabled
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __10__DefaultTypesHSQLDB {
     record DataTypes(
@@ -28,20 +28,20 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNullable
     ) { }
 
-    @TestTemplate public void test(MainDataSource ds) {
-        ds.q("""
+    @TestTemplate public void test(MainConnection cn) {
+        cn.q("""
                 insert into all_default_data_types values(
                     ?, ?,
                     ?, ?
                 )
                 """,
             (byte) 8, (Byte) null,
-            OffsetTime.of(23, 59, 59, 0,ZoneOffset.ofHours(0)), null
+            OffsetTime.of(23, 59, 59, 0, ZoneOffset.ofHours(0)), null
         ).fetchNone();
 
 
         // FIXME: assert ???
-        ds.q("""
+        cn.q("""
             select
                 byte_type, byte_type_null,
                 time_offset_type, time_offset_type_null
@@ -53,22 +53,20 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
     @TestTemplate public void test2(MainDataSource ds) throws JsonProcessingException {
         Assertions.assertEquals(
-            "",
-            new ObjectMapper()
+            "null", new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .writerWithDefaultPrettyPrinter().writeValueAsString(
                     ds.q("""
-                select
-                    gg as "name",
-                    bool as " NewType en.bool",
-                    byte as "         en.byte",
-                    c as "         en.c",
-                    short as "         en.short",
-                    intt as "         en.intt",
-                    long as "         en.long",
-                    flo as "         en.flo",
-                    doub as "         en.doub"
-                from grouped_dto""").g.fetchOne(TypeTest.class)
+                        select
+                            gg    as "        name   ",
+                            bool  as "NewType   en.f1",
+                            byte  as "          en.f2",
+                            short as "          en.f3",
+                            intt  as "          en.f4",
+                            long  as "          en.f5",
+                            flo   as "          en.f6",
+                            doub  as "          en.f7"
+                        from grouped_dto""").g.fetchOneOrZero(TypeTest.class)
                 )
         );
     }

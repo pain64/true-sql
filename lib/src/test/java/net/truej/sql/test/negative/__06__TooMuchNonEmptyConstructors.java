@@ -14,7 +14,7 @@ import static javax.tools.Diagnostic.Kind.ERROR;
     kind = ERROR, text = "has more than one non-empty args constructor"
 )
 @TrueSql public class __06__TooMuchNonEmptyConstructors {
-    class User {
+    static class User {
         Long id;
         String name;
         @Nullable String info;

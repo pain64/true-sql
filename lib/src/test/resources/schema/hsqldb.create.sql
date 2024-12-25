@@ -67,7 +67,6 @@ create table grouped_dto(
     gg varchar(50) not null,
     bool boolean not null,
     byte tinyint not null,
-    c char not null,
     short smallint not null,
     intt int not null,
     long bigint not null,

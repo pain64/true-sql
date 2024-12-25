@@ -13,9 +13,9 @@ import java.util.function.Predicate;
 
 public class TypeFinder {
 
-    static RuntimeException badFormat() {
-        return new RuntimeException(
-            "expected Name.class or full.qualified.Name.class or array[].class"
+    static RuntimeException badFormat(JCTree tree) {
+        return new TrueSqlPlugin.ValidationException(
+            tree, "expected Name.class or full.qualified.Name.class or array[].class"
         );
     }
 
@@ -26,7 +26,7 @@ public class TypeFinder {
             return new Type.ArrayType(mapArrayOrScalarType(symtab, cu, at.elemtype), symtab.arrayClass);
         else {
             var found = find(symtab, cu, tree);
-            if (found == null) throw badFormat();
+            if (found == null) throw badFormat(tree);
             return found;
         }
     }
@@ -37,10 +37,10 @@ public class TypeFinder {
 
         if (tree instanceof JCTree.JCFieldAccess fa) {
             if (!fa.name.equals(names.fromString("class")))
-                throw badFormat();
+                throw badFormat(fa);
             return mapArrayOrScalarType(symtab, cu, fa.selected);
         } else
-            throw badFormat();
+            throw badFormat(tree);
     }
 
     public static @Nullable Type find(

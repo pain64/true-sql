@@ -37,6 +37,13 @@ public class ExistingDtoParser {
         if (!dtoType.tsym.getTypeParameters().isEmpty())
             throw new ParseException("To Dto class cannot be generic");
 
+        if (
+            !dtoType.isPrimitive() &&
+            dtoType.tsym instanceof Symbol.ClassSymbol cl &&
+            cl.isInner() && !cl.isStatic()
+        )
+            throw new ParseException("To Dto class must be static if inner");
+
         var binding = bindings.stream()
             .filter(b -> b.className().equals(typeToClassName(dtoType)))
             .findFirst().orElse(null);
@@ -93,25 +100,26 @@ public class ExistingDtoParser {
                                 initName,
                                 p.type.allparams().head
                             )
-                        ) {
+                            ) {
 
-                        // x
-                        // Y y.a
-                        //   y.b
-                        //   z.
-                        // x
-                        // yA
-                        // yB
+                            // x
+                            // Y y.a
+                            //   y.b
+                            //   z.
+                            // x
+                            // yA
+                            // yB
                             // Scalar: Aggregatable - то что биндится напрямую
                             // Dto: Aggregatable - одно или несколько полей
                             // Aggregation: (name, List<Aggregatable>)
-                            case ListOfScalarField __ -> throw new ParseException("forbidden List<Lust<...");
+                            case ListOfScalarField __ ->
+                                throw new ParseException("forbidden List<Lust<...");
                             case ListOfGroupField lgf -> (Field) lgf;
                             case ScalarField sf -> (Field) new ListOfScalarField(
                                 sf.name(), sf.nullMode(), sf.binding()
                             );
-                        } ;
-                    // FIXME: this logic is duplicated???
+                        };
+                        // FIXME: this logic is duplicated???
                     else if (
                         bindings.stream()
                             .anyMatch(b -> b.className().equals(className))
