@@ -16,19 +16,19 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Types;
 
 @Configuration(
-    checks = @CompileTimeChecks(
+    checks = @CompileTimeChecks( // NB: this values will be overriden in runtime for each database
         url = "jdbc:hsqldb:mem:db",
         username = "SA",
         password = ""
-//        url = "jdbc:postgresql://localhost:5432/uikit_sample",
-//        username = "uikit",
-//        password = "1234"
-        // create connection pool
     ),
     typeBindings = {
         @TypeBinding(
             compatibleSqlTypeName = "point",
             rw = PgPointRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlType = Types.VARCHAR,
+            rw = PgUserSexRW.class
         ),
         @TypeBinding(
             compatibleSqlTypeName = "enum_user_sex",

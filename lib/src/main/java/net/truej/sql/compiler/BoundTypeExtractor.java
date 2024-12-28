@@ -9,7 +9,8 @@ import java.util.function.Consumer;
 public class BoundTypeExtractor {
 
     private static Type.ClassType up(
-        Symbol.ClassSymbol typeReadWriteSymbol, HashMap<Symbol, Type> map, Symbol.ClassSymbol from) {
+        Symbol.ClassSymbol typeReadWriteSymbol, HashMap<Symbol, Type> map, Symbol.ClassSymbol from
+    ) {
 
         var saveTypeArguments = (Consumer<Type>) t -> {
             for (var i = 0; i < t.tsym.getTypeParameters().size(); i++) {
@@ -26,20 +27,18 @@ public class BoundTypeExtractor {
         if (from == typeReadWriteSymbol)
             return (Type.ClassType) map.get(from.getTypeParameters().getFirst());
         else {
-            for (var iface : from.getInterfaces()) {
+            for (var iface : from.getInterfaces())
                 if (iface instanceof Type.ClassType cl) {
                     saveTypeArguments.accept(iface);
                     var r = up(typeReadWriteSymbol, map, (Symbol.ClassSymbol) cl.tsym);
                     if (r != null) return r;
                 }
-            }
 
-            if (from.getSuperclass() instanceof Type.ClassType parent) {
-                saveTypeArguments.accept(parent);
-                return up(typeReadWriteSymbol, map, (Symbol.ClassSymbol) parent.tsym);
-            }
+            // We have grantee that we will find
+            var parent = (Type.ClassType) from.getSuperclass();
+            saveTypeArguments.accept(parent);
 
-            return null;
+            return up(typeReadWriteSymbol, map, (Symbol.ClassSymbol) parent.tsym);
         }
     }
 

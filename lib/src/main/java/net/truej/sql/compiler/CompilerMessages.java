@@ -26,7 +26,6 @@ public class CompilerMessages {
         JCTree.JCCompilationUnit cu, JCTree forTree,
         JCDiagnostic.DiagnosticType type, String message
     ) {
-
         javacLog.report(
             diagnosticsFactory.create(
                 new DiagnosticSource(cu.getSourceFile(), javacLog),

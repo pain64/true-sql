@@ -10,6 +10,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
 import java.lang.annotation.*;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -47,6 +48,17 @@ public class TrueSqlTests2 implements
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     public @interface Messages {
         Message[] value() default {};
+    }
+
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface ContainsOutput {
+        String value();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface Env {
+        String key();
+        String value();
     }
 
     private static final Map<Database, TestDataSource> instances;
@@ -156,6 +168,19 @@ public class TrueSqlTests2 implements
         var simpleClassName = factoryContext.getTestClass().getSimpleName();
         var classFile = className.replace(".", "/");
 
+        var mutableEnv = (Map<String, String>) null;
+        try {
+            var env = System.getenv();
+            var field = env.getClass().getDeclaredField("m");
+            field.setAccessible(true);
+            //noinspection unchecked
+            mutableEnv = (Map<String, String>) field.get(env);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        var envToSet = factoryContext.getTestClass().getAnnotation(Env.class);
+
         try {
             var uri = new URI(
                 "file://" + System.getProperty("user.dir") + "/src/test/java/" +
@@ -186,10 +211,18 @@ public class TrueSqlTests2 implements
                 )
                 .map(m -> new TestCompiler2.Message(m.kind(), m.text())).toList();
 
+            var containsOutput = factoryContext.getTestClass().getAnnotation(ContainsOutput.class);
+
             var expectCompilationError = expectedMessages
                 .stream().anyMatch(m -> m.kind() == Diagnostic.Kind.ERROR);
 
-            var compiled = TestCompiler2.compile(compilationUnits, expectedMessages);
+            if (envToSet != null)
+                mutableEnv.put(envToSet.key(), envToSet.value());
+
+            var compiled = TestCompiler2.compile(
+                compilationUnits, expectedMessages,
+                containsOutput == null ? null : containsOutput.value()
+            );
 
             var forDefine = expectCompilationError ?
                 TestCompiler2.compile(List.of( // empty test class stub
@@ -215,7 +248,7 @@ public class TrueSqlTests2 implements
                                 methods + "}";
                         }
                     }
-                ), List.of()) : compiled;
+                ), List.of(), null) : compiled;
 
             var theClass = new URLClassLoader(
                 new URL[]{}, this.getClass().getClassLoader()
@@ -226,12 +259,13 @@ public class TrueSqlTests2 implements
                 });
             }}.loadClass(className + "_");
 
-            var instance = theClass.newInstance();
-            return instance;
+            return theClass.newInstance();
 
         } catch (IOException | URISyntaxException | InstantiationException |
                  IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
+        } finally {
+            if(envToSet != null) mutableEnv.remove(envToSet.key());
         }
     }
 

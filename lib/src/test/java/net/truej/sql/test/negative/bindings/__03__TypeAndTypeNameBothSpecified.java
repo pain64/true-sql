@@ -17,7 +17,6 @@ import static javax.tools.Diagnostic.Kind.ERROR;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
 import static net.truej.sql.compiler.TrueSqlTests2.Message;
-import static net.truej.sql.fetch.Parameters.NotNull;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @Message(

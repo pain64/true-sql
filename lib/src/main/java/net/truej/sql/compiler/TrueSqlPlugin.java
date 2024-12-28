@@ -22,7 +22,6 @@ import net.truej.sql.fetch.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
-import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -14,6 +14,7 @@ import com.sun.tools.javac.tree.JCTree;
 
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
@@ -43,20 +44,22 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
         var symtab = Symtab.instance(context);
         var names = Names.instance(context);
         var elements = JavacElements.instance(context);
+        var javacLog = Log.instance(context);
+        var messages = new CompilerMessages(context);
 
         if (annotations.isEmpty()) return false;
 
-        if ("true".equals(ConfigurationParser.findProperty(env, "truesql.printConfig"))) {
-            System.out.println("TrueSql configuration:");
+        if ("true".equals(ConfigurationParser.findProperty("truesql.printConfig"))) {
+            javacLog.printRawLines("TrueSql configuration:");
 
             for (var element : roundEnv.getElementsAnnotatedWith(Configuration.class)) {
                 var found = elements.getTreeAndTopLevel(element, null, null);
-                var cu = found.snd;
-                ConfigurationParser.parseConfig(
-                    env, symtab, names, cu,
-                    ((Symbol.ClassSymbol) element).className(),
-                    element.getAnnotation(Configuration.class), true
-                );
+                try {
+                    ConfigurationParser.parseConfig(
+                        symtab, names, found.snd, (Symbol.ClassSymbol) element,
+                        (propName, propValue) -> javacLog.printRawLines("\t" + propName + "=" + propValue)
+                    );
+                } catch (ConfigurationParser.ParseException ignored) { }
             }
         }
 
@@ -69,7 +72,6 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             var tree = found.fst;
             var cu = found.snd;
             var elementSymbol = (Symbol.ClassSymbol) element;
-            var messages = new CompilerMessages(context);
             var maker = TreeMaker.instance(context);
 
             var pkgCompiler = (Symbol.PackageSymbol) clProcessed.owner;
@@ -103,7 +105,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
             var generatedClassFqn = elementSymbol.getQualifiedName() + GENERATED_CLASS_NAME_SUFFIX;
             var invocations = InvocationsFinder.find(
-                env, context, symtab, names, maker, messages, cu, tree, generatedClassFqn
+                symtab, names, messages, cu, tree, generatedClassFqn
             );
 
             cuInfo.put(cu, new LinkedHashMap<>() {{
@@ -111,48 +113,44 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     put(kv.getKey(), doofyEncode(kv.getValue()));
             }});
 
-            try {
-                var builderFile = env.getFiler().createSourceFile(
-                    generatedClassFqn, element
+            try (var out = new PrintWriter(
+                env.getFiler().createSourceFile(generatedClassFqn, element).openWriter()
+            )) {
+                out.write("package " +
+                          elementSymbol.getQualifiedName().toString()
+                              .replace("." + elementSymbol.getSimpleName().toString(), "") +
+                          ";\n"
                 );
+                out.write("import " + TypeReadWrite.class.getName() + ";\n");
+                out.write("import " + ConnectionW.class.getName() + ";\n");
+                out.write("import " + DataSourceW.class.getName() + ";\n");
+                out.write("import " + TooMuchRowsException.class.getName() + ";\n");
+                out.write("import " + TooFewRowsException.class.getName() + ";\n");
+                out.write("import " + UpdateResult.class.getName() + ";\n");
+                out.write("import " + UpdateResultStream.class.getName() + ";\n");
+                out.write("import " + Function.class.getName() + ";\n");
+                out.write("import " + Parameters.class.getName() + ".*;\n");
+                out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
+                out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
+                out.write("import " + org.jetbrains.annotations.NotNull.class.getName() + ";\n");
+                out.write("import net.truej.sql.bindings.*;\n");
+                out.write("import java.util.List;\n");
+                out.write("import java.util.stream.Stream;\n");
+                out.write("import java.util.stream.Collectors;\n");
+                out.write("import java.util.Objects;\n");
+                out.write("import java.sql.SQLException;\n");
+                // FIXME: uncomment, set isolating mode for annotation processor
+                // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
+                // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
+                out.write("class %s { \n".formatted(
+                    elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
+                ));
 
-                try (var out = new PrintWriter(builderFile.openWriter())) {
-                    out.write("package " +
-                              elementSymbol.getQualifiedName().toString()
-                                  .replace("." + elementSymbol.getSimpleName().toString(), "") +
-                              ";\n"
-                    );
-                    out.write("import " + TypeReadWrite.class.getName() + ";\n");
-                    out.write("import " + ConnectionW.class.getName() + ";\n");
-                    out.write("import " + DataSourceW.class.getName() + ";\n");
-                    out.write("import " + TooMuchRowsException.class.getName() + ";\n");
-                    out.write("import " + TooFewRowsException.class.getName() + ";\n");
-                    out.write("import " + UpdateResult.class.getName() + ";\n");
-                    out.write("import " + UpdateResultStream.class.getName() + ";\n");
-                    out.write("import " + Function.class.getName() + ";\n");
-                    out.write("import " + Parameters.class.getName() + ".*;\n");
-                    out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
-                    out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
-                    out.write("import " + org.jetbrains.annotations.NotNull.class.getName() + ";\n");
-                    out.write("import net.truej.sql.bindings.*;\n");
-                    out.write("import java.util.List;\n");
-                    out.write("import java.util.stream.Stream;\n");
-                    out.write("import java.util.stream.Collectors;\n");
-                    out.write("import java.util.Objects;\n");
-                    out.write("import java.sql.SQLException;\n");
-                    // FIXME: uncomment, set isolating mode for annotation processor
-                    // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
-                    // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
-                    out.write("class %s { \n".formatted(
-                        elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
-                    ));
+                for (var result : invocations.values())
+                    if (result instanceof FetchInvocation fi)
+                        out.write(fi.generatedCode());
 
-                    for (var result : invocations.values())
-                        if (result instanceof FetchInvocation fi)
-                            out.write(fi.generatedCode());
-
-                    out.write("}");
-                }
+                out.write("}");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -2,6 +2,7 @@ package net.truej.sql.util;
 
 import com.sun.tools.javac.api.BasicJavacTask;
 import net.truej.sql.compiler.TrueSqlPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import javax.tools.*;
 import java.io.StringWriter;
@@ -14,7 +15,7 @@ public class TestCompiler2 {
 
     public static Map<String, SimpleFileManager.ClassFileData> compile(
         List<? extends SimpleJavaFileObject> compilationUnits,
-        List<Message> expectedMessages
+        List<Message> expectedMessages, @Nullable String containsOutputText
     ) {
         var output = new StringWriter();
 
@@ -27,7 +28,6 @@ public class TestCompiler2 {
         var arguments = asList(
             "--enable-preview", "--source", "21",
             "-classpath", System.getProperty("java.class.path"),
-           // "-Atruesql.printConfig=true",
             "-Xplugin:" + TrueSqlPlugin.NAME
         );
 
@@ -55,6 +55,9 @@ public class TestCompiler2 {
             System.out.println(output);
             throw new RuntimeException(output.toString());
         }
+
+        if (containsOutputText != null && !output.toString().contains(containsOutputText))
+            throw new RuntimeException("Expected output not exists. Has:\n" + output);
 
         var xx = 1;
 

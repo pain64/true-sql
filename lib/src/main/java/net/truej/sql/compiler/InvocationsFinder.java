@@ -4,23 +4,21 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeScanner;
-import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.compiler.GLangParser.NullMode;
+import net.truej.sql.compiler.StatementGenerator.AsDefault;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
-import net.truej.sql.config.Configuration;
+import net.truej.sql.compiler.StatementGenerator.StatementMode;
 import net.truej.sql.fetch.Parameters;
 import net.truej.sql.source.ConnectionW;
 import net.truej.sql.source.DataSourceW;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import java.sql.*;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -165,9 +163,8 @@ public class InvocationsFinder {
     }
 
     static LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult> find(
-        ProcessingEnvironment env, Context context, Symtab symtab, Names names,
-        TreeMaker maker, CompilerMessages messages, JCTree.JCCompilationUnit cu, JCTree tree,
-        String generatedClassName
+        Symtab symtab, Names names, CompilerMessages messages,
+        JCTree.JCCompilationUnit cu, JCTree tree, String generatedClassName
     ) {
 
         var result = new LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult>();
@@ -208,10 +205,7 @@ public class InvocationsFinder {
                     var vt = varTypes.get(idExpr.name);
 
                     var parsedConfig = ConfigurationParser.parseConfig(
-                        env, symtab, names, cu,
-                        vt.className(),
-                        vt.getAnnotation(Configuration.class),
-                        false
+                        symtab, names, cu, vt, (__, ___) -> { }
                     );
 
                     record CatalogAndSchema(String catalogName, String schemaName) { }
@@ -381,444 +375,428 @@ public class InvocationsFinder {
                 var fetchMethodName = f.name.toString();
 
                 if (
-                    f.name.equals(names.fromString("fetchOne")) ||
-                    f.name.equals(names.fromString("fetchOneOrZero")) ||
-                    f.name.equals(names.fromString("fetchList")) ||
-                    f.name.equals(names.fromString("fetchStream")) ||
-                    f.name.equals(names.fromString("fetchNone"))
-                ) {
+                    !f.name.equals(names.fromString("fetchOne")) &&
+                    !f.name.equals(names.fromString("fetchOneOrZero")) &&
+                    !f.name.equals(names.fromString("fetchList")) &&
+                    !f.name.equals(names.fromString("fetchStream")) &&
+                    !f.name.equals(names.fromString("fetchNone"))
+                )
+                    return null;
 
-                    var lineNumber = cu.getLineMap().getLineNumber(tree.getStartPosition());
-                    final DtoMode dtoMode;
+                var lineNumber = cu.getLineMap().getLineNumber(tree.getStartPosition());
+                final DtoMode dtoMode;
+
+                if (
+                    f.selected instanceof JCTree.JCFieldAccess fa &&
+                    fa.name.equals(names.fromString("g"))
+                ) {
+                    if (tree.args.isEmpty()) return null;
 
                     if (
-                        f.selected instanceof JCTree.JCFieldAccess fa &&
-                        fa.name.equals(names.fromString("g"))
-                    ) {
-                        if (tree.args.isEmpty()) return null;
+                        tree.args.head instanceof JCTree.JCFieldAccess gfa &&
+                        gfa.name.equals(names.fromString("class")) &&
+                        gfa.selected instanceof JCTree.JCIdent gid
+                    )
+                        dtoMode = new GenerateDto(gid.name);
+                    else
+                        throw new ValidationException(tree.args.head, "Expected %NewDtoClassName%.class");
 
+                    f = fa;
+                } else {
+                    if (f.name.equals(names.fromString("fetchNone"))) {
+                        if (!tree.args.isEmpty()) return null;
+                        dtoMode = null;
+                    } else if (tree.args.size() == 1) {
+                        dtoMode = new ExistingDto(
+                            NullMode.DEFAULT_NOT_NULL,
+                            TypeFinder.resolve(names, symtab, cu, tree.args.head)
+                        );
+                    } else if (tree.args.size() == 2) {
+                        final NullMode nullMode;
                         if (
-                            tree.args.head instanceof JCTree.JCFieldAccess gfa &&
-                            gfa.name.equals(names.fromString("class")) &&
-                            gfa.selected instanceof JCTree.JCIdent gid
-                        )
-                            dtoMode = new GenerateDto(gid.name);
-                        else
-                            throw new ValidationException(tree.args.head, "Expected %NewDtoClassName%.class");
+                            (tree.args.head instanceof JCTree.JCIdent id &&
+                             id.name.equals(names.fromString("Nullable"))) ||
+                            // FIXME: use FQN
+                            tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.Nullable")
+                        ) {
+                            nullMode = NullMode.EXACTLY_NULLABLE;
+                        } else if (
+                            (tree.args.head instanceof JCTree.JCIdent id &&
+                             id.name.equals(names.fromString("NotNull"))) ||
+                            tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.NotNull")
+                        ) {
+                            nullMode = NullMode.EXACTLY_NOT_NULL;
+                        } else
+                            return null;
 
-                        f = fa;
-                    } else {
-
-                        if (tree.args.isEmpty() && f.name.equals(names.fromString("fetchNone"))) {
-                            dtoMode = null;
-                        } else if (tree.args.size() == 1) {
-                            dtoMode = new ExistingDto(
-                                NullMode.DEFAULT_NOT_NULL,
-                                TypeFinder.resolve(names, symtab, cu, tree.args.head)
+                        // FIXME: deduplicate with line 423
+                        dtoMode = f.name.equals(names.fromString("fetchNone")) ? null :
+                            new ExistingDto(
+                                nullMode, TypeFinder.resolve(names, symtab, cu, tree.args.get(1))
                             );
-                        } else if (tree.args.size() == 2) {
-                            final NullMode nullMode;
-                            if (
-                                (tree.args.head instanceof JCTree.JCIdent id &&
-                                 id.name.equals(names.fromString("Nullable"))) ||
-                                // FIXME: use FQN
-                                tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.Nullable")
-                            ) {
-                                nullMode = NullMode.EXACTLY_NULLABLE;
-                            } else if (
-                                (tree.args.head instanceof JCTree.JCIdent id &&
-                                 id.name.equals(names.fromString("NotNull"))) ||
-                                tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.NotNull")
-                            ) {
-                                nullMode = NullMode.EXACTLY_NOT_NULL;
-                            } else
+                    } else
+                        return null;
+                }
+
+                boolean isWithUpdateCount = false;
+                if (
+                    f.selected instanceof JCTree.JCFieldAccess fa &&
+                    fa.name.equals(names.fromString("withUpdateCount"))
+                ) {
+                    isWithUpdateCount = true;
+                    f = fa;
+                }
+
+                var statementMode = (StatementMode) new AsDefault();
+
+                if (
+                    f.selected instanceof JCTree.JCMethodInvocation inv &&
+                    inv.meth instanceof JCTree.JCFieldAccess fa
+                ) {
+                    if (
+                        fa.name.equals(names.fromString("asGeneratedKeys")) && !inv.args.isEmpty()
+                    ) {
+                        if (inv.args.stream().allMatch(
+                            arg -> arg instanceof JCTree.JCLiteral al &&
+                                   al.getValue() instanceof Integer
+                        )) {
+                            statementMode = new AsGeneratedKeysIndices(
+
+                                inv.args.stream().mapToInt(arg ->
+                                    (Integer) ((JCTree.JCLiteral) arg).value
+                                ).toArray()
+                            );
+                            f = fa;
+                        } else if (inv.args.stream().allMatch(arg ->
+                            arg instanceof JCTree.JCLiteral al &&
+                            al.getValue() instanceof String
+                        )) {
+                            statementMode = new AsGeneratedKeysColumnNames(
+                                inv.args.stream().map(arg ->
+                                    (String) ((JCTree.JCLiteral) arg).value
+                                ).toArray(String[]::new)
+                            );
+                            f = fa;
+                        }
+                    } else if (
+                        fa.name.equals(names.fromString("asCall")) && inv.args.isEmpty()
+                    ) {
+                        statementMode = new StatementGenerator.AsCall();
+                        f = fa;
+                    }
+                }
+
+                final StatementGenerator.QueryMode queryMode;
+                final JCTree.JCIdent sourceExpression;
+                final StatementGenerator.SourceMode sourceMode;
+                final ConfigurationParser.ParsedConfiguration parsedConfig;
+
+                if (
+                    f.selected instanceof JCTree.JCMethodInvocation inv &&
+                    inv.meth instanceof JCTree.JCFieldAccess fa &&
+                    fa.name.equals(names.fromString("q"))
+                ) {
+                    var tryAsQuery = (Function<Integer, @Nullable String>) i ->
+                        i < inv.args.length() &&
+                        inv.args.get(i) instanceof JCTree.JCLiteral lit &&
+                        lit.getValue() instanceof String text ? text : null;
+
+
+                    var queryText = tryAsQuery.apply(0);
+                    if (queryText != null) // single
+                        queryMode = parseQuery(
+                            symtab, cu, names, tree, null, null, queryText, inv.args.tail
+                        );
+                    else {
+                        queryText = tryAsQuery.apply(1);
+                        if (queryText != null) { // batch
+                            if (inv.args.size() != 3)
                                 return null;
 
-                            // FIXME: deduplicate with line 423
-                            dtoMode = f.name.equals(names.fromString("fetchNone")) ? null :
-                                new ExistingDto(
-                                    nullMode, TypeFinder.resolve(names, symtab, cu, tree.args.get(1))
+                            if (
+                                inv.args.get(2) instanceof JCTree.JCLambda lmb &&
+                                lmb.body instanceof JCTree.JCNewArray array &&
+                                array.elemtype instanceof JCTree.JCIdent elementTypeId &&
+                                elementTypeId.name.equals(names.fromString("Object"))
+                            )
+                                queryMode = parseQuery(
+                                    symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
                                 );
+                            else throw new ValidationException(
+                                tree,
+                                "Batch parameter extractor must be lambda literal returning " +
+                                "object array literal (e.g. `b -> new Object[]{b.f1, b.f2}`)"
+                            );
                         } else
-                            return null;
+                            throw new ValidationException(
+                                tree, "Query text must be a string literal"
+                            );
                     }
 
-                    boolean isWithUpdateCount = false;
-                    if (f.selected instanceof JCTree.JCFieldAccess fa) {
-                        if (fa.name.equals(names.fromString("withUpdateCount")))
-                            isWithUpdateCount = true;
-                        else
-                            return null;
-                        f = fa;
-                    }
-
-                    final StatementGenerator.StatementMode statementMode;
-
-                    if (f.selected instanceof JCTree.JCMethodInvocation inv) {
-                        if (inv.meth instanceof JCTree.JCFieldAccess fa) {
-
-                            if (fa.name.equals(names.fromString("asGeneratedKeys"))) {
-                                if (inv.args.isEmpty())
-                                    return null;
-                                if (inv.args.getFirst() instanceof JCTree.JCLiteral lit) {
-                                    if (lit.getValue() instanceof Integer) {
-
-                                        if (!inv.args.stream().allMatch(
-                                            arg -> arg instanceof JCTree.JCLiteral al &&
-                                                   al.getValue() instanceof Integer
-                                        )) return null;
-
-                                        statementMode = new AsGeneratedKeysIndices(
-
-                                            inv.args.stream().mapToInt(arg ->
-                                                (Integer) ((JCTree.JCLiteral) arg).value
-                                            ).toArray()
-                                        );
-                                    } else if (lit.getValue() instanceof String) {
-                                        if (!inv.args.stream().allMatch(arg ->
-                                            arg instanceof JCTree.JCLiteral al &&
-                                            al.getValue() instanceof String
-                                        )) return null;
-
-                                        statementMode = new AsGeneratedKeysColumnNames(
-                                            inv.args.stream().map(arg ->
-                                                (String) ((JCTree.JCLiteral) arg).value
-                                            ).toArray(String[]::new)
-                                        );
-                                    } else
-                                        return null;
-                                } else
-                                    return null;
-
-                                f = fa;
-                            } else if (fa.name.equals(names.fromString("asCall"))) {
-                                statementMode = new StatementGenerator.AsCall();
-                                f = fa;
-                            } else
-                                statementMode = new StatementGenerator.AsDefault();
-
-                        } else
-                            return null;
-                    } else
-                        statementMode = new StatementGenerator.AsDefault();
-
-
-                    final StatementGenerator.QueryMode queryMode;
-                    final JCTree.JCIdent sourceExpression;
-                    final Symbol.ClassSymbol sourceType;
-                    final StatementGenerator.SourceMode sourceMode;
-                    final ConfigurationParser.ParsedConfiguration parsedConfig;
-
-                    if (f.selected instanceof JCTree.JCMethodInvocation inv) {
-                        if (inv.meth instanceof JCTree.JCFieldAccess fa) {
-                            if (fa.name.equals(names.fromString("q"))) {
-                                var tryAsQuery = (Function<Integer, @Nullable String>) i ->
-                                    i < inv.args.length() &&
-                                    inv.args.get(i) instanceof JCTree.JCLiteral lit &&
-                                    lit.getValue() instanceof String text ? text : null;
-
-
-                                var queryText = tryAsQuery.apply(0);
-                                if (queryText != null) // single
-                                    queryMode = parseQuery(
-                                        symtab, cu, names, tree, null, null, queryText, inv.args.tail
-                                    );
-                                else {
-                                    queryText = tryAsQuery.apply(1);
-                                    if (queryText != null) { // batch
-                                        if (inv.args.size() != 3)
-                                            return null;
-
-                                        if (
-                                            inv.args.get(2) instanceof JCTree.JCLambda lmb &&
-                                            lmb.body instanceof JCTree.JCNewArray array &&
-                                            array.elemtype instanceof JCTree.JCIdent elementTypeId &&
-                                            elementTypeId.name.equals(names.fromString("Object"))
-                                        )
-                                            queryMode = parseQuery(
-                                                symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
-                                            );
-                                        else throw new ValidationException(
-                                            tree,
-                                            "Batch parameter extractor must be lambda literal returning " +
-                                            "object array literal (e.g. `b -> new Object[]{b.f1, b.f2}`)"
-                                        );
-                                    } else
-                                        throw new ValidationException(
-                                            tree, "Query text must be a string literal"
-                                        );
-                                }
-
-                                if (fa.selected instanceof JCTree.JCIdent processorId) {
-                                    sourceExpression = processorId;
-                                    var clConnectionW = symtab.enterClass(
-                                        cu.modle, names.fromString(ConnectionW.class.getName())
-                                    );
-                                    var clDataSourceW = symtab.enterClass(
-                                        cu.modle, names.fromString(DataSourceW.class.getName())
-                                    );
-
-
-                                    var vt = varTypes.get(processorId.name);
-
-                                    if (vt != null && vt.getSuperclass().tsym == clConnectionW) {
-                                        sourceMode = StatementGenerator.SourceMode.CONNECTION;
-                                    } else if (vt != null && vt.getSuperclass().tsym == clDataSourceW) {
-                                        if (withConnectionSource.contains(processorId.name))
-                                            sourceMode = StatementGenerator.SourceMode.CONNECTION;
-                                        else
-                                            sourceMode = StatementGenerator.SourceMode.DATASOURCE;
-                                    } else
-                                        throw new ValidationException(
-                                            processorId,
-                                            "Source identifier may be method parameter, class field or " +
-                                            "local variable initialized by new (var ds = new MySourceW(...)). " +
-                                            "Type of source identifier cannot be generic parameter"
-                                        );
-
-
-                                    sourceType = vt;
-                                    parsedConfig = ConfigurationParser.parseConfig(
-                                        env, symtab, names, cu,
-                                        sourceType.className(),
-                                        vt.getAnnotation(Configuration.class),
-                                        false
-                                    );
-
-                                } else throw new ValidationException(
-                                    fa.selected, "Expected identifier for source for `.q(...)`"
-                                );
-                            } else return null;
-                        } else return null;
-                    } else return null;
-
-                    var parseExistingDto = (Function<ExistingDto, GLangParser.Field>) existing ->
-                        ExistingDtoParser.parse(
-                            parsedConfig.typeBindings(),
-                            "result",
-                            existing.nullMode,
-                            names.init, existing.toType
+                    if (fa.selected instanceof JCTree.JCIdent processorId) {
+                        sourceExpression = processorId;
+                        var clConnectionW = symtab.enterClass(
+                            cu.modle, names.fromString(ConnectionW.class.getName())
+                        );
+                        var clDataSourceW = symtab.enterClass(
+                            cu.modle, names.fromString(DataSourceW.class.getName())
                         );
 
-                    final GLangParser.Field toDto;
-                    final JdbcMetadataFetcher.JdbcMetadata jdbcMetadata;
 
-                    try {
-                        jdbcMetadata = parsedConfig.url() == null ? null :
-                            JdbcMetadataFetcher.fetch(
-                                parsedConfig.url(), parsedConfig.username(), parsedConfig.password(),
-                                queryMode, statementMode
-                            );
-                    } catch (SQLException e) {
-                        // Эту ошибку нужно отдать в javac именно в этот момент.
-                        // Если закончится раунд процессинга аннотаций, а ошибка не записана
-                        // то у нас не сгенерируются Dto и будет ошибка компиляции
-                        // и до плагина компилятора мы не дойдем!
-                        messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
-                        // FIXME: Нужно подумать о новой стратегии вывода ошибок компиляции (когда и какие)
-                        // FIXME: do return instead ??
-                        throw new TrueSqlPlugin.ValidationException(tree, e.getMessage());
-                    }
+                        var vt = varTypes.get(processorId.name);
 
-                    var makeColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () ->
-                        switch (statementMode) {
-                            case StatementGenerator.StatementLike __ ->
-                                jdbcMetadata.columns() == null ? null :
-                                    jdbcMetadata.columns().stream().map(c ->
-                                        new GLangParser.ColumnMetadata(
-                                            c.nullMode(),
-                                            c.sqlType(),
-                                            c.sqlTypeName(),
-                                            c.javaClassName(),
-                                            c.columnName(),
-                                            c.columnLabel(),
-                                            c.scale(),
-                                            c.precision()
-                                        )
-                                    ).toList();
-
-                            case StatementGenerator.AsCall __ -> {
-                                // FIXME: проверка call и unfold одновременно? ???
-                                // FIXME: проверка batch и unfold одновременно? ???
-                                var pMetadata = jdbcMetadata.parameters();
-                                if (pMetadata == null) yield null;
-
-                                yield Arrays.stream(getOutParametersNumbers(queryMode))
-                                    .mapToObj(i -> {
-                                        var p = pMetadata.get(i - 1);
-                                        return new GLangParser.ColumnMetadata(
-                                            p.nullMode(),
-                                            p.sqlType(),
-                                            p.sqlTypeName(),
-                                            p.javaClassName(),
-                                            null,
-                                            "c" + i,
-                                            p.scale(),
-                                            p.precision()
-                                        );
-                                    }).toList();
-                            }
-                        };
-
-                    var handleNullabilityMismatch = (BiConsumer<Boolean, String>)
-                        (isWarningOnly, message) -> {
-                            if (isWarningOnly)
-                                warnings.add(new CompilationWarning(tree, message));
+                        if (vt != null && vt.getSuperclass().tsym == clConnectionW) {
+                            sourceMode = StatementGenerator.SourceMode.CONNECTION;
+                        } else if (vt != null && vt.getSuperclass().tsym == clDataSourceW) {
+                            if (withConnectionSource.contains(processorId.name))
+                                sourceMode = StatementGenerator.SourceMode.CONNECTION;
                             else
-                                throw new ValidationException(tree, message);
-                        };
+                                sourceMode = StatementGenerator.SourceMode.DATASOURCE;
+                        } else
+                            throw new ValidationException(
+                                processorId,
+                                "Source identifier may be method parameter, class field or " +
+                                "local variable initialized by new (var ds = new MySourceW(...)). " +
+                                "Type of source identifier cannot be generic parameter"
+                            );
 
-                    toDto = switch (dtoMode) {
-                        case null -> null;
-                        case ExistingDto existing -> {
-                            var parsed = parseExistingDto.apply(existing);
-                            var dtoFields = flattenedDtoType(parsed);
+                        parsedConfig = ConfigurationParser.parseConfig(
+                            symtab, names, cu, vt, (__, ___) -> { }
+                        );
 
-                            if (jdbcMetadata == null) yield parsed;
-                            var columns = makeColumns.get();
-                            if (columns == null) yield parsed;
+                    } else throw new ValidationException(
+                        fa.selected, "Expected identifier for source for `.q(...)`"
+                    );
+                } else
+                    return null;
 
-                            if (dtoFields.size() != columns.size())
-                                throw new ValidationException(
-                                    tree, "target type implies " + dtoFields.size() + " columns but result has "
-                                          + columns.size()
-                                );
+                var parseExistingDto = (Function<ExistingDto, GLangParser.Field>) existing ->
+                    ExistingDtoParser.parse(
+                        parsedConfig.typeBindings(),
+                        "result",
+                        existing.nullMode,
+                        names.init, existing.toType
+                    );
 
-                            for (var i = 0; i < dtoFields.size(); i++) {
-                                var ii = i;
-                                var field = dtoFields.get(i);
-                                var column = columns.get(i);
+                final GLangParser.Field toDto;
+                final JdbcMetadataFetcher.JdbcMetadata jdbcMetadata;
 
-                                TypeChecker.assertNullabilityCompatible(
-                                    column.nullMode(),
-                                    field.nullMode(),
-                                    (isWarningOnly, sqlNullMode, javaNullMode) ->
-                                        handleNullabilityMismatch.accept(
-                                            isWarningOnly,
-                                            "nullability mismatch for column " + (ii + 1) +
-                                            " (for field `" + field.name() + "`). Your decision is " +
-                                            javaNullMode + " but driver infers " + sqlNullMode
-                                        )
-                                );
+                try {
+                    jdbcMetadata = parsedConfig.url() == null ? null :
+                        JdbcMetadataFetcher.fetch(
+                            parsedConfig.url(), parsedConfig.username(), parsedConfig.password(),
+                            queryMode, statementMode
+                        );
+                } catch (SQLException e) {
+                    // Эту ошибку нужно отдать в javac именно в этот момент.
+                    // Если закончится раунд процессинга аннотаций, а ошибка не записана
+                    // то у нас не сгенерируются Dto и будет ошибка компиляции
+                    // и до плагина компилятора мы не дойдем!
+                    messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
+                    // FIXME: Нужно подумать о новой стратегии вывода ошибок компиляции (когда и какие)
+                    // FIXME: do return instead ??
+                    throw new TrueSqlPlugin.ValidationException(tree, e.getMessage());
+                }
 
-                                TypeChecker.assertTypesCompatible(
-                                    jdbcMetadata.onDatabase(),
-                                    column.sqlType(), // FIXME: pass column ???
-                                    column.sqlTypeName(),
-                                    column.javaClassName(),
-                                    column.scale(),
-                                    field.binding(),
-                                    (typeKind, expected, has) -> new ValidationException(
-                                        tree, typeKind + " mismatch for column " + (ii + 1) +
-                                              " (for field `" + field.name() + "`). Expected " +
-                                              expected + " but has " + has
+                var stMode = statementMode;
+
+                var makeColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () ->
+                    switch (stMode) {
+                        case StatementGenerator.StatementLike __ ->
+                            jdbcMetadata.columns() == null ? null :
+                                jdbcMetadata.columns().stream().map(c ->
+                                    new GLangParser.ColumnMetadata(
+                                        c.nullMode(),
+                                        c.sqlType(),
+                                        c.sqlTypeName(),
+                                        c.javaClassName(),
+                                        c.columnName(),
+                                        c.columnLabel(),
+                                        c.scale(),
+                                        c.precision()
                                     )
-                                );
-                            }
+                                ).toList();
 
-                            yield parsed;
+                        case StatementGenerator.AsCall __ -> {
+                            // FIXME: проверка call и unfold одновременно? ???
+                            // FIXME: проверка batch и unfold одновременно? ???
+                            var pMetadata = jdbcMetadata.parameters();
+                            if (pMetadata == null) yield null;
+
+                            yield Arrays.stream(getOutParametersNumbers(queryMode))
+                                .mapToObj(i -> {
+                                    var p = pMetadata.get(i - 1);
+                                    return new GLangParser.ColumnMetadata(
+                                        p.nullMode(),
+                                        p.sqlType(),
+                                        p.sqlTypeName(),
+                                        p.javaClassName(),
+                                        null,
+                                        "c" + i,
+                                        p.scale(),
+                                        p.precision()
+                                    );
+                                }).toList();
                         }
-                        case GenerateDto gDto -> {
-                            if (jdbcMetadata == null)
-                                throw new ValidationException(
-                                    tree, "compile time checks must be enabled for .g"
-                                );
+                    };
 
-                            var columns = makeColumns.get();
+                var handleNullabilityMismatch = (BiConsumer<Boolean, String>)
+                    (isWarningOnly, message) -> {
+                        if (isWarningOnly)
+                            warnings.add(new CompilationWarning(tree, message));
+                        else
+                            throw new ValidationException(tree, message);
+                    };
 
-                            if (columns == null) throw new ValidationException(
+                toDto = switch (dtoMode) {
+                    case null -> null;
+                    case ExistingDto existing -> {
+                        var parsed = parseExistingDto.apply(existing);
+                        var dtoFields = flattenedDtoType(parsed);
+
+                        if (jdbcMetadata == null) yield parsed;
+                        var columns = makeColumns.get();
+                        if (columns == null) yield parsed;
+
+                        if (dtoFields.size() != columns.size())
+                            throw new ValidationException(
+                                tree, "target type implies " + dtoFields.size() + " columns but result has "
+                                      + columns.size()
+                            );
+
+                        for (var i = 0; i < dtoFields.size(); i++) {
+                            var ii = i;
+                            var field = dtoFields.get(i);
+                            var column = columns.get(i);
+
+                            TypeChecker.assertNullabilityCompatible(
+                                column.nullMode(),
+                                field.nullMode(),
+                                (isWarningOnly, sqlNullMode, javaNullMode) ->
+                                    handleNullabilityMismatch.accept(
+                                        isWarningOnly,
+                                        "nullability mismatch for column " + (ii + 1) +
+                                        " (for field `" + field.name() + "`). Your decision is " +
+                                        javaNullMode + " but driver infers " + sqlNullMode
+                                    )
+                            );
+
+                            TypeChecker.assertTypesCompatible(
+                                jdbcMetadata.onDatabase(),
+                                column.sqlType(), // FIXME: pass column ???
+                                column.sqlTypeName(),
+                                column.javaClassName(),
+                                column.scale(),
+                                field.binding(),
+                                (typeKind, expected, has) -> new ValidationException(
+                                    tree, typeKind + " mismatch for column " + (ii + 1) +
+                                          " (for field `" + field.name() + "`). Expected " +
+                                          expected + " but has " + has
+                                )
+                            );
+                        }
+
+                        yield parsed;
+                    }
+                    case GenerateDto gDto -> {
+                        if (jdbcMetadata == null)
+                            throw new ValidationException(
+                                tree, "compile time checks must be enabled for .g"
+                            );
+
+                        var columns = makeColumns.get();
+
+                        if (columns == null)
+                            throw new ValidationException(
                                 tree, ".g mode is not available because column metadata is not provided by JDBC driver"
                             );
 
-                            var fields = GLangParser.parseResultSetColumns(
-                                columns, (column, columnIndex, javaClassNameHint, nullModeHint) -> {
+                        var fields = GLangParser.parseResultSetColumns(
+                            columns, (column, columnIndex, javaClassNameHint, nullModeHint) -> {
 
-                                    final NullMode nullMode;
-                                    if (nullModeHint != NullMode.DEFAULT_NOT_NULL) {
-                                        TypeChecker.assertNullabilityCompatible(
-                                            column.nullMode(), nullModeHint,
-                                            (isWarningOnly, sqlNullMode, javaNullMode) ->
-                                                handleNullabilityMismatch.accept(
-                                                    // FIXME: deduplicate message common part
-                                                    isWarningOnly,
-                                                    "nullability mismatch for column " + (columnIndex + 1) +
-                                                    " (for generated dto field `" + column.columnLabel() + "`). Your decision is " +
-                                                    javaNullMode + " but driver infers " + sqlNullMode
-                                                )
-                                        );
-                                        nullMode = nullModeHint;
-                                    } else
-                                        nullMode = column.nullMode();
-
-                                    final Standard.Binding binding;
-                                    if (javaClassNameHint != null) {
-                                        binding = TypeChecker.getBindingForClass(
-                                            tree, parsedConfig.typeBindings(), javaClassNameHint
-                                        );
-
-                                        TypeChecker.assertTypesCompatible(
-                                            jdbcMetadata.onDatabase(), column.sqlType(), column.sqlTypeName(),
-                                            column.javaClassName(), column.scale(), binding,
-                                            (typeKind, expected, has) -> new ValidationException(
-                                                tree, typeKind + " mismatch for column " + (columnIndex + 1) +
-                                                      " (for generated dto field `" + column.columnLabel() +
-                                                      "`). Expected " + expected + " but has " + has
+                                final NullMode nullMode;
+                                if (nullModeHint != NullMode.DEFAULT_NOT_NULL) {
+                                    TypeChecker.assertNullabilityCompatible(
+                                        column.nullMode(), nullModeHint,
+                                        (isWarningOnly, sqlNullMode, javaNullMode) ->
+                                            handleNullabilityMismatch.accept(
+                                                // FIXME: deduplicate message common part
+                                                isWarningOnly,
+                                                "nullability mismatch for column " + (columnIndex + 1) +
+                                                " (for generated dto field `" + column.columnLabel() + "`). Your decision is " +
+                                                javaNullMode + " but driver infers " + sqlNullMode
                                             )
-                                        );
-                                    } else
-                                        binding = TypeChecker.getBindingForClass(
-                                            tree, parsedConfig.typeBindings(), TypeChecker.inferType(
-                                                parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
-                                            )
-                                        );
-
-                                    return new GLangParser.BindColumn.Result(
-                                        binding, nullMode
                                     );
-                                }
-                            );
+                                    nullMode = nullModeHint;
+                                } else
+                                    nullMode = column.nullMode();
 
-                            yield new GLangParser.ListOfGroupField(
-                                "result", gDto.dtoClassName.toString(), fields
-                            );
-                        }
-                    };
+                                final Standard.Binding binding;
+                                if (javaClassNameHint != null) {
+                                    binding = TypeChecker.getBindingForClass(
+                                        tree, parsedConfig.typeBindings(), javaClassNameHint
+                                    );
 
-                    var fetchMode = switch (fetchMethodName) {
-                        case "fetchOne" -> new StatementGenerator.FetchOne(toDto);
-                        case "fetchOneOrZero" -> new StatementGenerator.FetchOneOrZero(toDto);
-                        case "fetchList" -> new StatementGenerator.FetchList(toDto);
-                        case "fetchStream" -> new StatementGenerator.FetchStream(toDto);
-                        case "fetchNone" -> new StatementGenerator.FetchNone();
-                        default -> throw new RuntimeException("unreachable");
-                    };
+                                    TypeChecker.assertTypesCompatible(
+                                        jdbcMetadata.onDatabase(), column.sqlType(), column.sqlTypeName(),
+                                        column.javaClassName(), column.scale(), binding,
+                                        (typeKind, expected, has) -> new ValidationException(
+                                            tree, typeKind + " mismatch for column " + (columnIndex + 1) +
+                                                  " (for generated dto field `" + column.columnLabel() +
+                                                  "`). Expected " + expected + " but has " + has
+                                        )
+                                    );
+                                } else
+                                    binding = TypeChecker.getBindingForClass(
+                                        tree, parsedConfig.typeBindings(), TypeChecker.inferType(
+                                            parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
+                                        )
+                                    );
 
-                    var generatedCode = StatementGenerator.generate(
-                        className ->
-                            parsedConfig.typeBindings().stream()
-                                .filter(b -> b.className().equals(className))
-                                .findFirst().orElseThrow(() -> new IllegalStateException("unreachable"))
-                                .rwClassName(),
-                        lineNumber,
-                        sourceMode,
-                        queryMode,
-                        statementMode,
-                        fetchMode,
-                        dtoMode instanceof InvocationsFinder.GenerateDto,
-                        isWithUpdateCount
-                    );
+                                return new GLangParser.BindColumn.Result(
+                                    binding, nullMode
+                                );
+                            }
+                        );
 
-                    return new FetchInvocation(
-                        jdbcMetadata == null ? null : jdbcMetadata.onDatabase(),
-                        parsedConfig.typeBindings(),
-                        generatedClassName, fetchMethodName, lineNumber, warnings,
-                        sourceExpression, queryMode,
-                        jdbcMetadata == null ? null : jdbcMetadata.parameters(),
-                        generatedCode
-                    );
-                }
+                        yield new GLangParser.ListOfGroupField(
+                            "result", gDto.dtoClassName.toString(), fields
+                        );
+                    }
+                };
 
-                return null;
+                var fetchMode = switch (fetchMethodName) {
+                    case "fetchOne" -> new StatementGenerator.FetchOne(toDto);
+                    case "fetchOneOrZero" -> new StatementGenerator.FetchOneOrZero(toDto);
+                    case "fetchList" -> new StatementGenerator.FetchList(toDto);
+                    case "fetchStream" -> new StatementGenerator.FetchStream(toDto);
+                    case "fetchNone" -> new StatementGenerator.FetchNone();
+                    default -> throw new RuntimeException("unreachable");
+                };
+
+                var generatedCode = StatementGenerator.generate(
+                    className ->
+                        parsedConfig.typeBindings().stream()
+                            .filter(b -> b.className().equals(className))
+                            .findFirst().orElseThrow(() -> new IllegalStateException("unreachable"))
+                            .rwClassName(),
+                    lineNumber,
+                    sourceMode,
+                    queryMode,
+                    statementMode,
+                    fetchMode,
+                    dtoMode instanceof InvocationsFinder.GenerateDto,
+                    isWithUpdateCount
+                );
+
+                return new FetchInvocation(
+                    jdbcMetadata == null ? null : jdbcMetadata.onDatabase(),
+                    parsedConfig.typeBindings(),
+                    generatedClassName, fetchMethodName, lineNumber, warnings,
+                    sourceExpression, queryMode,
+                    jdbcMetadata == null ? null : jdbcMetadata.parameters(),
+                    generatedCode
+                );
             }
 
             @Override public void visitApply(JCTree.JCMethodInvocation tree) {

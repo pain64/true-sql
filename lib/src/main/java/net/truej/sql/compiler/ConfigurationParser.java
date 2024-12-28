@@ -1,8 +1,8 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
-import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.bindings.Standard;
@@ -10,10 +10,9 @@ import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeReadWrite;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.type.MirroredTypeException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import static net.truej.sql.config.Configuration.INT_NOT_DEFINED;
@@ -27,10 +26,7 @@ public class ConfigurationParser {
         String url, String username, String password, List<Standard.Binding> typeBindings
     ) { }
 
-    public static @Nullable String findProperty(ProcessingEnvironment env, String propertyName) {
-//        var prop = env.getOptions().get(propertyName);
-//        if (prop != null) return prop;
-
+    public static @Nullable String findProperty(String propertyName) {
         var prop = System.getProperty(propertyName);
         if (prop != null) return prop;
 
@@ -39,38 +35,43 @@ public class ConfigurationParser {
     }
 
     public static ParsedConfiguration parseConfig(
-        ProcessingEnvironment env, Symtab symtab, Names names,
-        JCTree.JCCompilationUnit cu, String sourceClassName,
-        Configuration sourceConfig, boolean doPrint
+        Symtab symtab, Names names, JCTree.JCCompilationUnit cu,
+        Symbol.ClassSymbol annotated, BiConsumer<String, String> onPropertyParsed
     ) {
         var parseProperty = (BiFunction<String, String, String>)
-            (parameterName, defaultValue) -> {
-                var propertyName = "truesql." + sourceClassName + "." + parameterName;
-                var prop = findProperty(env, propertyName);
+            (parameterName, valueInAnnotation) -> {
+                var propertyName = "truesql." + annotated.className() + "." + parameterName;
+                var prop = findProperty(propertyName);
 
                 if (prop == null)
-                    if (!defaultValue.equals(Configuration.STRING_NOT_DEFINED))
-                        prop = defaultValue;
+                    if (!valueInAnnotation.equals(Configuration.STRING_NOT_DEFINED))
+                        prop = valueInAnnotation;
 
-                if (doPrint) System.out.println(propertyName + "=" + prop);
-
+                onPropertyParsed.accept(propertyName, prop);
                 return prop;
             };
 
-        if (sourceConfig != null) {
+        var config = (Configuration) null;
+        var typeBindingAttrib = (Attribute.Array) null;
+
+        for (var am : annotated.getAnnotationMirrors())
+            if (am.getAnnotationType().toString().equals(Configuration.class.getName())) {
+                config = annotated.getAnnotation(Configuration.class);
+                typeBindingAttrib = (Attribute.Array) am.member(names.fromString("typeBindings"));
+            }
+
+        if (config != null) {
             var bindings = new ArrayList<>(Standard.bindings);
 
-            for (var tb : sourceConfig.typeBindings()) {
+            for (var i = 0; i < config.typeBindings().length; i++) {
+                var tb = config.typeBindings()[i];
 
-                Symbol.ClassSymbol rwClassSym;
-
-                try {
-                    rwClassSym = symtab.enterClass(cu.modle, names.fromString(tb.rw().getName()));
-                } catch (MirroredTypeException mte) {
-                    rwClassSym = symtab.enterClass(
-                        cu.modle, ((Type.ClassType) mte.getTypeMirror()).tsym.flatName()
-                    );
-                }
+                var rwClassSym = symtab.enterClass(
+                    cu.modle, ((Attribute.Class)
+                        ((Attribute.Compound) typeBindingAttrib.values[i])
+                            .member(names.fromString("rw"))
+                    ).classType.tsym.flatName()
+                );
 
                 rwClassSym.complete();
 
@@ -96,7 +97,7 @@ public class ConfigurationParser {
 
                 if (!errors.isEmpty())
                     throw new ParseException(
-                        "For source " + sourceClassName + ": " +
+                        "For source " + annotated.className() + ": " +
                         "RW class " + rwClassSym.flatName() + ": " +
                         String.join(", ", errors)
                     );
@@ -108,7 +109,7 @@ public class ConfigurationParser {
 
                 if (compatibleSqlType != null && compatibleSqlTypeName != null)
                     throw new ParseException(
-                        "For source " + sourceClassName + ": " +
+                        "For source " + annotated.className() + ": " +
                         "compatibleSqlType and compatibleSqlTypeName " +
                         "cannot be specified at the same time"
                     );
@@ -122,9 +123,9 @@ public class ConfigurationParser {
             }
 
             return new ParsedConfiguration(
-                parseProperty.apply("url", sourceConfig.checks().url()),
-                parseProperty.apply("username", sourceConfig.checks().username()),
-                parseProperty.apply("password", sourceConfig.checks().password()),
+                parseProperty.apply("url", config.checks().url()),
+                parseProperty.apply("username", config.checks().username()),
+                parseProperty.apply("password", config.checks().password()),
                 bindings
             );
         } else
