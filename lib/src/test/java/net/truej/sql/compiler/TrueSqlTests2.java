@@ -201,6 +201,9 @@ public class TrueSqlTests2 implements
                         return code.replace(
                             "class " + simpleClassName,
                             "class " + simpleClassName + "_ extends " + className
+                        ).replace(
+                            simpleClassName + "G.*",
+                            simpleClassName + "_G.*"
                         );
                     }
                 }

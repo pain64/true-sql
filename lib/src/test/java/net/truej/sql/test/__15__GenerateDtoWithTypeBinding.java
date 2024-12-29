@@ -6,14 +6,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.User5;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.User6;
+import net.truej.sql.test.__05__GenerateDtoG.User5;
+import net.truej.sql.test.__05__GenerateDtoG.User6;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 // FIXME

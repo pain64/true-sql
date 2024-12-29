@@ -10,7 +10,7 @@ import net.truej.sql.compiler.TrueSqlTests2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.*;
+import net.truej.sql.test.__05__GenerateDtoG.*;
 
 import java.util.HashMap;
 import java.util.function.Supplier;

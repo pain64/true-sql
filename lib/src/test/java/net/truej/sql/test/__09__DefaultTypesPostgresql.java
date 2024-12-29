@@ -29,6 +29,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
         short shortType, @Nullable Short shortTypeNull,
         LocalTime timeType, @Nullable LocalTime timeTypeNull,
         LocalDateTime timestampType, @Nullable LocalDateTime timestampTypeNull,
+        OffsetDateTime offsetDateTimeType, @Nullable LocalDateTime offsetDateTimeTypeNull,
         float floatType, @Nullable Float floatTypeNull,
         double doubleType, @Nullable Double doubleTypeNull,
         OffsetTime offsetTime, @Nullable OffsetTime offsetTimeNull
@@ -48,6 +49,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 (short) 255, null,
                 LocalTime.of(23, 59, 59), null,
                 LocalDateTime.of(1984, 1, 1, 23, 59, 59), null,
+                OffsetDateTime.of(1984,1,1,23,59,59,0, ZoneOffset.UTC),null,
                 3.14159f, null,
                 3.1415926535d, null,
                 OffsetTime.of(23,59,59, 0, ZoneOffset.ofHours(1)),null
@@ -74,7 +76,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                 data.integerType, data.integerTypeNull,
                 data.longType, data.longTypeNull,
                 data.stringType, data.stringTypeNull,
-                //Byte []  bytes_type, @Nullable Byte [] bytes_type_null,
                 data.shortType, data.shortTypeNull,
                 data.timeType, data.timeTypeNull,
                 data.timestampType, data.timestampTypeNull,
@@ -96,6 +97,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
                     short_type, short_type_null,
                     time_type, time_type_null,
                     timestamp_type, timestamp_type_null,
+                    timestamp_type at time zone 'UTC', timestamp_type_null  at time zone 'UTC',
                     float_type, float_type_null,
                     double_type, double_type_null,
                     offset_time_type, offset_time_type_null

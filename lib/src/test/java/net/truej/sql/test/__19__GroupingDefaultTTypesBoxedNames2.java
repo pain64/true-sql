@@ -5,8 +5,8 @@ import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.GroupTest2;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import net.truej.sql.test.__05__GenerateDtoG.GroupTest2;
+
 import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(POSTGRESQL)

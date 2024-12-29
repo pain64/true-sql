@@ -7,19 +7,16 @@ import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.test.__05__GenerateDtoTrueSql.TypeTest;
+import net.truej.sql.test.__05__GenerateDtoG.TypeTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.math.BigDecimal;
 import java.time.*;
 
 import static net.truej.sql.compiler.TrueSqlTests2.*;
 import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __10__DefaultTypesHSQLDB {

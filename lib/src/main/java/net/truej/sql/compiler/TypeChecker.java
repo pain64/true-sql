@@ -351,19 +351,20 @@ class TypeChecker {
                 return "java.time.ZonedDateTime";
         }
 
+        if (onDatabase.equals(POSTGRESQL_DB_NAME)) {
+            if (column.sqlTypeName().equals("timetz"))
+                return "java.time.OffsetTime";
+            // https://github.com/pgjdbc/pgjdbc/pull/3006
+            if (column.sqlTypeName().equals("timestamptz"))
+                return "java.time.OffsetDateTime";
+        }
+
         // shim for new java.time API (JSR-310)
         return switch (column.sqlType()) {
             case Types.DATE -> "java.time.LocalDate";
             case Types.TIME -> "java.time.LocalTime";
-            case Types.TIMESTAMP ->
-                // https://github.com/pgjdbc/pgjdbc/pull/3006
-                column.sqlTypeName().equals("timestamptz") // postgresql
-                    ? "java.time.OffsetDateTime"
-                    : "java.time.LocalDateTime";
-            case Types.TIME_WITH_TIMEZONE -> "java.time.OffsetTime";
-            case Types.TIMESTAMP_WITH_TIMEZONE ->
-                column.javaClassName().equals("java.time.ZonedDateTime")
-                    ? column.javaClassName() : "java.time.OffsetDateTime";
+            case Types.TIMESTAMP -> "java.time.LocalDateTime";
+            case Types.TIMESTAMP_WITH_TIMEZONE -> "java.time.OffsetDateTime";
             default -> parsedConfig.typeBindings().stream()
                 .filter(b ->
                     column.sqlTypeName().equals(b.compatibleSqlTypeName())
