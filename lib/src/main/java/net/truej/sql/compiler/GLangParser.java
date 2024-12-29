@@ -239,13 +239,7 @@ public class GLangParser {
             .filter(nl -> nl.line.chain.next != null)
             .collect(
                 Collectors.groupingBy(
-                    nl -> {
-                        var javaFieldName = nl.line.chain.fieldName;
-                        if (javaFieldName == null)
-                            throw new ParseException("Field name required");
-
-                        return javaFieldName;
-                    },
+                    nl -> nl.line.chain.fieldName,
                     LinkedHashMap::new, Collectors.toList()
                 )
             ).entrySet().stream().map(group -> {

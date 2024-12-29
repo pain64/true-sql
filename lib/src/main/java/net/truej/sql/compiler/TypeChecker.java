@@ -109,22 +109,6 @@ class TypeChecker {
         // avoid JDBC 1.0 spec bug
         if (
             (
-                (
-                    javaBinding.className().equals(Byte.class.getName()) |
-                    javaBinding.className().equals(byte.class.getName())
-                ) && sqlType == Types.TINYINT
-            ) ||
-            (
-                (
-                    javaBinding.className().equals(Short.class.getName()) |
-                    javaBinding.className().equals(short.class.getName())
-                ) &&
-                sqlType == Types.SMALLINT
-            )
-        ) return;
-
-        if (
-            (
                 javaBinding.className().equals(int.class.getName()) ||
                 javaBinding.className().equals(Integer.class.getName())
             ) && (
@@ -224,20 +208,22 @@ class TypeChecker {
             if (!javaBinding.className().equals(sqlJavaClassName))
                 throw handler.onError("type", javaBinding.className(), sqlJavaClassName);
         } else {
-            if (javaBinding.compatibleSqlTypeName() != null) {
-                if (!javaBinding.compatibleSqlTypeName().equals(sqlTypeName))
-                    throw handler.onError(
-                        "sql type name", javaBinding.compatibleSqlTypeName(), sqlTypeName
-                    );
-            }
+            if (
+                javaBinding.compatibleSqlTypeName() != null &&
+                !javaBinding.compatibleSqlTypeName().equals(sqlTypeName)
+            )
+                throw handler.onError(
+                    "sql type name", javaBinding.compatibleSqlTypeName(), sqlTypeName
+                );
 
-            if (javaBinding.compatibleSqlType() != null) {
-                if (javaBinding.compatibleSqlType() != sqlType)
-                    throw handler.onError(
-                        "sql type id (java.sql.Types)",
-                        "" + javaBinding.compatibleSqlType(), "" + sqlType
-                    );
-            }
+            if (
+                javaBinding.compatibleSqlType() != null &&
+                javaBinding.compatibleSqlType() != sqlType
+            )
+                throw handler.onError(
+                    "sql type id (java.sql.Types)",
+                    "" + javaBinding.compatibleSqlType(), "" + sqlType
+                );
         }
     }
 
@@ -256,7 +242,7 @@ class TypeChecker {
                     case EXACTLY_NOT_NULL:
                         handler.onMismatch(true, sqlNullMode, javaNullMode);
                         break;
-                } 
+                }
                 break;
             case DEFAULT_NOT_NULL:
                 switch (sqlNullMode) {
