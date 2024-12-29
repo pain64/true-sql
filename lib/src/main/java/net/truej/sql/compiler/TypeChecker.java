@@ -146,15 +146,6 @@ class TypeChecker {
                 )
             ) || (
                 (
-                    javaBinding.className().equals(char.class.getName()) ||
-                    javaBinding.className().equals(Character.class.getName())
-                ) && (
-                    sqlJavaClassName.equals(char.class.getName()) ||
-                    sqlJavaClassName.equals(Character.class.getName()) ||
-                    sqlType == Types.CHAR
-                )
-            ) || (
-                (
                     javaBinding.className().equals(short.class.getName()) ||
                     javaBinding.className().equals(Short.class.getName())
                 ) && (
@@ -287,12 +278,6 @@ class TypeChecker {
                 column.sqlType() == Types.TINYINT
             )
                 return byte.class.getName();
-
-            if (
-                column.javaClassName().equals(Character.class.getName()) ||
-                column.sqlType() == Types.CHAR
-            )
-                return char.class.getName();
 
             if (
                 column.javaClassName().equals(Short.class.getName()) ||
