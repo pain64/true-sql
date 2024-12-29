@@ -71,16 +71,16 @@ public class InvocationsFinder {
         var map = (ParseLeaf) (name, invoke, checkImport) -> {
             var check = (Function<String, Boolean>) (sName) -> {
                 if (name.equals(names.fromString(sName))) {
+                    if (batchLambda != null)
+                        throw new ValidationException(
+                            invoke, sName + " parameter is not applicable in batch mode"
+                        );
+
                     if (!checkImport) return true;
 
                     var imp = cu.starImportScope.findFirst(name);
                     if (imp == null)
                         imp = cu.namedImportScope.findFirst(name);
-
-                    if (batchLambda != null)
-                        throw new ValidationException(
-                            invoke, sName + " parameter is not applicable in batch mode"
-                        );
 
                     return imp != null &&
                            imp instanceof Symbol.MethodSymbol &&
@@ -132,25 +132,27 @@ public class InvocationsFinder {
 
             if (i < args.size()) {
                 var expression = args.get(i);
-                final QueryPart parsed;
+                var parsed = (QueryPart) new InParameter(expression);
 
                 if (expression instanceof JCTree.JCMethodInvocation invoke) {
                     if (invoke.meth instanceof JCTree.JCIdent id) {
                         parsed = map.parse(id.name, invoke, true);
-                    } else if (
-                        invoke.meth instanceof JCTree.JCFieldAccess fa &&
-                        fa.selected instanceof JCTree.JCIdent id &&
-                        id.name.equals(names.fromString("Parameters"))
-                    ) {
-                        var imp = cu.namedImportScope.findFirst(id.name);
-                        if (imp != null && imp.type.tsym == clParameters)
+                    } else if (invoke.meth instanceof JCTree.JCFieldAccess fa) {
+                        if (
+                            fa.selected instanceof JCTree.JCFieldAccess faa &&
+                            faa.toString().equals(Parameters.class.getName())
+                        ) {
                             parsed = map.parse(fa.name, invoke, false);
-                        else
-                            parsed = new InParameter(invoke);
-                    } else
-                        parsed = new InParameter(invoke);
-                } else
-                    parsed = new InParameter(expression);
+                        } else if (
+                            fa.selected instanceof JCTree.JCIdent id &&
+                            id.name.equals(names.fromString(Parameters.class.getSimpleName()))
+                        ) {
+                            var imp = cu.namedImportScope.findFirst(id.name);
+                            if (imp != null && imp.type.tsym == clParameters)
+                                parsed = map.parse(fa.name, invoke, false);
+                        }
+                    }
+                }
 
                 result.add(parsed);
             }
