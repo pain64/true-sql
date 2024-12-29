@@ -1,5 +1,7 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.tree.JCTree;
+import net.truej.sql.compiler.ConfigurationParser.ParsedConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -245,6 +247,94 @@ public class JdbcMetadataFetcher {
             }
 
             return new JdbcMetadata(onDatabase, columns, parameters);
+        }
+    }
+
+    static void checkConstraint(
+        JCTree tree, ParsedConfiguration config,
+        @Nullable String catalogName, @Nullable String schemaName,
+        String tableName, String constraintName
+    ) throws SQLException {
+        try (
+            var connection = DriverManager.getConnection(
+                config.url(), config.username(), config.password()
+            )
+        ) {
+            var onDatabase = connection.getMetaData().getDatabaseProductName();
+
+            if (catalogName == null) {
+                if (onDatabase.equals(ORACLE_DB_NAME))
+                    catalogName = "";
+                else if (
+                    onDatabase.equals(MYSQL_DB_NAME) ||
+                    onDatabase.equals(MARIA_DB_NAME)
+                )
+                    catalogName = "def";
+                else
+                    catalogName = connection.getCatalog();
+            }
+
+            if (schemaName == null) {
+                if (
+                    onDatabase.equals(MYSQL_DB_NAME) ||
+                    onDatabase.equals(MARIA_DB_NAME)
+                )
+                    schemaName = connection.getCatalog();
+                else
+                    schemaName = connection.getSchema();
+            }
+
+            var query = """
+                select
+                    '', ''
+                from information_schema.table_constraints
+                where
+                    upper(TABLE_CATALOG)   = upper(?) and
+                    upper(TABLE_SCHEMA)    = upper(?) and
+                    upper(TABLE_NAME)      = upper(?) and
+                    upper(CONSTRAINT_NAME) = upper(?)""";
+
+            if (
+                onDatabase.equals(MYSQL_DB_NAME) ||
+                onDatabase.equals(MARIA_DB_NAME)
+            )
+                query = """
+                    select
+                        '', ?
+                    from information_schema.table_constraints
+                    where
+                        upper(TABLE_SCHEMA)    = upper(?) and
+                        upper(TABLE_NAME)      = upper(?) and
+                        upper(CONSTRAINT_NAME) = upper(?)
+                    """;
+
+            if (onDatabase.equals(ORACLE_DB_NAME))
+                query = """
+                    select
+                        '', ?
+                    from all_constraints
+                    where
+                        upper(OWNER)           = upper(?) and
+                        upper(TABLE_NAME)      = upper(?) and
+                        upper(CONSTRAINT_NAME) = upper(?)
+                    """;
+
+            var stmt = connection.prepareStatement(query);
+            stmt.setString(1, catalogName);
+            stmt.setString(2, schemaName);
+            stmt.setString(3, tableName);
+            stmt.setString(4, constraintName);
+
+            var rs = stmt.executeQuery();
+            if (!rs.next())
+                throw new TrueSqlPlugin.ValidationException(
+                    tree, "constraint not found"
+                );
+
+
+            if (rs.next()) throw new TrueSqlPlugin.ValidationException(
+                tree, "too much constraints for criteria"
+            );
         }
     }
 }
