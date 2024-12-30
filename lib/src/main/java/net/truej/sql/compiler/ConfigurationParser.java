@@ -3,6 +3,7 @@ package net.truej.sql.compiler;
 import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.bindings.Standard;
@@ -115,7 +116,7 @@ public class ConfigurationParser {
                     );
 
                 bindings.add(new Standard.Binding(
-                    bound.tsym.flatName().toString(),
+                    TrueSqlPlugin.typeToClassName(bound),
                     rwClassSym.flatName().toString(),
                     compatibleSqlType,
                     compatibleSqlTypeName

@@ -1,2 +1,9 @@
-package net.truej.sql.compiler;public class IntArrayNullableRW {
+package net.truej.sql.compiler;
+
+import java.sql.*;
+
+public class IntArrayNullableRW extends GenericArrayRw<Integer[]> {
+    @Override Integer[] convert(Array array) throws SQLException {
+        return (Integer[]) array.getArray();
+    }
 }

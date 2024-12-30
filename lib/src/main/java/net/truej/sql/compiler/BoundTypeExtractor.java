@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 
 public class BoundTypeExtractor {
 
-    private static Type.ClassType up(
+    private static Type up(
         Symbol.ClassSymbol typeReadWriteSymbol, HashMap<Symbol, Type> map, Symbol.ClassSymbol from
     ) {
 
@@ -25,7 +25,7 @@ public class BoundTypeExtractor {
         };
 
         if (from == typeReadWriteSymbol)
-            return (Type.ClassType) map.get(from.getTypeParameters().getFirst());
+            return map.get(from.getTypeParameters().getFirst());
         else {
             for (var iface : from.getInterfaces())
                 if (iface instanceof Type.ClassType cl) {
@@ -42,7 +42,7 @@ public class BoundTypeExtractor {
         }
     }
 
-    public static Type.ClassType extract(
+    public static Type extract(
         Symbol.ClassSymbol typeReadWriteSymbol, Symbol.ClassSymbol from
     ) {
         return up(typeReadWriteSymbol, new HashMap<>(), from);

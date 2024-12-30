@@ -33,6 +33,35 @@ import java.sql.Types;
         @TypeBinding(
             compatibleSqlTypeName = "enum_user_sex",
             rw = PgUserSexRW.class
+        ),
+        // порядок важен. Мы хотим чтобы в .g режиме по умолчанию выводились Integer[]
+        @TypeBinding(
+            compatibleSqlTypeName = "_int4",
+            rw = IntArrayNullableRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_int4",
+            rw = IntArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_int8",
+            rw = LongArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_float4",
+            rw = FloatArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_float8",
+            rw = DoubleArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_bool",
+            rw = BooleanArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "_int2",
+            rw = ShortArrayRW.class
         )
     }
 ) public class MainDataSource extends DataSourceW {
