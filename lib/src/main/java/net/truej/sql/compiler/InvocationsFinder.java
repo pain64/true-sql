@@ -64,57 +64,46 @@ public class InvocationsFinder {
             cu.modle, names.fromString(Parameters.class.getName())
         );
 
-        interface ParseLeaf {
-            QueryPart parse(Name name, JCTree.JCMethodInvocation invoke, boolean checkImport);
+        interface ParameterParser {
+            QueryPart parse(Name name, JCTree.JCMethodInvocation invoke);
         }
 
-        var map = (ParseLeaf) (name, invoke, checkImport) -> {
-            var check = (Function<String, Boolean>) (sName) -> {
-                if (name.equals(names.fromString(sName))) {
-                    if (batchLambda != null)
-                        throw new ValidationException(
-                            invoke, sName + " parameter is not applicable in batch mode"
-                        );
+        var parser = (ParameterParser) (methodName, invoke) -> {
+            final QueryPart parameter;
 
-                    if (!checkImport) return true;
-
-                    var imp = cu.starImportScope.findFirst(name);
-                    if (imp == null)
-                        imp = cu.namedImportScope.findFirst(name);
-
-                    return imp != null &&
-                           imp instanceof Symbol.MethodSymbol &&
-                           imp.owner == clParameters;
-                }
-                return false;
-            };
-
-            if (check.apply("inout")) {
-                return new InoutParameter(invoke.args.head);
-            } else if (check.apply("out")) {
-                var found = TypeFinder.resolve(names, symtab, cu, invoke.args.head);
-                return new OutParameter(found);
-            } else if (check.apply("unfold")) {
+            if (methodName.equals(names.fromString("inout")))
+                parameter = new InoutParameter(invoke.args.head);
+            else if (methodName.equals(names.fromString("out")))
+                parameter = new OutParameter(
+                    TypeFinder.resolve(names, symtab, cu, invoke.args.head)
+                );
+            else if (methodName.equals(names.fromString("unfold"))) {
                 if (invoke.args.size() == 1)
-                    return new UnfoldParameter(invoke.args.head, null);
-                else if (invoke.args.size() == 2) {
+                    parameter = new UnfoldParameter(invoke.args.head, null);
+                else { // 2
                     if (
                         invoke.args.get(1) instanceof JCTree.JCLambda lmb &&
                         lmb.body instanceof JCTree.JCNewArray array &&
                         array.elemtype instanceof JCTree.JCIdent elementTypeId &&
                         elementTypeId.name.equals(names.fromString("Object"))
                     )
-                        return new UnfoldParameter(invoke.args.head, lmb);
+                        parameter = new UnfoldParameter(invoke.args.head, lmb);
                     else
                         throw new ValidationException(
                             invoke,
                             "Unfold parameter extractor must be lambda literal returning " +
                             "object array literal (e.g. `u -> new Object[]{u.f1, u.f2}`)"
                         );
-                } else
-                    throw new ValidationException(invoke, "bad tree"); // FIXME: refactor to new bad tree subsystem
+                }
             } else
-                return new InParameter(invoke);
+                parameter = new InParameter(invoke);
+
+            if (batchLambda != null && !(parameter instanceof InParameter))
+                throw new ValidationException(
+                    invoke, "only IN parameters allowed in batch mode"
+                );
+
+            return parameter;
         };
 
         var fragments = (queryText + " ").split("(?<=[\\s,=()])\\?");
@@ -136,21 +125,30 @@ public class InvocationsFinder {
 
                 if (expression instanceof JCTree.JCMethodInvocation invoke) {
                     if (invoke.meth instanceof JCTree.JCIdent id) {
-                        parsed = map.parse(id.name, invoke, true);
+                        var imp = cu.starImportScope.findFirst(id.name);
+                        if (imp == null)
+                            imp = cu.namedImportScope.findFirst(id.name);
+
+                        if (
+                            imp != null &&
+                            imp instanceof Symbol.MethodSymbol &&
+                            imp.owner == clParameters
+                        )
+                            parsed = parser.parse(id.name, invoke);
                     } else if (invoke.meth instanceof JCTree.JCFieldAccess fa) {
                         if (
                             fa.selected instanceof JCTree.JCFieldAccess faa &&
                             faa.toString().equals(Parameters.class.getName())
-                        ) {
-                            parsed = map.parse(fa.name, invoke, false);
-                        } else if (
+                        )
+                            parsed = parser.parse(fa.name, invoke);
+                        else if (
                             fa.selected instanceof JCTree.JCIdent id &&
-                            id.name.equals(names.fromString(Parameters.class.getSimpleName()))
-                        ) {
-                            var imp = cu.namedImportScope.findFirst(id.name);
-                            if (imp != null && imp.type.tsym == clParameters)
-                                parsed = map.parse(fa.name, invoke, false);
-                        }
+                            id.name.equals(names.fromString(Parameters.class.getSimpleName())) &&
+                            cu.namedImportScope.findFirst(id.name) instanceof Symbol s &&
+                            s.type.tsym == clParameters
+                        )
+                            parsed = parser.parse(fa.name, invoke);
+
                     }
                 }
 
@@ -308,11 +306,9 @@ public class InvocationsFinder {
                         } else
                             return null;
 
-                        // FIXME: deduplicate with line 423
-                        dtoMode = f.name.equals(names.fromString("fetchNone")) ? null :
-                            new ExistingDto(
-                                nullMode, TypeFinder.resolve(names, symtab, cu, tree.args.get(1))
-                            );
+                        dtoMode = new ExistingDto(
+                            nullMode, TypeFinder.resolve(names, symtab, cu, tree.args.get(1))
+                        );
                     } else
                         return null;
                 }
