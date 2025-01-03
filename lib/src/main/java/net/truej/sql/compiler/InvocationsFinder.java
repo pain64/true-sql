@@ -135,21 +135,20 @@ public class InvocationsFinder {
                             imp.owner == clParameters
                         )
                             parsed = parser.parse(id.name, invoke);
-                    } else if (invoke.meth instanceof JCTree.JCFieldAccess fa) {
-                        if (
-                            fa.selected instanceof JCTree.JCFieldAccess faa &&
-                            faa.toString().equals(Parameters.class.getName())
+                    } else if (
+                        invoke.meth instanceof JCTree.JCFieldAccess fa && (
+                            (
+                                fa.selected instanceof JCTree.JCIdent id &&
+                                id.name.equals(clParameters.getSimpleName()) &&
+                                cu.namedImportScope.findFirst(id.name) instanceof Symbol s &&
+                                s.type.tsym == clParameters
+                            ) || (
+                                fa.selected instanceof JCTree.JCFieldAccess faa &&
+                                clParameters.getQualifiedName().contentEquals(faa.toString())
+                            )
                         )
-                            parsed = parser.parse(fa.name, invoke);
-                        else if (
-                            fa.selected instanceof JCTree.JCIdent id &&
-                            id.name.equals(names.fromString(Parameters.class.getSimpleName())) &&
-                            cu.namedImportScope.findFirst(id.name) instanceof Symbol s &&
-                            s.type.tsym == clParameters
-                        )
-                            parsed = parser.parse(fa.name, invoke);
-
-                    }
+                    )
+                        parsed = parser.parse(fa.name, invoke);
                 }
 
                 result.add(parsed);
@@ -200,9 +199,15 @@ public class InvocationsFinder {
             ) throws SQLException {
                 if (
                     (tree.args.length() >= 3 || tree.args.length() <= 5) &&
-                    sourceExpression instanceof JCTree.JCIdent idExpr
+                    sourceExpression instanceof JCTree.JCIdent idExpr // FIXME: перенести ниже
                 ) {
+// TODO:
+//                    throw new ValidationException(
+//                        fa.selected, "Expected identifier for source for `.constraint(...)`"
+//                    );
+
                     var vt = varTypes.get(idExpr.name);
+                    if (vt == null) return;
 
                     var parsedConfig = ConfigurationParser.parseConfig(
                         symtab, names, cu, vt, (__, ___) -> { }
@@ -293,14 +298,13 @@ public class InvocationsFinder {
                         if (
                             (tree.args.head instanceof JCTree.JCIdent id &&
                              id.name.equals(names.fromString("Nullable"))) ||
-                            // FIXME: use FQN
-                            tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.Nullable")
+                            tree.args.head.toString().equals(Parameters.class.getName() + ".Nullable")
                         ) {
                             nullMode = NullMode.EXACTLY_NULLABLE;
                         } else if (
                             (tree.args.head instanceof JCTree.JCIdent id &&
                              id.name.equals(names.fromString("NotNull"))) ||
-                            tree.args.head.toString().equals("net.truej.sql.fetch.Parameters.NotNull")
+                            tree.args.head.toString().equals(Parameters.class.getName() + ".NotNull")
                         ) {
                             nullMode = NullMode.EXACTLY_NOT_NULL;
                         } else
@@ -416,7 +420,6 @@ public class InvocationsFinder {
                         var clDataSourceW = symtab.enterClass(
                             cu.modle, names.fromString(DataSourceW.class.getName())
                         );
-
 
                         var vt = varTypes.get(processorId.name);
 
@@ -702,7 +705,7 @@ public class InvocationsFinder {
                     messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
                     // FIXME: Нужно подумать о новой стратегии вывода ошибок компиляции (когда и какие)
                     // FIXME: do return instead ??
-                    throw new TrueSqlPlugin.ValidationException(tree, e.getMessage());
+                    // throw new TrueSqlPlugin.ValidationException(tree, e.getMessage());
                 } catch (
                     GLangParser.ParseException |
                     ExistingDtoParser.ParseException |
@@ -725,7 +728,6 @@ public class InvocationsFinder {
         return IntStream.range(
             0, parameters.size()
         ).filter(i ->
-            //!(parameters.get(i) instanceof InParameter)
             parameters.get(i) instanceof InoutParameter ||
             parameters.get(i) instanceof OutParameter
         ).map(i -> i + 1).toArray();
