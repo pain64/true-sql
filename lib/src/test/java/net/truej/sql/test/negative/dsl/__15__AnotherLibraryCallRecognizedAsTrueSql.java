@@ -1,6 +1,7 @@
 package net.truej.sql.test.negative.dsl;
 
 import net.truej.sql.TrueSql;
+import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
@@ -12,13 +13,44 @@ import java.sql.SQLException;
 @TrueSql public class __15__AnotherLibraryCallRecognizedAsTrueSql {
     static class Confusion {
         Confusion q(String text) { return this; }
+        Confusion q(Integer t1, String t2, String t3, String t4) { return this; }
         Void fetchNone() { return null; }
+        public void constraint(String sn, String tn, Integer cn, String none) { }
+        public void constraint(String sn, String tn, String cn, Integer some, String none) { }
+        void fetchOne(String one, String two) {};
+        void fetchOne(String one, String two, String three) {};
     }
     // TrueSql recognizes that it's not genuine TrueSql api call!
     // Errors discovered for this tree in annotation processor
     // will be discarded in compiler plugin
-    @TestTemplate void test() throws SQLException {
+    @TestTemplate void test() {
         var cn = new Confusion();
         cn.q("").fetchNone();
     }
+
+    @TestTemplate public void test1() {
+        var con = new Confusion();
+        con.constraint("a", "a", 1, null);
+    }
+
+    @TestTemplate public void test2() {
+        var con = new Confusion();
+        con.constraint("a", "a", "a", 1, null);
+    }
+
+    @TestTemplate public void test4() {
+        var con = new Confusion();
+        con.fetchOne("a", "b", "c");
+    }
+
+    @TestTemplate public void test5() {
+        var con = new Confusion();
+        con.q(1, "1", "1", "1");
+    }
+
+    @TestTemplate public void test6() {
+        var con = new Confusion();
+        con.q(1, "1", "1", "1").fetchOne("1", "1");
+    }
+
 }

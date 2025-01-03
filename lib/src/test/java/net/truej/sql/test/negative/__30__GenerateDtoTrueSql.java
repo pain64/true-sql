@@ -6,4 +6,6 @@ public class __30__GenerateDtoTrueSql {
     class Dto1 {}
     class Dto2 {}
     class BadTypeDto {}
+    class Dto3 {}
+    class Dto4 {}
 }

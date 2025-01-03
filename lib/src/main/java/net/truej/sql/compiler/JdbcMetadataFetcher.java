@@ -44,8 +44,7 @@ public class JdbcMetadataFetcher {
     private static List<SqlColumnMetadata> fetchColumns(
         String onDatabase, ResultSetMetaData rMetadata
     ) throws SQLException {
-        // FIXME: remove this line
-        if (rMetadata == null) return List.of();
+        if (rMetadata == null) return null;
 
         var isUppercaseOnly = (Function<String, Boolean>) str ->
             str.chars().filter(ch -> ch != '_')
