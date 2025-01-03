@@ -208,7 +208,7 @@ public class MapperGenerator {
     }
 
     public static void generate(
-        Out out, Field toType,
+        Out out, FetchToField toType,
         int[] outParametersNumbers,
         Function<String, String> typeToRwClass
     ) {
@@ -226,19 +226,11 @@ public class MapperGenerator {
         final WriteNext mapFields;
 
         switch (toType) {
-            case Aggregated gf -> {
+            case ListOfGroupField lgf -> {
                 final String toDto;
 
-                var javaClassName = switch (gf) {
-                    case ListOfGroupField lgf -> lgf.newJavaClassName();
-                    case ListOfScalarField lsf -> lsf.binding().className();
-                };
-                var fields = switch (gf) {
-                    case ListOfGroupField lgf -> lgf.fields();
-                    case ListOfScalarField lsf -> List.of((Field) lsf);
-                };
-                var flattened = flattenStartRow(fields);
-                var hasInnerAggregating = fields.stream()
+                var flattened = flattenStartRow(lgf.fields());
+                var hasInnerAggregating = lgf.fields().stream()
                     .anyMatch(f -> f instanceof Aggregated);
 
                 var eachField = Out.each(flattened, ",\n", (o, i, field) -> {
@@ -254,7 +246,7 @@ public class MapperGenerator {
                     );
 
                     var groupKeysDto = (WriteNext) o ->
-                        dtoForGroupKeys(o, 1, 0, fields);
+                        dtoForGroupKeys(o, 1, 0, lgf.fields());
 
                     toDto = "Row";
                     extraDto = o -> o.w(
@@ -265,10 +257,10 @@ public class MapperGenerator {
                         "\n"
                     );
                     groupTransform = o ->
-                        nextOperations(o, 1, 0, javaClassName, fields);
+                        nextOperations(o, 1, 0, lgf.newJavaClassName(), lgf.fields());
 
                 } else {
-                    toDto = javaClassName;
+                    toDto = lgf.newJavaClassName();
                     extraDto = __ -> null;
                     groupTransform = __ -> null;
                 }

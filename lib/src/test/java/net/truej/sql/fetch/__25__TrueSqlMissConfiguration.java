@@ -7,7 +7,6 @@ import org.junit.jupiter.api.function.Executable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static net.truej.sql.fetch.Parameters.*;
 
@@ -22,8 +21,9 @@ public class __25__TrueSqlMissConfiguration {
 
 
     @Test void test() throws Throwable {
-        new Parameters(); // for Jacoco
-        new Standard(); // for Jacoco
+        // for Jacoco
+        new Parameters();
+        new Standard();
 
         var actions = List.<Executable>of(
             () -> out(Integer.class),

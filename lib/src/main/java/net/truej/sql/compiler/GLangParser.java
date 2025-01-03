@@ -173,20 +173,21 @@ public class GLangParser {
     public sealed interface Field {
         String name();
     }
-    sealed interface Aggregated extends Field { }
+    public sealed interface FetchToField extends Field { }
+    sealed interface Aggregated { }
 
     public record ScalarField(
         String name, NullMode nullMode, Binding binding
-    ) implements Field { }
+    ) implements FetchToField { }
 
     public record ListOfScalarField(
         // FIXME: разве колонка после агрегации может быть null???
         String name, NullMode nullMode, Binding binding
-    ) implements Aggregated { }
+    ) implements Field, Aggregated { }
 
     public record ListOfGroupField(
         String name, String newJavaClassName, List<Field> fields
-    ) implements Aggregated { }
+    ) implements FetchToField, Aggregated { }
 
     public record NumberedColumn(int n, ColumnMetadata column, Line line) { }
 

@@ -62,8 +62,7 @@ public class JdbcMetadataFetcher {
         String onDatabase, ResultSetMetaData mt, int i
     ) throws SQLException {
         return switch (onDatabase) {
-            case POSTGRESQL_DB_NAME ->
-                pgGetBaseColumnName(mt, i);
+            case POSTGRESQL_DB_NAME -> pgGetBaseColumnName(mt, i);
             case HSQL_DB_NAME -> {
                 var name = mt.getColumnName(i);
                 yield isUppercaseOnly(name)
@@ -333,11 +332,6 @@ public class JdbcMetadataFetcher {
                 throw new TrueSqlPlugin.ValidationException(
                     tree, "constraint not found"
                 );
-
-
-            if (rs.next()) throw new TrueSqlPlugin.ValidationException(
-                tree, "too much constraints for criteria"
-            );
         }
     }
 }

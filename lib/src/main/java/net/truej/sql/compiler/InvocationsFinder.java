@@ -449,21 +449,18 @@ public class InvocationsFinder {
                 } else
                     return null;
 
-                var parseExistingDto = (Function<ExistingDto, GLangParser.Field>) existing ->
-                    ExistingDtoParser.parse(
-                        parsedConfig.typeBindings(),
-                        "result",
-                        existing.nullMode,
-                        names.init, existing.toType
+                var parseExistingDto = (Function<ExistingDto, GLangParser.FetchToField>) existing ->
+                    (GLangParser.FetchToField) ExistingDtoParser.parse(
+                        parsedConfig.typeBindings(), true, false, "result",
+                        existing.nullMode, names.init, existing.toType
                     );
 
-                final GLangParser.Field toDto;
+                final GLangParser.FetchToField toDto;
                 var jdbcMetadata = parsedConfig.url() == null ? null :
                     JdbcMetadataFetcher.fetch(
                         parsedConfig.url(), parsedConfig.username(), parsedConfig.password(),
                         queryMode, statementMode
                     );
-
 
                 var stMode = statementMode;
 
@@ -703,9 +700,6 @@ public class InvocationsFinder {
                     // то у нас не сгенерируются Dto и будет ошибка компиляции
                     // и до плагина компилятора мы не дойдем!
                     messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
-                    // FIXME: Нужно подумать о новой стратегии вывода ошибок компиляции (когда и какие)
-                    // FIXME: do return instead ??
-                    // throw new TrueSqlPlugin.ValidationException(tree, e.getMessage());
                 } catch (
                     GLangParser.ParseException |
                     ExistingDtoParser.ParseException |

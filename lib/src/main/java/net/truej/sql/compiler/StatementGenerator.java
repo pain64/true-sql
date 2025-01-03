@@ -38,15 +38,15 @@ public class StatementGenerator {
 
     public sealed interface FetchMode { }
     public sealed interface FetchTo extends FetchMode {
-        Field toField();
+        FetchToField toField();
     }
 
     // FIXME: .g cannot have has none???
     public record FetchNone() implements FetchMode { }
-    public record FetchOne(Field toField) implements FetchTo { }
-    public record FetchOneOrZero(Field toField) implements FetchTo { }
-    public record FetchList(Field toField) implements FetchTo { }
-    public record FetchStream(Field toField) implements FetchTo { }
+    public record FetchOne(FetchToField toField) implements FetchTo { }
+    public record FetchOneOrZero(FetchToField toField) implements FetchTo { }
+    public record FetchList(FetchToField toField) implements FetchTo { }
+    public record FetchStream(FetchToField toField) implements FetchTo { }
 
     interface WriteNext {
         Void write(Out out);
@@ -164,8 +164,6 @@ public class StatementGenerator {
                 var toSourceCodeType = switch (to.toField()) {
                     case ScalarField sf -> classNameToSourceCodeType(sf.binding().className());
                     case ListOfGroupField lgf -> lgf.newJavaClassName();
-                    case ListOfScalarField lsf ->
-                        throw new RuntimeException("unreachable. refactor this code");
                 };
 
                 var wrapWith = switch (to) {
