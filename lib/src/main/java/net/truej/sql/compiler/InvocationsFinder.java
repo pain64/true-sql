@@ -33,7 +33,8 @@ import static net.truej.sql.compiler.TrueSqlPlugin.*;
 public class InvocationsFinder {
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
-    sealed interface SingleParameter extends QueryPart { }
+    public sealed interface ParameterPart extends QueryPart {}
+    sealed interface SingleParameter extends ParameterPart { }
     sealed interface InOrInoutParameter extends SingleParameter {
         JCTree.JCExpression expression();
     }
@@ -43,7 +44,7 @@ public class InvocationsFinder {
     public record OutParameter(Type toType) implements SingleParameter { }
     public record UnfoldParameter(
         JCTree.JCExpression expression, @Nullable JCTree.JCLambda extractor
-    ) implements QueryPart { }
+    ) implements ParameterPart { }
 
     record ExistingDto(
         NullMode nullMode, Type toType
@@ -117,7 +118,6 @@ public class InvocationsFinder {
 
         for (var i = 0; i < fragments.length; i++) {
             result.add(new TextPart(fragments[i]));
-
 
             if (i < args.size()) {
                 var expression = args.get(i);
@@ -252,8 +252,8 @@ public class InvocationsFinder {
             @Nullable FetchInvocation handleFetch(
                 JCTree.JCMethodInvocation tree, JCTree.JCFieldAccess f
             ) throws SQLException {
+
                 var warnings = new ArrayList<CompilationWarning>();
-                // FIXME: split to parse tree and handle
                 var fetchMethodName = f.name.toString();
 
                 if (
@@ -298,12 +298,14 @@ public class InvocationsFinder {
                         if (
                             (tree.args.head instanceof JCTree.JCIdent id &&
                              id.name.equals(names.fromString("Nullable"))) ||
+                            tree.args.head.toString().equals(Parameters.class.getSimpleName() + ".Nullable") ||
                             tree.args.head.toString().equals(Parameters.class.getName() + ".Nullable")
                         ) {
                             nullMode = NullMode.EXACTLY_NULLABLE;
                         } else if (
                             (tree.args.head instanceof JCTree.JCIdent id &&
                              id.name.equals(names.fromString("NotNull"))) ||
+                            tree.args.head.toString().equals(Parameters.class.getSimpleName() + ".NotNull") ||
                             tree.args.head.toString().equals(Parameters.class.getName() + ".NotNull")
                         ) {
                             nullMode = NullMode.EXACTLY_NOT_NULL;
@@ -636,8 +638,7 @@ public class InvocationsFinder {
                     case "fetchOneOrZero" -> new StatementGenerator.FetchOneOrZero(toDto);
                     case "fetchList" -> new StatementGenerator.FetchList(toDto);
                     case "fetchStream" -> new StatementGenerator.FetchStream(toDto);
-                    case "fetchNone" -> new StatementGenerator.FetchNone();
-                    default -> throw new RuntimeException("unreachable");
+                    default /* fetchNone */ -> new StatementGenerator.FetchNone();
                 };
 
                 var generatedCode = StatementGenerator.generate(

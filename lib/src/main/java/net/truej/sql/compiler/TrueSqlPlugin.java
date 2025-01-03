@@ -35,7 +35,7 @@ public class TrueSqlPlugin implements Plugin {
 
     // https://static1.srcdn.com/wordpress/wp-content/uploads/2021/05/scary-movie-doofy.jpg?q=50&fit=crop&w=1100&h=618&dpr=1.5
 
-    public static java.util.List<Object> doofyEncode(Object value) {
+    static java.util.List<Object> doofyEncode(Object value) {
         if (value == null) return null;
 
         var cl = value.getClass();
@@ -68,7 +68,7 @@ public class TrueSqlPlugin implements Plugin {
             }};
     }
 
-    private static Object doofyDecode(Object in) {
+    static Object doofyDecode(Object in) {
         if (in == null) return null;
         var value = (java.util.List<Object>) in;
 
@@ -347,14 +347,8 @@ public class TrueSqlPlugin implements Plugin {
                             tree.args = tree.args.append(extractor);
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
                             break;
-                        case TextPart __:
+                        default:
                             break;
-                        case InoutParameter __:
-                            throw new RuntimeException("unreachable");
-                        case OutParameter __:
-                            throw new RuntimeException("unreachable");
-                        case UnfoldParameter __:
-                            throw new RuntimeException("unreachable");
                     }
                 break;
             case SingleQuery sq:

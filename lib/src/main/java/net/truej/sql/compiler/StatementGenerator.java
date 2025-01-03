@@ -241,13 +241,13 @@ public class StatementGenerator {
                 updateCount = "updateCount";
             }
             case SingleQuery sp -> {
-                var nonTextParts = sp.parts.stream()
-                    .filter(p -> !(p instanceof InvocationsFinder.TextPart)).toList();
+                var parameterParts = sp.parts.stream()
+                    .filter(p -> p instanceof InvocationsFinder.ParameterPart)
+                    .map(p -> (InvocationsFinder.ParameterPart) p)
+                    .toList();
 
                 var eachTypeParameter = Out.each(
-                    nonTextParts, ", ", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart __ ->
-                            throw new IllegalStateException("unreachable");
+                    parameterParts, ", ", (o, i, p) -> switch (p) {
                         case InvocationsFinder.SingleParameter __ -> o.w("P", i + 1);
                         case InvocationsFinder.UnfoldParameter up -> {
                             var n = unfoldArgumentsCount(up.extractor());
@@ -263,13 +263,11 @@ public class StatementGenerator {
                     }
                 );
 
-                typeParameters = nonTextParts.isEmpty()
+                typeParameters = parameterParts.isEmpty()
                     ? o -> o.w("") : o -> o.w("<", eachTypeParameter, ">");
 
                 var eachParameter = Out.each(
-                    nonTextParts, ",\n", (o, i, p) -> switch (p) {
-                        case InvocationsFinder.TextPart __ ->
-                            throw new IllegalStateException("unreachable");
+                    parameterParts, ",\n", (o, i, p) -> switch (p) {
                         case InvocationsFinder.InOrInoutParameter __ -> o.w(
                             "P", i + 1, " p", i + 1, " ,\n",
                             "TypeReadWrite<P", i + 1, "> prw", i + 1
@@ -299,7 +297,7 @@ public class StatementGenerator {
                     }
                 );
 
-                parametersCode = nonTextParts.isEmpty()
+                parametersCode = parameterParts.isEmpty()
                     ? o -> o.w("") : o -> o.w(eachParameter, ",");
 
                 throwsClause = o -> null;
@@ -342,9 +340,7 @@ public class StatementGenerator {
 
                 setParameters = o -> {
                     var setters = Out.each(
-                        nonTextParts, "\n", (oo, i, p) -> switch (p) {
-                            case InvocationsFinder.TextPart __ ->
-                                throw new IllegalStateException("unreachable");
+                        parameterParts, "\n", (oo, i, p) -> switch (p) {
                             case InvocationsFinder.InOrInoutParameter __ ->
                                 oo.w("prw", i + 1, ".set(stmt, ++n, p", i + 1, ");");
                             case InvocationsFinder.OutParameter __ ->

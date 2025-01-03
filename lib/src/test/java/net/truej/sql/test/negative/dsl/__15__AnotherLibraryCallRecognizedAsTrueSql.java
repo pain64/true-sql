@@ -3,13 +3,16 @@ package net.truej.sql.test.negative.dsl;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests2.EnableOn;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.sql.SQLException;
 
-@ExtendWith(TrueSqlTests2.class)
+import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+
+@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __15__AnotherLibraryCallRecognizedAsTrueSql {
     static class Confusion {
         Confusion q(String text) { return this; }

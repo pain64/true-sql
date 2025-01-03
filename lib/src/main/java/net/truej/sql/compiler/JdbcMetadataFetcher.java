@@ -9,7 +9,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -41,48 +40,53 @@ public class JdbcMetadataFetcher {
         @Nullable List<SqlParameterMetadata> parameters
     ) { }
 
+    private static boolean isUppercaseOnly(String str) {
+        return str.chars().filter(ch -> ch != '_')
+            .allMatch(Character::isUpperCase);
+    }
+
+    private static boolean isGLangExpression(String str) {
+        return str.contains(".") || str.contains(":t");
+    }
+
+    static String pgGetBaseColumnName(ResultSetMetaData mt, int i) {
+        try {
+            return (String) mt.getClass().getMethod("getBaseColumnName", int.class)
+                .invoke(mt, i);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String getColumnName(
+        String onDatabase, ResultSetMetaData mt, int i
+    ) throws SQLException {
+        return switch (onDatabase) {
+            case POSTGRESQL_DB_NAME ->
+                pgGetBaseColumnName(mt, i);
+            case HSQL_DB_NAME -> {
+                var name = mt.getColumnName(i);
+                yield isUppercaseOnly(name)
+                    ? name.toLowerCase() : name;
+            }
+            case ORACLE_DB_NAME, MSSQL_DB_NAME -> null;
+            default -> mt.getColumnName(i);
+        };
+    }
+
     private static List<SqlColumnMetadata> fetchColumns(
         String onDatabase, ResultSetMetaData rMetadata
     ) throws SQLException {
         if (rMetadata == null) return null;
-
-        var isUppercaseOnly = (Function<String, Boolean>) str ->
-            str.chars().filter(ch -> ch != '_')
-                .allMatch(Character::isUpperCase);
-
-        var isGLangExpression = (Function<String, Boolean>) str ->
-            str.contains(".") || str.contains(":t");
-
-        var getColumnName = (BiFunction<ResultSetMetaData, Integer, String>) (mt, i) -> {
-            try {
-                return switch (onDatabase) {
-                    case POSTGRESQL_DB_NAME ->
-                        (String) mt.getClass().getMethod("getBaseColumnName", int.class)
-                            .invoke(mt, i);
-                    case HSQL_DB_NAME -> {
-                        var name = mt.getColumnName(i);
-                        yield isUppercaseOnly.apply(name)
-                            ? name.toLowerCase() : name;
-                    }
-                    case ORACLE_DB_NAME, MSSQL_DB_NAME -> null;
-                    default -> mt.getColumnName(i);
-                };
-
-            } catch (SQLException | NoSuchMethodException |
-                     IllegalAccessException |
-                     InvocationTargetException ex) {
-                throw new RuntimeException(ex);
-            }
-        };
 
         var fixedColumnLabel = (Function<String, String>) label -> {
             if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
                 return ""; // ???
 
             if (onDatabase.equals(HSQL_DB_NAME) || onDatabase.equals(ORACLE_DB_NAME)) {
-                if (isGLangExpression.apply(label))
+                if (isGLangExpression(label))
                     return label;
-                return isUppercaseOnly.apply(label)
+                return isUppercaseOnly(label)
                     ? label.toLowerCase() : label;
             }
 
@@ -103,7 +107,7 @@ public class JdbcMetadataFetcher {
                         rMetadata.getColumnType(i),
                         rMetadata.getScale(i),
                         rMetadata.getPrecision(i),
-                        getColumnName.apply(rMetadata, i),
+                        getColumnName(onDatabase, rMetadata, i),
                         fixedColumnLabel.apply(rMetadata.getColumnLabel(i)),
                         switch (rMetadata.isNullable(i)) {
                             case ResultSetMetaData.columnNoNulls ->
