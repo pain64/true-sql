@@ -14,8 +14,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(POSTGRESQL)
 @TrueSql public class __21__ArrayTest {
-    @TestTemplate public void testInt(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testInt(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::int[] as "privet"
             """).fetchOne(int[].class);
@@ -23,8 +23,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new int[] {1, 2, 3});
     }
 
-    @TestTemplate public void testIntNullable(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testIntNullable(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::int[] as "privet"
             """).fetchOne(Integer[].class);
@@ -32,8 +32,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new Integer[] {1, 2, 3});
     }
 
-    @TestTemplate public void testLong(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testLong(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::bigint[] as "privet"
             """).fetchOne(long[].class);
@@ -41,8 +41,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new long[] {1, 2, 3});
     }
 
-    @TestTemplate public void testFloat(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testFloat(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::float4[] as "privet"
             """).fetchOne(float[].class);
@@ -50,8 +50,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new float[] {1, 2, 3});
     }
 
-    @TestTemplate public void testDouble(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testDouble(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::float8[] as "privet"
             """).fetchOne(double[].class);
@@ -59,8 +59,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new double[] {1, 2, 3});
     }
 
-    @TestTemplate public void testShort(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testShort(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,2,3]::int2[] as "privet"
             """).fetchOne(short[].class);
@@ -68,8 +68,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
         Assertions.assertArrayEquals(result, new short[] {1, 2, 3});
     }
 
-    @TestTemplate public void testBoolean(@NotNull MainDataSource cn) {
-        var result = cn.q("""
+    @TestTemplate public void testBoolean(MainDataSource ds) {
+        var result = ds.q("""
             select
                 ARRAY[1,0,1]::boolean[] as "privet"
             """).fetchOne(boolean[].class);

@@ -65,11 +65,11 @@ public class InvocationsFinder {
             cu.modle, names.fromString(Parameters.class.getName())
         );
 
-        interface ParameterParser {
+        interface NotInParameterParser {
             QueryPart parse(Name name, JCTree.JCMethodInvocation invoke);
         }
 
-        var parser = (ParameterParser) (methodName, invoke) -> {
+        var parser = (NotInParameterParser) (methodName, invoke) -> {
             final QueryPart parameter;
 
             if (methodName.equals(names.fromString("inout")))
@@ -78,7 +78,7 @@ public class InvocationsFinder {
                 parameter = new OutParameter(
                     TypeFinder.resolve(names, symtab, cu, invoke.args.head)
                 );
-            else if (methodName.equals(names.fromString("unfold"))) {
+            else { // unfold
                 if (invoke.args.size() == 1)
                     parameter = new UnfoldParameter(invoke.args.head, null);
                 else { // 2
@@ -96,10 +96,9 @@ public class InvocationsFinder {
                             "object array literal (e.g. `u -> new Object[]{u.f1, u.f2}`)"
                         );
                 }
-            } else
-                parameter = new InParameter(invoke);
+            }
 
-            if (batchLambda != null && !(parameter instanceof InParameter))
+            if (batchLambda != null)
                 throw new ValidationException(
                     invoke, "only IN parameters allowed in batch mode"
                 );

@@ -17,12 +17,14 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
     static class Confusion {
         Confusion q(String text) { return this; }
         Confusion q(Integer t1, String t2, String t3, String t4) { return this; }
+        Confusion bar() { return this; }
         Void fetchNone() { return null; }
         public void constraint(String sn, String tn, Integer cn, String none) { }
         public void constraint(String sn, String tn, String cn, Integer some, String none) { }
         void fetchOne(String one, String two) {};
         void fetchOne(String one, String two, String three) {};
     }
+
     // TrueSql recognizes that it's not genuine TrueSql api call!
     // Errors discovered for this tree in annotation processor
     // will be discarded in compiler plugin
@@ -48,7 +50,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 
     @TestTemplate public void test5() {
         var con = new Confusion();
-        con.q(1, "1", "1", "1");
+        con.q(1, "1", "1", "1").fetchNone();
     }
 
     @TestTemplate public void test6() {
@@ -56,4 +58,8 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         con.q(1, "1", "1", "1").fetchOne("1", "1");
     }
 
+    @TestTemplate public void test7() {
+        var con = new Confusion();
+        con.bar().fetchNone();
+    }
 }
