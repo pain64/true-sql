@@ -76,11 +76,11 @@ public class TypeFinder {
             found[0] = (Symbol.ClassSymbol) cu.toplevelScope.findFirst(id.name, isClass);
 
             // FIXME: use SimpleTreeVisitor
-            if (found[0] == null || found[0].type.isErroneous())
+            if (found[0] == null)
                 cu.accept(
                     new TreeScanner() {
                         @Override public void visitClassDef(JCTree.JCClassDecl tree) {
-                            if (tree.name.equals(id.name) && tree.sym != null)
+                            if (tree.name.equals(id.name))
                                 found[0] = tree.sym;
 
                             super.visitClassDef(tree);

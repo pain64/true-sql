@@ -16,5 +16,10 @@ public class __03__CharTestTrueSqlPlugin {
             "C",
             TrueSqlPlugin.arrayTypeToClassName(new Type.JCPrimitiveType(TypeTag.CHAR, null))
         );
+
+        Assertions.assertSame(
+            Character.class,
+            TrueSqlPlugin.primitiveTypeToBoxedClass(new Type.JCPrimitiveType(TypeTag.CHAR, null))
+        );
     }
 }

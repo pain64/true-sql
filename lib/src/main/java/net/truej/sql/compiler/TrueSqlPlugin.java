@@ -248,6 +248,29 @@ public class TrueSqlPlugin implements Plugin {
             }
     }
 
+    static Class<?> primitiveTypeToBoxedClass(Type.JCPrimitiveType pt) {
+        return switch (pt.getTag()) {
+            case BYTE -> Byte.class;
+            case CHAR -> Character.class;
+            case SHORT -> Short.class;
+            case LONG -> Long.class;
+            case FLOAT -> Float.class;
+            case INT -> Integer.class;
+            case DOUBLE -> Double.class;
+            default -> Boolean.class;
+        };
+    }
+
+    static Type boxType(Names names, Symtab symtab, Type t) {
+        var boxed = (Function<Class<?>, Type>) cl ->
+            symtab.getClass(symtab.java_base, names.fromString(cl.getName())).type;
+
+        if (t instanceof Type.JCPrimitiveType pt)
+            return boxed.apply(primitiveTypeToBoxedClass(pt));
+
+        return t;
+    }
+
     void handle(
         Symtab symtab, Names names, TreeMaker maker,
         CompilerMessages messages, JCTree.JCCompilationUnit cu,
@@ -306,22 +329,6 @@ public class TrueSqlPlugin implements Plugin {
             return newClass;
         };
 
-        var boxType = (Function<Type, Type>) t -> {
-            var boxed = (Function<Class<?>, Type>) cl ->
-                symtab.getClass(symtab.java_base, names.fromString(cl.getName())).type;
-
-            if (t == symtab.booleanType) return boxed.apply(Boolean.class);
-            if (t == symtab.byteType) return boxed.apply(Byte.class);
-            if (t == symtab.charType) return boxed.apply(Character.class);
-            if (t == symtab.shortType) return boxed.apply(Short.class);
-            if (t == symtab.intType) return boxed.apply(Integer.class);
-            if (t == symtab.longType) return boxed.apply(Long.class);
-            if (t == symtab.floatType) return boxed.apply(Float.class);
-            if (t == symtab.doubleType) return boxed.apply(Double.class);
-
-            return t;
-        };
-
         switch (invocation.queryMode) {
             case BatchedQuery bq:
                 tree.args = tree.args.append(bq.listDataExpression());
@@ -337,7 +344,7 @@ public class TrueSqlPlugin implements Plugin {
                                 Type.noType,
                                 List.of(
                                     bq.extractor().params.head.type,
-                                    boxType.apply(p.expression().type)
+                                    boxType(names, symtab, p.expression().type)
                                 ),
                                 clParameterExtractor
                             );
@@ -387,7 +394,7 @@ public class TrueSqlPlugin implements Plugin {
                                         Type.noType,
                                         List.of(
                                             p.extractor().params.head.type,
-                                            boxType.apply(partExpression.type)
+                                            boxType(names, symtab, partExpression.type)
                                         ),
                                         clParameterExtractor
                                     );
