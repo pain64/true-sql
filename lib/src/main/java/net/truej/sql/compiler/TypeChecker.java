@@ -15,12 +15,13 @@ import static net.truej.sql.compiler.DatabaseNames.*;
 
 class TypeChecker {
     static Standard.Binding getBindingForClass(
-        JCTree tree, List<Standard.Binding> typeBindings, String javaClassName
+        JCTree tree, List<Standard.Binding> typeBindings,
+        boolean isFullQualified, String javaClassName
     ) {
         return typeBindings.stream()
             .filter(b ->
-                b.className().equals(javaClassName) ||
-                b.className().endsWith(javaClassName) // FIXME: this code is used only for G
+                (isFullQualified && b.className().equals(javaClassName)) ||
+                (!isFullQualified && b.className().endsWith(javaClassName))
             ).findFirst().orElseThrow(() ->
                 new TrueSqlPlugin.ValidationException(
                     tree, "has no binding for type " + javaClassName
@@ -239,7 +240,6 @@ class TypeChecker {
                 switch (sqlNullMode) {
                     case EXACTLY_NULLABLE:
                         handler.onMismatch(false, sqlNullMode, javaNullMode);
-                        break;
                     case DEFAULT_NOT_NULL,
                          EXACTLY_NOT_NULL: { } break;
                 }

@@ -84,7 +84,7 @@ public class ExistingDtoParser {
                 : new ScalarField(toFieldName, nullMode, binding);
         } else {
 
-            if (!isEntry && !isToList)
+            if (dtoType.isPrimitive() || !isEntry && !isToList)
                 throw new ParseException(
                     "has no type binding for " + typeToClassName(dtoType)
                 );

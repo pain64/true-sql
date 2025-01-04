@@ -598,7 +598,7 @@ public class InvocationsFinder {
                                 final Standard.Binding binding;
                                 if (javaClassNameHint != null) {
                                     binding = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), javaClassNameHint
+                                        tree, parsedConfig.typeBindings(), false, javaClassNameHint
                                     );
 
                                     TypeChecker.assertTypesCompatible(
@@ -612,7 +612,7 @@ public class InvocationsFinder {
                                     );
                                 } else
                                     binding = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), TypeChecker.inferType(
+                                        tree, parsedConfig.typeBindings(), true, TypeChecker.inferType(
                                             parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
                                         )
                                     );

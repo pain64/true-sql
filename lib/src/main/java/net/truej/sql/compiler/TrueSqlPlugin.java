@@ -187,16 +187,9 @@ public class TrueSqlPlugin implements Plugin {
                           pMetadata.mode() + " but has " + javaParameterMode
                 );
 
-            if (javaParameterType == symtab.botType) {
-                if (pMetadata.nullMode() == GLangParser.NullMode.EXACTLY_NOT_NULL)
-                    messages.write(
-                        cu, tree, JCDiagnostic.DiagnosticType.WARNING,
-                        "for parameter " + (pIndex + 1) + " expected not-null values " +
-                        "but passed null literal"
-                    );
-            } else {
+            if (javaParameterType != symtab.botType) {
                 var binding = TypeChecker.getBindingForClass(
-                    tree, invocation.bindings, typeToClassName(javaParameterType)
+                    tree, invocation.bindings, true, typeToClassName(javaParameterType)
                 );
 
                 TypeChecker.assertTypesCompatible(
@@ -209,6 +202,12 @@ public class TrueSqlPlugin implements Plugin {
                     )
                 );
             }
+//            else if (pMetadata.nullMode() == GLangParser.NullMode.EXACTLY_NOT_NULL)
+//                messages.write(
+//                    cu, tree, JCDiagnostic.DiagnosticType.WARNING,
+//                    "for parameter " + (pIndex + 1) + " expected not-null values " +
+//                    "but passed null literal"
+//                );
         };
 
         var pIndex = 0;
@@ -286,7 +285,7 @@ public class TrueSqlPlugin implements Plugin {
                 var forClassName = typeToClassName(type);
 
                 var binding = TypeChecker.getBindingForClass(
-                    tree, invocation.bindings, forClassName
+                    tree, invocation.bindings, true, forClassName
                 );
 
                 rwClassSymbol = symtab.getClass(
@@ -443,10 +442,8 @@ public class TrueSqlPlugin implements Plugin {
 
         if (tree.meth instanceof JCTree.JCIdent id)
             symbol = id.sym;
-        else if (tree.meth instanceof JCTree.JCFieldAccess fa)
-            symbol = fa.sym;
         else
-            return false;
+            symbol = ((JCTree.JCFieldAccess) tree.meth).sym;
 
         return symbol instanceof Symbol.MethodSymbol mt && trueSqlDslMethods.contains(mt);
     }
@@ -460,14 +457,8 @@ public class TrueSqlPlugin implements Plugin {
         cu.accept(
             new TreeScanner() {
                 @Override public void visitClassDef(JCTree.JCClassDecl tree) {
-                    if (tree.type.tsym.getAnnotation(TrueSql.class) != null) {
+                    if (tree.type.tsym.getAnnotation(TrueSql.class) != null)
                         hasTrueSqlAnnotation[0] = true;
-                        if (tree.type.tsym.getAnnotation(Processed.class) == null)
-                            throw new ValidationException(
-                                tree, "TrueSql annotation processor not enabled. Check out your " +
-                                      "build tool configuration (Gradle, Maven, ...)"
-                            );
-                    }
 
                     super.visitClassDef(tree);
                 }

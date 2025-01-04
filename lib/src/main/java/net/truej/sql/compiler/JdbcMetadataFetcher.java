@@ -80,7 +80,7 @@ public class JdbcMetadataFetcher {
 
         var fixedColumnLabel = (Function<String, String>) label -> {
             if (onDatabase.equals(MYSQL_DB_NAME) && label == null)
-                return ""; // ???
+                return "";
 
             if (onDatabase.equals(HSQL_DB_NAME) || onDatabase.equals(ORACLE_DB_NAME)) {
                 if (isGLangExpression(label))
@@ -142,11 +142,10 @@ public class JdbcMetadataFetcher {
                                 GLangParser.NullMode.DEFAULT_NOT_NULL;
                         },
                         switch (pmt.getParameterMode(i)) {
-                            case parameterModeIn -> TrueSqlPlugin.ParameterMode.IN;
                             case parameterModeInOut -> TrueSqlPlugin.ParameterMode.INOUT;
                             case parameterModeOut -> TrueSqlPlugin.ParameterMode.OUT;
-                            default -> // parameterModeUnknown
-                                throw new RuntimeException("unreachable");
+                            default -> // parameterModeIn, parameterModeUnknown
+                                TrueSqlPlugin.ParameterMode.IN;
                         }
                     )
                 );

@@ -9,8 +9,8 @@ class MissConfigurationException extends RuntimeException {
         if (isJacocoWorkaroundEnabled) return null;
 
         throw new MissConfigurationException(
-            "TrueSql compiler plugin not enabled. Check out your build tool configuration" +
-            " (Gradle, Maven, ...)"
+            "TrueSql compiler plugin or annotation processor not enabled. " +
+            "Check out your build tool configuration (Gradle, Maven, ...)"
         );
     }
 }

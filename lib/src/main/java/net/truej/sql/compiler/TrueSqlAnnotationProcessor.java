@@ -12,8 +12,6 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
 
-import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 
@@ -63,33 +61,11 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
             }
         }
 
-        var clProcessed = symtab.enterClass(
-            symtab.unnamedModule, names.fromString(Processed.class.getName())
-        );
-
         for (var element : roundEnv.getElementsAnnotatedWith(TrueSql.class)) {
             var found = elements.getTreeAndTopLevel(element, null, null);
             var tree = found.fst;
             var cu = found.snd;
             var elementSymbol = (Symbol.ClassSymbol) element;
-            var maker = TreeMaker.instance(context);
-
-            var pkgCompiler = (Symbol.PackageSymbol) clProcessed.owner;
-            var pkgSql = (Symbol.PackageSymbol) pkgCompiler.owner;
-            var pkgTruej = (Symbol.PackageSymbol) pkgSql.owner;
-            var pkgNet = (Symbol.PackageSymbol) pkgTruej.owner;
-
-            ((JCTree.JCClassDecl) tree).mods.annotations = ((JCTree.JCClassDecl) tree).mods.annotations.prepend(
-                maker.Annotation(
-                    maker.Select(
-                        maker.Select(
-                            maker.Select(maker.Select(maker.Ident(pkgNet), pkgTruej), pkgSql),
-                            pkgCompiler
-                        ),
-                        clProcessed
-                    ), List.nil()
-                )
-            );
 
             @SuppressWarnings("unchecked") var cuInfo = (
                 HashMap<

@@ -43,6 +43,15 @@ public class TypeFinder {
             throw badFormat(tree);
     }
 
+    // User can provide broken java code for us (because of Javac pipeline).
+    // In this case we must not fall with NPE
+    static Type ensureCompilationUnitCodeIsNotBroken(Symbol.ClassSymbol found) {
+        if (found == null)
+            return null;
+
+        return new Type.ClassType(Type.noType, List.nil(), found);
+    }
+
     public static @Nullable Type find(
         Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
     ) {
@@ -59,8 +68,7 @@ public class TypeFinder {
                     case FLOAT -> symtab.floatType.tsym;
                     case INT -> symtab.intType.tsym;
                     case DOUBLE -> symtab.doubleType.tsym;
-                    case BOOLEAN -> symtab.booleanType.tsym;
-                    default -> null;
+                    default -> symtab.booleanType.tsym;
                 }
             );
         } if (tree instanceof JCTree.JCIdent id) {
@@ -80,37 +88,34 @@ public class TypeFinder {
                     }
                 );
 
-            if (found[0] == null || found[0].type.isErroneous())
+            if (found[0] == null)
                 found[0] = (Symbol.ClassSymbol) cu.namedImportScope.findFirst(id.name, isClass);
 
-            if (found[0] == null || found[0].type.isErroneous())
+            if (found[0] == null)
                 found[0] = symtab.getClass(cu.modle, cu.packge.fullname.append('.', id.name));
 
-            if (found[0] == null || found[0].type.isErroneous())
+            if (found[0] == null)
                 found[0] = (Symbol.ClassSymbol) cu.starImportScope.findFirst(id.name, isClass);
 
-            if (found[0] == null || found[0].type.isErroneous())
-                return null;
-
-            return new Type.ClassType(Type.noType, List.nil(), found[0]);
+            return ensureCompilationUnitCodeIsNotBroken(found[0]);
 
         } else if (tree instanceof JCTree.JCFieldAccess tail) {
             var fqn = tail.name;
             while (true) {
                 if (tail.selected instanceof JCTree.JCIdent id) {
                     fqn = id.name.append('.', fqn); break;
-                } else if (tail.selected instanceof JCTree.JCFieldAccess tfa) {
+                } else {
+                    var tfa = ((JCTree.JCFieldAccess) tail.selected);
                     fqn = tfa.name.append('.', fqn); tail = tfa;
-                } else
-                    return null;
+                }
             }
 
             var found = symtab.getClass(cu.modle, fqn);
 
-            if (found == null || found.type.isErroneous())
+            if (found == null)
                 found = symtab.getClass(symtab.java_base, fqn);
 
-            if (found == null || found.type.isErroneous())
+            if (found == null)
                 return null;
 
             return new Type.ClassType(Type.noType, List.nil(), found);
