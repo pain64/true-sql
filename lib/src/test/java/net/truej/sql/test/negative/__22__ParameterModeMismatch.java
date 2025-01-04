@@ -12,7 +12,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @Message(
-    kind = ERROR, text = "for parameter 2 expected mode IN but has INOUT"
+    kind = ERROR, text = "for parameter 2 expected mode INOUT but has IN"
 )
 @TrueSql public class __22__ParameterModeMismatch {
     @TestTemplate public void test(MainConnection cn) {

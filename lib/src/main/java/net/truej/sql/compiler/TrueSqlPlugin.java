@@ -166,7 +166,10 @@ public class TrueSqlPlugin implements Plugin {
             : type.tsym.flatName().toString();
     }
 
-    void checkParameters(Symtab symtab, JCTree.JCMethodInvocation tree, FetchInvocation invocation) {
+    void checkParameters(
+        CompilerMessages messages, Symtab symtab, JCTree.JCCompilationUnit cu,
+        JCTree.JCMethodInvocation tree, FetchInvocation invocation
+    ) {
         if (invocation.parametersMetadata == null) return;
 
         interface ParameterChecker {
@@ -178,19 +181,18 @@ public class TrueSqlPlugin implements Plugin {
         var checkParameter = (ParameterChecker) (pIndex, javaParameterType, javaParameterMode) -> {
             var pMetadata = invocation.parametersMetadata.get(pIndex);
 
-            // FIXME: reverse expected & has
             if (pMetadata.mode() != javaParameterMode)
                 throw new ValidationException(
                     tree, "for parameter " + (pIndex + 1) + " expected mode " +
-                          javaParameterMode + " but has " + pMetadata.mode()
+                          pMetadata.mode() + " but has " + javaParameterMode
                 );
 
             if (javaParameterType == symtab.botType) {
                 if (pMetadata.nullMode() == GLangParser.NullMode.EXACTLY_NOT_NULL)
-                    // FIXME: warning ???
-                    throw new ValidationException(
-                        tree, "for parameter " + (pIndex + 1) + " expected not-null values " +
-                              "but passed null literal"
+                    messages.write(
+                        cu, tree, JCDiagnostic.DiagnosticType.WARNING,
+                        "for parameter " + (pIndex + 1) + " expected not-null values " +
+                        "but passed null literal"
                     );
             } else {
                 var binding = TypeChecker.getBindingForClass(
@@ -202,7 +204,6 @@ public class TrueSqlPlugin implements Plugin {
                     pMetadata.sqlType(), pMetadata.sqlTypeName(), pMetadata.javaClassName(),
                     pMetadata.scale(), binding,
                     (typeKind, expected, has) -> new ValidationException(
-                        // FIXME: разобраться с именами expected и has
                         tree, typeKind + " mismatch for parameter " + (pIndex + 1) +
                               ". Expected " + has + " but has " + expected
                     )
@@ -250,10 +251,11 @@ public class TrueSqlPlugin implements Plugin {
 
     void handle(
         Symtab symtab, Names names, TreeMaker maker,
+        CompilerMessages messages, JCTree.JCCompilationUnit cu,
         JCTree.JCMethodInvocation tree, FetchInvocation invocation
     ) {
 
-        checkParameters(symtab, tree, invocation);
+        checkParameters(messages, symtab, cu, tree, invocation);
 
         var clParameterExtractor = symtab.getClass(
             symtab.java_base, names.fromString(
@@ -535,11 +537,10 @@ public class TrueSqlPlugin implements Plugin {
                                         case FetchInvocation fi -> {
                                             for (var warning : fi.warnings)
                                                 messages.write(
-                                                    (JCTree.JCCompilationUnit) e.getCompilationUnit(),
-                                                    warning.tree, JCDiagnostic.DiagnosticType.WARNING, warning.message
+                                                    cu, warning.tree, JCDiagnostic.DiagnosticType.WARNING, warning.message
                                                 );
 
-                                            handle(symtab, names, maker, tree, fi);
+                                            handle(symtab, names, maker, messages, cu, tree, fi);
                                         }
                                         case ValidationException ex -> {
                                             hasNoErrors = false;

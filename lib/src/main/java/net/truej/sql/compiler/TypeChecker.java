@@ -28,7 +28,7 @@ class TypeChecker {
     }
 
     interface TypeMismatchHandler {
-        RuntimeException onError(String typeKing, String expected, String has);
+        RuntimeException onError(String typeKind, String expected, String has);
     }
 
     static void assertTypesCompatible(
