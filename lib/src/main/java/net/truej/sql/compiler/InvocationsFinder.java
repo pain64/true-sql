@@ -158,6 +158,14 @@ public class InvocationsFinder {
             ? new StatementGenerator.BatchedQuery(batchListDataExpression, batchLambda, result)
             : new StatementGenerator.SingleQuery(result);
     }
+    static ValidationException badSource(JCTree tree) {
+        return new ValidationException(
+            tree,
+            "Source identifier may be method parameter, class field or " +
+            "local variable initialized by new (var ds = new MySourceW(...)). " +
+            "Type of source identifier cannot be generic parameter"
+        );
+    }
 
     static LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult> find(
         Symtab symtab, Names names, CompilerMessages messages,
@@ -206,7 +214,7 @@ public class InvocationsFinder {
 //                    );
 
                     var vt = varTypes.get(idExpr.name);
-                    if (vt == null) return;
+                    if (vt == null) throw badSource(tree);
 
                     var parsedConfig = ConfigurationParser.parseConfig(
                         symtab, names, cu, vt, (__, ___) -> { }
@@ -432,12 +440,7 @@ public class InvocationsFinder {
                             else
                                 sourceMode = StatementGenerator.SourceMode.DATASOURCE;
                         } else
-                            throw new ValidationException(
-                                processorId,
-                                "Source identifier may be method parameter, class field or " +
-                                "local variable initialized by new (var ds = new MySourceW(...)). " +
-                                "Type of source identifier cannot be generic parameter"
-                            );
+                            throw badSource(processorId);
 
                         parsedConfig = ConfigurationParser.parseConfig(
                             symtab, names, cu, vt, (__, ___) -> { }
