@@ -52,12 +52,10 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
             for (var element : roundEnv.getElementsAnnotatedWith(Configuration.class)) {
                 var found = elements.getTreeAndTopLevel(element, null, null);
-                try {
-                    ConfigurationParser.parseConfig(
-                        symtab, names, found.snd, (Symbol.ClassSymbol) element,
-                        (propName, propValue) -> javacLog.printRawLines("\t" + propName + "=" + propValue)
-                    );
-                } catch (ConfigurationParser.ParseException ignored) { }
+                ConfigurationParser.parseConfig(
+                    symtab, names, found.snd, (Symbol.ClassSymbol) element,
+                    (propName, propValue) -> javacLog.printRawLines("\t" + propName + "=" + propValue)
+                );
             }
         }
 
