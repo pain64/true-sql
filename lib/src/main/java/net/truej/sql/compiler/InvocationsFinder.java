@@ -205,7 +205,7 @@ public class InvocationsFinder {
                 JCTree.JCMethodInvocation tree, JCTree.JCExpression sourceExpression
             ) throws SQLException {
                 if (
-                    (tree.args.length() >= 3 || tree.args.length() <= 5) &&
+                    (tree.args.length() >= 3 && tree.args.length() <= 5) &&
                     sourceExpression instanceof JCTree.JCIdent idExpr // FIXME: перенести ниже
                 ) {
 // TODO:

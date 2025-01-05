@@ -19,8 +19,10 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         Confusion q(Integer t1, String t2, String t3, String t4) { return this; }
         Confusion bar() { return this; }
         Void fetchNone() { return null; }
+        public void constraint(String sn, String tn) { }
         public void constraint(String sn, String tn, Integer cn, String none) { }
         public void constraint(String sn, String tn, String cn, Integer some, String none) { }
+        public void constraint(String sn, String tn, String cn, Integer some, String none, String ss) { }
         void fetchOne(String one, String two) {};
         void fetchOne(String one, String two, String three) {};
     }
@@ -62,4 +64,21 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         var con = new Confusion();
         con.bar().fetchNone();
     }
+
+    @TestTemplate public void test8() {
+        var con = new Confusion();
+        con.constraint("1", "2");
+    }
+
+    @TestTemplate public void test9() {
+        var con = new Confusion();
+        con.constraint("1", "2", "3", 1, "5", "6");
+    }
+
+    @TestTemplate public void test11() {
+        var con = new Confusion();
+        var cn = con;
+        cn.constraint("1", "2", 4, "3");
+    }
+
 }
