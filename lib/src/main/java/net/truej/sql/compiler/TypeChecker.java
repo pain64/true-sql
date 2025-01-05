@@ -66,7 +66,7 @@ class TypeChecker {
 
             if (
                 sqlTypeName.equals("NUMBER") &&
-                sqlScale == 0 && (
+                (sqlScale == 0 || sqlScale == -127) && (
                     javaBinding.className().equals(Long.class.getName()) ||
                     javaBinding.className().equals(long.class.getName()) ||
                     javaBinding.className().equals(Integer.class.getName()) ||
@@ -133,8 +133,7 @@ class TypeChecker {
                     javaBinding.className().equals(Boolean.class.getName())
                 ) && (
                     sqlJavaClassName.equals(boolean.class.getName()) ||
-                    sqlJavaClassName.equals(Boolean.class.getName()) ||
-                    sqlType == Types.BOOLEAN
+                    sqlJavaClassName.equals(Boolean.class.getName())
                 )
             ) || (
                 (
@@ -160,8 +159,7 @@ class TypeChecker {
                     javaBinding.className().equals(Integer.class.getName())
                 ) && (
                     sqlJavaClassName.equals(int.class.getName()) ||
-                    sqlJavaClassName.equals(Integer.class.getName()) ||
-                    sqlType == Types.INTEGER
+                    sqlJavaClassName.equals(Integer.class.getName())
                 )
             ) || (
                 (
@@ -169,8 +167,7 @@ class TypeChecker {
                     javaBinding.className().equals(Long.class.getName())
                 ) && (
                     sqlJavaClassName.equals(long.class.getName()) ||
-                    sqlJavaClassName.equals(Long.class.getName()) ||
-                    sqlType == Types.BIGINT
+                    sqlJavaClassName.equals(Long.class.getName())
                 )
             ) || (
                 (
@@ -178,8 +175,7 @@ class TypeChecker {
                     javaBinding.className().equals(Float.class.getName())
                 ) && (
                     sqlJavaClassName.equals(float.class.getName()) ||
-                    sqlJavaClassName.equals(Float.class.getName()) ||
-                    sqlType == Types.FLOAT
+                    sqlJavaClassName.equals(Float.class.getName())
                 )
             ) || (
                 (
@@ -187,8 +183,7 @@ class TypeChecker {
                     javaBinding.className().equals(Double.class.getName())
                 ) && (
                     sqlJavaClassName.equals(double.class.getName()) ||
-                    sqlJavaClassName.equals(Double.class.getName()) ||
-                    sqlType == Types.DOUBLE
+                    sqlJavaClassName.equals(Double.class.getName())
                 )
             )
         ) return;

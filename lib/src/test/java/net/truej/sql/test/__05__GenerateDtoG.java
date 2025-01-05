@@ -15,4 +15,5 @@ public class __05__GenerateDtoG {
     class GroupTest {}
     class GroupTest2 {}
     class ByteArrayWrapper {}
+    class SC {}
 }
