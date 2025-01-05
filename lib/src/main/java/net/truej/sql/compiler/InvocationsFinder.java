@@ -33,7 +33,7 @@ import static net.truej.sql.compiler.TrueSqlPlugin.*;
 public class InvocationsFinder {
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
-    public sealed interface ParameterPart extends QueryPart {}
+    public sealed interface ParameterPart extends QueryPart { }
     sealed interface SingleParameter extends ParameterPart { }
     sealed interface InOrInoutParameter extends SingleParameter {
         JCTree.JCExpression expression();
@@ -172,6 +172,13 @@ public class InvocationsFinder {
         JCTree.JCCompilationUnit cu, JCTree tree, String generatedClassName
     ) {
 
+        var clConnectionW = symtab.enterClass(
+            cu.modle, names.fromString(ConnectionW.class.getName())
+        );
+        var clDataSourceW = symtab.enterClass(
+            cu.modle, names.fromString(DataSourceW.class.getName())
+        );
+
         var result = new LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult>();
 
         new TreeScanner() {
@@ -205,20 +212,12 @@ public class InvocationsFinder {
                 JCTree.JCMethodInvocation tree, JCTree.JCExpression sourceExpression
             ) throws SQLException {
                 if (
-                    (tree.args.length() >= 3 && tree.args.length() <= 5) &&
-                    sourceExpression instanceof JCTree.JCIdent idExpr // FIXME: перенести ниже
+                    tree.args.length() >= 3 && tree.args.length() <= 5
                 ) {
-// TODO:
-//                    throw new ValidationException(
-//                        fa.selected, "Expected identifier for source for `.constraint(...)`"
-//                    );
-
-                    var vt = varTypes.get(idExpr.name);
-                    if (vt == null) throw badSource(tree);
-
-                    var parsedConfig = ConfigurationParser.parseConfig(
-                        symtab, names, cu, vt, (__, ___) -> { }
-                    );
+                    if (!(sourceExpression instanceof JCTree.JCIdent))
+                        throw new ValidationException(
+                            sourceExpression, "Expected identifier for source for `.constraint(...)`"
+                        );
 
                     if (
                         tree.args.get(0) instanceof JCTree.JCLiteral l3 &&
@@ -249,9 +248,20 @@ public class InvocationsFinder {
                                 return;
                         }
 
-                        JdbcMetadataFetcher.checkConstraint(
-                            tree, parsedConfig, catalogName, schemaName, tableName, constraintName
+                        var vt = varTypes.get(((JCTree.JCIdent) sourceExpression).name);
+                        if (
+                            vt == null ||
+                            vt.getSuperclass().tsym != clConnectionW &&
+                            vt.getSuperclass().tsym != clDataSourceW
+                        ) throw badSource(tree);
+
+                        var parsedConfig = ConfigurationParser.parseConfig(
+                            symtab, names, cu, vt, (__, ___) -> { }
                         );
+                        if (parsedConfig.url() != null)
+                            JdbcMetadataFetcher.checkConstraint(
+                                tree, parsedConfig, catalogName, schemaName, tableName, constraintName
+                            );
                     }
                 }
             }
@@ -423,12 +433,6 @@ public class InvocationsFinder {
 
                     if (fa.selected instanceof JCTree.JCIdent processorId) {
                         sourceExpression = processorId;
-                        var clConnectionW = symtab.enterClass(
-                            cu.modle, names.fromString(ConnectionW.class.getName())
-                        );
-                        var clDataSourceW = symtab.enterClass(
-                            cu.modle, names.fromString(DataSourceW.class.getName())
-                        );
 
                         var vt = varTypes.get(processorId.name);
 
