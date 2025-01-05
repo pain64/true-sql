@@ -1,12 +1,16 @@
 package net.truej.sql.compiler;
 
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import com.sun.tools.javac.code.Type;
 
-public class __03__CharTestTrueSqlPlugin {
+public class __03__CharTestUnreachable {
     @Test public void test() {
+        Assertions.assertEquals(
+            Character.class.getName(),
+            MapperGenerator.boxedClassName("char")
+        );
         Assertions.assertEquals(
             "char",
             TrueSqlPlugin.arrayClassNameToSourceCodeType("Char")
@@ -22,4 +26,5 @@ public class __03__CharTestTrueSqlPlugin {
             TrueSqlPlugin.primitiveTypeToBoxedClass(new Type.JCPrimitiveType(TypeTag.CHAR, null))
         );
     }
+
 }

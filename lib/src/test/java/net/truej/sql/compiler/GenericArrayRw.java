@@ -2,9 +2,12 @@ package net.truej.sql.compiler;
 
 import net.truej.sql.config.TypeReadWrite;
 
+import java.io.Serializable;
 import java.sql.*;
 
-public abstract class GenericArrayRw<T> implements TypeReadWrite<T> {
+public abstract class GenericArrayRw<T> implements
+    Serializable, // need for coverage
+    TypeReadWrite<T> {
     abstract T convert(Array array) throws SQLException;
 
     @Override public T get(ResultSet rs, int columnIndex) throws SQLException {

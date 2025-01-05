@@ -641,8 +641,7 @@ public class InvocationsFinder {
                     className ->
                         parsedConfig.typeBindings().stream()
                             .filter(b -> b.className().equals(className))
-                            .findFirst().orElseThrow(() -> new IllegalStateException("unreachable"))
-                            .rwClassName(),
+                            .findFirst().get().rwClassName(),
                     lineNumber,
                     sourceMode,
                     queryMode,

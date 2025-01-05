@@ -25,6 +25,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         );
     }
 
+    @TestTemplate  public void triedButUnhandled(MainDataSource ds) {
+        assertThrows(ConstraintViolationException.class, () -> {
+            try {
+                ds.q("delete from city").fetchNone();
+            } catch (ConstraintViolationException ex) {
+                ex.when(
+                    ds.constraint("users", "users_pk", () -> {
+                        throw new Handled();
+                    })
+                );
+            }
+        });
+    }
+
     @TestTemplate public void rethrow(MainDataSource ds) {
         assertThrows(Handled.class, () -> {
             try {

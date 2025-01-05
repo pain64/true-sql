@@ -34,11 +34,12 @@ public class BoundTypeExtractor {
                     if (r != null) return r;
                 }
 
-            // We have grantee that we will find
-            var parent = (Type.ClassType) from.getSuperclass();
-            saveTypeArguments.accept(parent);
+            if (from.getSuperclass() instanceof Type.ClassType parent) {
+                saveTypeArguments.accept(parent);
+                return up(typeReadWriteSymbol, map, (Symbol.ClassSymbol) parent.tsym);
+            }
 
-            return up(typeReadWriteSymbol, map, (Symbol.ClassSymbol) parent.tsym);
+            return null;
         }
     }
 

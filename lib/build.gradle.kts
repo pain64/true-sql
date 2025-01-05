@@ -8,6 +8,10 @@ plugins {
 
 }
 
+jacoco {
+    toolVersion = "0.8.12"
+}
+
 repositories {
     mavenCentral()
 }
@@ -101,6 +105,7 @@ tasks.test {
 tasks.jacocoTestReport {
     reports {
         csv.required.set(true)
+        xml.required.set(true)
     }
 }
 
