@@ -220,9 +220,9 @@ public class InvocationsFinder {
                         );
 
                     if (
-                        tree.args.get(0) instanceof JCTree.JCLiteral l3 &&
+                        tree.args.get(tree.args.length() - 3) instanceof JCTree.JCLiteral l3 &&
                         l3.getValue() instanceof String tableName &&
-                        tree.args.get(1) instanceof JCTree.JCLiteral l4 &&
+                        tree.args.get(tree.args.length() - 2) instanceof JCTree.JCLiteral l4 &&
                         l4.getValue() instanceof String constraintName
                     ) {
                         var schemaName = (String) null;
@@ -230,7 +230,7 @@ public class InvocationsFinder {
 
                         if (tree.args.length() >= 4) {
                             if (
-                                tree.args.get(2) instanceof JCTree.JCLiteral l2 &&
+                                tree.args.get(tree.args.length() - 4) instanceof JCTree.JCLiteral l2 &&
                                 l2.getValue() instanceof String sn
                             )
                                 schemaName = sn;
@@ -240,7 +240,7 @@ public class InvocationsFinder {
 
                         if (tree.args.length() == 5) {
                             if (
-                                tree.args.get(3) instanceof JCTree.JCLiteral l1 &&
+                                tree.args.getFirst() instanceof JCTree.JCLiteral l1 &&
                                 l1.getValue() instanceof String cn
                             )
                                 catalogName = cn;
