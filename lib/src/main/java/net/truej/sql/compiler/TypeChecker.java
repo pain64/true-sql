@@ -221,20 +221,24 @@ class TypeChecker {
     static void assertNullabilityCompatible(
         NullMode sqlNullMode, NullMode javaNullMode, NullabilityMismatchHandler handler
     ) {
+        enum Decision {OK, WARN, ERROR}
+        var decision = Decision.OK;
+
         switch (javaNullMode) {
             case EXACTLY_NULLABLE:
                 switch (sqlNullMode) {
                     case EXACTLY_NULLABLE,
                          DEFAULT_NOT_NULL: { } break;
                     case EXACTLY_NOT_NULL:
-                        handler.onMismatch(true, sqlNullMode, javaNullMode);
+                        decision = Decision.WARN;
                         break;
                 }
                 break;
             case DEFAULT_NOT_NULL:
                 switch (sqlNullMode) {
                     case EXACTLY_NULLABLE:
-                        handler.onMismatch(false, sqlNullMode, javaNullMode);
+                        decision = Decision.ERROR;
+                        break;
                     case DEFAULT_NOT_NULL,
                          EXACTLY_NOT_NULL: { } break;
                 }
@@ -242,13 +246,16 @@ class TypeChecker {
             case EXACTLY_NOT_NULL:
                 switch (sqlNullMode) {
                     case EXACTLY_NULLABLE:
-                        handler.onMismatch(true, sqlNullMode, javaNullMode);
+                        decision = Decision.WARN;
                         break;
                     case DEFAULT_NOT_NULL,
                          EXACTLY_NOT_NULL: { } break;
                 }
                 break;
         }
+
+        if (decision != Decision.OK)
+            handler.onMismatch(decision == Decision.WARN, sqlNullMode, javaNullMode);
     }
 
     static String inferType(

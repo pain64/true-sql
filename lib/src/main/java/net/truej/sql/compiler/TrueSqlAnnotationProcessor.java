@@ -6,6 +6,7 @@ import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 import com.sun.tools.javac.code.Symbol;
@@ -32,6 +33,17 @@ import static net.truej.sql.compiler.TrueSqlPlugin.*;
 public class TrueSqlAnnotationProcessor extends AbstractProcessor {
 
     static final String GENERATED_CLASS_NAME_SUFFIX = "G";
+
+    interface Action<E extends Exception> {
+        void run() throws E;
+    }
+    static void checkedExceptionAsUnchecked(Action<IOException> fn) {
+        try {
+            fn.run();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override public boolean process(
         Set<? extends TypeElement> annotations, RoundEnvironment roundEnv
@@ -87,47 +99,47 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     put(kv.getKey(), doofyEncode(kv.getValue()));
             }});
 
-            try (var out = new PrintWriter(
-                env.getFiler().createSourceFile(generatedClassFqn, element).openWriter()
-            )) {
-                out.write("package " +
-                          elementSymbol.getQualifiedName().toString()
-                              .replace("." + elementSymbol.getSimpleName().toString(), "") +
-                          ";\n"
-                );
-                out.write("import " + TypeReadWrite.class.getName() + ";\n");
-                out.write("import " + ConnectionW.class.getName() + ";\n");
-                out.write("import " + DataSourceW.class.getName() + ";\n");
-                out.write("import " + TooMuchRowsException.class.getName() + ";\n");
-                out.write("import " + TooFewRowsException.class.getName() + ";\n");
-                out.write("import " + UpdateResult.class.getName() + ";\n");
-                out.write("import " + UpdateResultStream.class.getName() + ";\n");
-                out.write("import " + Function.class.getName() + ";\n");
-                out.write("import " + Parameters.class.getName() + ".*;\n");
-                out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
-                out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
-                out.write("import " + org.jetbrains.annotations.NotNull.class.getName() + ";\n");
-                out.write("import net.truej.sql.bindings.*;\n");
-                out.write("import java.util.List;\n");
-                out.write("import java.util.stream.Stream;\n");
-                out.write("import java.util.stream.Collectors;\n");
-                out.write("import java.util.Objects;\n");
-                out.write("import java.sql.SQLException;\n");
-                // FIXME: uncomment, set isolating mode for annotation processor
-                // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
-                // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
-                out.write("class %s { \n".formatted(
-                    elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
-                ));
+            checkedExceptionAsUnchecked(() -> {
+                try (var out = new PrintWriter(
+                    env.getFiler().createSourceFile(generatedClassFqn, element).openWriter()
+                )) {
+                    out.write("package " +
+                              elementSymbol.getQualifiedName().toString()
+                                  .replace("." + elementSymbol.getSimpleName().toString(), "") +
+                              ";\n"
+                    );
+                    out.write("import " + TypeReadWrite.class.getName() + ";\n");
+                    out.write("import " + ConnectionW.class.getName() + ";\n");
+                    out.write("import " + DataSourceW.class.getName() + ";\n");
+                    out.write("import " + TooMuchRowsException.class.getName() + ";\n");
+                    out.write("import " + TooFewRowsException.class.getName() + ";\n");
+                    out.write("import " + UpdateResult.class.getName() + ";\n");
+                    out.write("import " + UpdateResultStream.class.getName() + ";\n");
+                    out.write("import " + Function.class.getName() + ";\n");
+                    out.write("import " + Parameters.class.getName() + ".*;\n");
+                    out.write("import " + EvenSoNullPointerException.class.getName() + ";\n");
+                    out.write("import " + org.jetbrains.annotations.Nullable.class.getName() + ";\n");
+                    out.write("import " + org.jetbrains.annotations.NotNull.class.getName() + ";\n");
+                    out.write("import net.truej.sql.bindings.*;\n");
+                    out.write("import java.util.List;\n");
+                    out.write("import java.util.stream.Stream;\n");
+                    out.write("import java.util.stream.Collectors;\n");
+                    out.write("import java.util.Objects;\n");
+                    out.write("import java.sql.SQLException;\n");
+                    // FIXME: uncomment, set isolating mode for annotation processor
+                    // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
+                    // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
+                    out.write("class %s { \n".formatted(
+                        elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
+                    ));
 
-                for (var result : invocations.values())
-                    if (result instanceof FetchInvocation fi)
-                        out.write(fi.generatedCode());
+                    for (var result : invocations.values())
+                        if (result instanceof FetchInvocation fi)
+                            out.write(fi.generatedCode());
 
-                out.write("}");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+                    out.write("}");
+                }
+            });
         }
 
         return false;
