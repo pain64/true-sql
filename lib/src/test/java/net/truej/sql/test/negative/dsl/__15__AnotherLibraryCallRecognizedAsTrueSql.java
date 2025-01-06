@@ -16,15 +16,20 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __15__AnotherLibraryCallRecognizedAsTrueSql {
     static class Confusion {
+        Confusion g = new Confusion();
         Confusion q(String text) { return this; }
         Confusion q(Integer t1, String t2, String t3, String t4) { return this; }
         Confusion bar() { return this; }
         Void fetchNone() { return null; }
-        public void constraint(String sn, String tn) { }
-        public void constraint(String sn, String tn, Integer cn, String none) { }
-        public void constraint(String sn, String tn, String cn, String none) { }
-        public void constraint(String sn, String tn, String cn, Integer some, String none) { }
-        public void constraint(String sn, String tn, String cn, Integer some, String none, String ss) { }
+        Void fetchOne() { return null; }
+
+        public void constraint(String tn, String сn, Runnable r) { }
+        public void constraint(String sn, String cn, String tn, Runnable r) { }
+        public void constraint(String catn, String sn, String cn, String tn, Runnable r) { }
+
+        public void constraint(int x1, int x2) { }
+        public void constraint(int x1, int x2, int x3, int x4, int x5, int x6) { }
+
         void fetchOne(String one, String two) {};
         void fetchOne(String one, String two, String three) {};
     }
@@ -35,16 +40,6 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
     @TestTemplate void test() {
         var cn = new Confusion();
         cn.q("").fetchNone();
-    }
-
-    @TestTemplate public void test1() {
-        var con = new Confusion();
-        con.constraint("a", "a", 1, null);
-    }
-
-    @TestTemplate public void test2() {
-        var con = new Confusion();
-        con.constraint("a", "a", "a", 1, null);
     }
 
     @TestTemplate public void test4() {
@@ -67,25 +62,40 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         con.bar().fetchNone();
     }
 
-    @TestTemplate public void test8() {
+    @TestTemplate public void testGMissedArgument() {
         var con = new Confusion();
-        con.constraint("1", "2");
+        con.q("").g.fetchNone();
     }
 
-    @TestTemplate public void test9() {
+    @TestTemplate public void testNoFetchNoneRequiresArgs() {
         var con = new Confusion();
-        con.constraint("1", "2", "3", 1, "5", "6");
+        con.q("").fetchOne();
     }
 
-    @TestTemplate public void test10() {
+    @TestTemplate public void testTooLittleParametersCount() {
+        var con = new Confusion();
+        con.constraint(1, 2);
+    }
+
+    @TestTemplate public void testTooMuchParametersCount() {
+        var con = new Confusion();
+        con.constraint(1, 2, 3, 4, 5, 6);
+    }
+
+    @TestTemplate public void testBadSourceUnknownVarType() {
         var con = new Confusion();
         var cn = con;
-        cn.constraint("1", "2", 4, "3");
+        cn.constraint("", "", "", "", () -> {});
     }
 
-    @TestTemplate public void test11() {
+    @TestTemplate public void testBadSourceBadVarType() {
         var con = new Confusion();
-        var cn = con;
-        cn.constraint("1", "2", "1", "3");
+        con.constraint("", "", "", "", () -> {});
+    }
+
+    @TestTemplate public void testBadLiteral() {
+        var con = new Confusion();
+        con.constraint(null, "a", "a", "", () -> {});
+        con.constraint(null, "a", "", () -> {});
     }
 }
