@@ -33,7 +33,7 @@
         <dependency>
             <groupId>net.truej</groupId>
             <artifactId>sql</artifactId>
-            <version>3.0.0-beta3</version>
+            <version>3.0.0-beta4</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -73,7 +73,7 @@
                         <annotationProcessorPath>
                             <groupId>net.truej</groupId>
                             <artifactId>sql</artifactId>
-                            <version>3.0.0-beta3</version>
+                            <version>3.0.0-beta4</version>
                         </annotationProcessorPath>
                         <annotationProcessorPath>
                             <groupId>org.postgresql</groupId>

@@ -16,12 +16,14 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
 @ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
 @TrueSql public class __15__AnotherLibraryCallRecognizedAsTrueSql {
     static class Confusion {
-        Confusion g = new Confusion();
+        Confusion g = this;
         Confusion q(String text) { return this; }
         Confusion q(Integer t1, String t2, String t3, String t4) { return this; }
         Confusion bar() { return this; }
         Void fetchNone() { return null; }
-        Void fetchOne() { return null; }
+        Void fetchNone(int x) { return null; }
+        Confusion asGeneratedKeys() { return this; }
+        Confusion asGeneratedKeys(float f1) { return this; }
 
         public void constraint(String tn, String сn, Runnable r) { }
         public void constraint(String sn, String cn, String tn, Runnable r) { }
@@ -62,14 +64,20 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         con.bar().fetchNone();
     }
 
+    @TestTemplate public void testAsGeneratedKeys() {
+        var con = new Confusion();
+        con.asGeneratedKeys().fetchNone();
+        con.asGeneratedKeys(42f).fetchNone();
+    }
+
     @TestTemplate public void testGMissedArgument() {
         var con = new Confusion();
         con.q("").g.fetchNone();
     }
 
-    @TestTemplate public void testNoFetchNoneRequiresArgs() {
+    @TestTemplate public void testFetchNoneWithArgs() {
         var con = new Confusion();
-        con.q("").fetchOne();
+        con.q("").fetchNone(1);
     }
 
     @TestTemplate public void testTooLittleParametersCount() {

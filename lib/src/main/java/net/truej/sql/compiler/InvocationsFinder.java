@@ -366,9 +366,19 @@ public class InvocationsFinder {
                             );
                             f = fa;
                         } else if (inv.args.stream().allMatch(arg ->
-                            arg instanceof JCTree.JCLiteral al &&
-                            al.getValue() instanceof String
+                            arg instanceof JCTree.JCLiteral al && (
+                                al.getValue() instanceof String ||
+                                al.getValue() == null
+                            )
                         )) {
+                            if (
+                                inv.args.stream()
+                                    .anyMatch(arg -> ((JCTree.JCLiteral) arg).getValue() == null)
+                            )
+                                throw new ValidationException(
+                                    tree, "unexpected null literal as asGeneratedKeys column name"
+                                );
+
                             statementMode = new AsGeneratedKeysColumnNames(
                                 inv.args.stream().map(arg ->
                                     (String) ((JCTree.JCLiteral) arg).value
