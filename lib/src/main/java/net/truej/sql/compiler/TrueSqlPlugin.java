@@ -441,7 +441,7 @@ public class TrueSqlPlugin implements Plugin {
     boolean isTrueSqlDslInvocation(Symtab symtab, Names names, JCTree.JCMethodInvocation tree) {
         if (trueSqlDslMethods == null)
             trueSqlDslMethods = parseDslMethods(
-                symtab, names, As.class, Q.class,
+                symtab, names, As.class, Q.class, NewConstraint.class,
                 Parameters.class, UpdateCount.class, NoUpdateCount.class
             );
 
@@ -477,7 +477,11 @@ public class TrueSqlPlugin implements Plugin {
                 @Override public void visitApply(JCTree.JCMethodInvocation tree) {
                     super.visitApply(tree);
 
-                    if (isTrueSqlDslInvocation(symtab, names, tree)) {
+                    if (
+                        isTrueSqlDslInvocation(symtab, names, tree) &&
+                            !(tree.meth instanceof JCTree.JCFieldAccess fa &&
+                            fa.name.contentEquals("constraint"))
+                    ) {
                         if (!hasTrueSqlAnnotation[0])
                             throw new ValidationException(
                                 tree, "TrueSql DSL used but class not annotated with @TrueSql"

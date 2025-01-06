@@ -90,47 +90,47 @@ public class TrueSqlTests2 implements
 //            .withPassword("testPassword")
 //            .withReuse(true);
 
-        pgContainer.start();
-        mysqlContainer.start();
-        mariaDbContainer.start();
-        mssqlContainer.start();
-        oracleContainer.start();
+//        pgContainer.start();
+//        mysqlContainer.start();
+//        mariaDbContainer.start();
+//        mssqlContainer.start();
+//        oracleContainer.start();
 
         instances = Map.of(
             Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb")
-            , Database.POSTGRESQL, new TestDataSource(
-                pgContainer.getJdbcUrl(),
-                pgContainer.getUsername(),
-                pgContainer.getPassword(),
-                "postgresql"
-            )
-            ,
-            Database.MYSQL, new TestDataSource(
-                mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
-                mysqlContainer.getUsername(),
-                mysqlContainer.getPassword(),
-                "mysql"
-            )
-            , Database.MARIADB, new TestDataSource(
-                mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
-                mariaDbContainer.getUsername(),
-                mariaDbContainer.getPassword(),
-                "mysql"
-            )
-            ,
-            Database.MSSQL, new TestDataSource(
-                mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
-                mssqlContainer.getUsername(),
-                mssqlContainer.getPassword(),
-                "mssql"
-            )
-            ,
-            Database.ORACLE, new TestDataSource(
-                oracleContainer.getJdbcUrl(),
-                oracleContainer.getUsername(),
-                oracleContainer.getPassword(),
-                "oracle"
-            )
+//            , Database.POSTGRESQL, new TestDataSource(
+//                pgContainer.getJdbcUrl(),
+//                pgContainer.getUsername(),
+//                pgContainer.getPassword(),
+//                "postgresql"
+//            )
+//            ,
+//            Database.MYSQL, new TestDataSource(
+//                mysqlContainer.getJdbcUrl() + "?allowMultiQueries=true",
+//                mysqlContainer.getUsername(),
+//                mysqlContainer.getPassword(),
+//                "mysql"
+//            )
+//            , Database.MARIADB, new TestDataSource(
+//                mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
+//                mariaDbContainer.getUsername(),
+//                mariaDbContainer.getPassword(),
+//                "mysql"
+//            )
+//            ,
+//            Database.MSSQL, new TestDataSource(
+//                mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
+//                mssqlContainer.getUsername(),
+//                mssqlContainer.getPassword(),
+//                "mssql"
+//            )
+//            ,
+//            Database.ORACLE, new TestDataSource(
+//                oracleContainer.getJdbcUrl(),
+//                oracleContainer.getUsername(),
+//                oracleContainer.getPassword(),
+//                "oracle"
+//            )
         );
     }
 

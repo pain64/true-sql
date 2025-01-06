@@ -1,9 +1,11 @@
 package net.truej.sql.test;
 
+import net.truej.sql.compiler.MainDataSourceUnchecked;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.fetch.SqlExceptionR;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 );
             }
         });
+    }
+
+    @TestTemplate  public void uncheckedDS(MainDataSourceUnchecked ds) {
+        ds.constraint("not_exists", "not_exists_constraint", () -> 42);
     }
 
     @TestTemplate public void rethrow(MainDataSource ds) {

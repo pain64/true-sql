@@ -2,6 +2,7 @@ package net.truej.sql.test.negative.dsl;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
+import net.truej.sql.compiler.MainDataSourceUnchecked;
 import net.truej.sql.compiler.TrueSqlTests2;
 import net.truej.sql.compiler.TrueSqlTests2.EnableOn;
 import org.junit.jupiter.api.Disabled;
@@ -21,6 +22,7 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         Void fetchNone() { return null; }
         public void constraint(String sn, String tn) { }
         public void constraint(String sn, String tn, Integer cn, String none) { }
+        public void constraint(String sn, String tn, String cn, String none) { }
         public void constraint(String sn, String tn, String cn, Integer some, String none) { }
         public void constraint(String sn, String tn, String cn, Integer some, String none, String ss) { }
         void fetchOne(String one, String two) {};
@@ -75,10 +77,15 @@ import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
         con.constraint("1", "2", "3", 1, "5", "6");
     }
 
-    @TestTemplate public void test11() {
+    @TestTemplate public void test10() {
         var con = new Confusion();
         var cn = con;
         cn.constraint("1", "2", 4, "3");
     }
 
+    @TestTemplate public void test11() {
+        var con = new Confusion();
+        var cn = con;
+        cn.constraint("1", "2", "1", "3");
+    }
 }
