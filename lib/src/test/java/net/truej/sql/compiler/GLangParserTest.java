@@ -31,20 +31,4 @@ public class GLangParserTest {
         assertLex("a\\ \\ b", new Text("a  b"), new End());
         assertLex("a\\  \\ b", new Text("a "), new Text(" b"), new End());
     }
-
-    @Test void parseDotLangTest() {
-//        Assertions.assertEquals(
-//            parseGroups(""), List.of()
-//        );
-//        Assertions.assertEquals(
-//            parseGroups("axxx"), List.of("axxx")
-//        );
-//        Assertions.assertEquals(
-//            parseGroups("axxx.y"), List.of("axxx", "y")
-//        );
-//        Assertions.assertEquals(
-//            parseGroups("axxx.b.c"), List.of("axxx", "b", "c")
-//        );
-        //DotLangParser.parseFields(":t json t.b\\.c.d");
-    }
 }
