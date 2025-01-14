@@ -2,8 +2,8 @@ package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.TrueSqlTests2.Message;
+import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.compiler.TrueSqlTests.Message;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.WARNING;
 
-@ExtendWith(TrueSqlTests2.class) @Message(
+@ExtendWith(TrueSqlTests.class) @Message(
     kind = WARNING, text =
     "nullability mismatch for column 3 (for field `info`). Your decision is EXACTLY_NOT_NULL but driver infers EXACTLY_NULLABLE"
 )

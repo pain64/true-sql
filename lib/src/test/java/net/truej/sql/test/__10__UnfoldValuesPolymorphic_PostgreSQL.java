@@ -2,19 +2,19 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
-import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import static net.truej.sql.fetch.Parameters.Nullable;
 import static net.truej.sql.fetch.Parameters.unfold;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
+@ExtendWith(TrueSqlTests.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __10__UnfoldValuesPolymorphic_PostgreSQL {
 
     @TestTemplate public void unfold_values_workaround1(MainDataSource ds) {

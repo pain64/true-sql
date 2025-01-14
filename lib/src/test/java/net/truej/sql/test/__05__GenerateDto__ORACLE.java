@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.test.__05__GenerateDtoG.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
@@ -15,10 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @EnableOn(ORACLE)
 @TrueSql public class __05__GenerateDto__ORACLE {
 
     @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {

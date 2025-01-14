@@ -1,17 +1,10 @@
 package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.test.negative.GeneratedDTOTrueSql.PointSome;
-import org.junit.jupiter.api.TestTemplate;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.postgresql.geometric.PGpoint;
 
-import static javax.tools.Diagnostic.Kind.ERROR;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 //@TrueSqlTests2.Message(
 //    kind = ERROR, text = "target type implies 1 columns but result has 3"
 //)

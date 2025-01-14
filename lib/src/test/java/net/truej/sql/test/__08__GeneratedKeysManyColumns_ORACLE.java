@@ -2,7 +2,7 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.fetch.UpdateResult;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -13,13 +13,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 
 // FIXME: disable this check in compiler for HSQLDB -- enable test
 // FIXME: check MariaDB insert-returning
 // FIXME: check MsSQL output
-@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @EnableOn(ORACLE)
 @TrueSql public class __08__GeneratedKeysManyColumns_ORACLE {
 
     record Discount(Long id, @Nullable BigDecimal discount) { }

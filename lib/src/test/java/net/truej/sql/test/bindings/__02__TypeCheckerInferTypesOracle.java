@@ -2,9 +2,7 @@ package net.truej.sql.test.bindings;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.fetch.Parameters;
-import org.jetbrains.annotations.NotNull;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.bindings.__02__TypeCheckerInferTypesOracleG.*;
@@ -12,9 +10,9 @@ import static net.truej.sql.fetch.Parameters.NotNull;
 
 import java.time.ZonedDateTime;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
+import static net.truej.sql.compiler.TrueSqlTests.Database.ORACLE;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(ORACLE)
 @TrueSql public class __02__TypeCheckerInferTypesOracle {
     @TestTemplate public void test(MainConnection cn) {
         var result = cn.q("""

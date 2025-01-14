@@ -2,19 +2,19 @@ package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 import static net.truej.sql.fetch.Parameters.inout;
 import static net.truej.sql.fetch.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(HSQLDB)
-@TrueSqlTests2.Message(kind = ERROR, text = "only IN parameters allowed in batch mode")
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(HSQLDB)
+@TrueSqlTests.Message(kind = ERROR, text = "only IN parameters allowed in batch mode")
 @TrueSql
 public class __37__InvocationsFinderBatchModeParameters {
     @TestTemplate public void test(MainDataSource ds) {

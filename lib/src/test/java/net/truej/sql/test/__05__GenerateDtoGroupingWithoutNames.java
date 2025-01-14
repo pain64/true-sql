@@ -5,17 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.test.__05__GenerateDtoGroupingWithoutNamesTrueSql.*;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MSSQL, ORACLE, MYSQL, MARIADB})
+@ExtendWith(TrueSqlTests.class) @DisabledOn({MSSQL, ORACLE, MYSQL, MARIADB})
 // FIX test for enable on MySQL: mysql has no OffsetDateTime
 @TrueSql public class __05__GenerateDtoGroupingWithoutNames {
 

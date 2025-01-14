@@ -2,7 +2,7 @@ package net.truej.sql.test.bindings;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,9 +10,9 @@ import net.truej.sql.test.bindings.__02__TypeCheckerInferTypesG.*;
 
 import java.time.OffsetTime;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.POSTGRESQL;
+import static net.truej.sql.compiler.TrueSqlTests.Database.POSTGRESQL;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(POSTGRESQL)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(POSTGRESQL)
 @TrueSql public class __02__TypeCheckerInferTypes {
     @TestTemplate public void testTimeTypes(MainConnection cn) throws NoSuchFieldException, IllegalAccessException {
         var result = cn.q("""

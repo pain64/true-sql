@@ -11,7 +11,7 @@ import java.util.List;
 
 import static net.truej.sql.fetch.Parameters.*;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 @TrueSql public class __10__Unfold {
 
     @TestTemplate public void unfold1(MainConnection cn) {

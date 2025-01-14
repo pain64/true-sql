@@ -2,19 +2,19 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.MSSQL;
 import static net.truej.sql.fetch.Parameters.*;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 @DisabledOn({HSQLDB, MSSQL})
 @TrueSql public class __14__UnfoldMany {
     record User(long id, String name) { }

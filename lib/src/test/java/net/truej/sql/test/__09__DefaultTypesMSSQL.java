@@ -2,21 +2,19 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.math.BigDecimal;
 import java.time.*;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.MSSQL;
+import static net.truej.sql.compiler.TrueSqlTests.Database.MSSQL;
 import static net.truej.sql.fetch.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(MSSQL)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(MSSQL)
 @TrueSql public class __09__DefaultTypesMSSQL {
     record DataTypes(
         byte aByte, @Nullable Byte aByteNullable,

@@ -2,13 +2,13 @@ package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.Message(
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.Message(
     kind = ERROR, text = "target type implies 1 columns but result has 3"
 )
 @TrueSql public class __02__DtoFieldCountMismatch {

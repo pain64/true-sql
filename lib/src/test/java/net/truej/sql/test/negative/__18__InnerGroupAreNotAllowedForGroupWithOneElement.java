@@ -2,15 +2,15 @@ package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.test.negative.GeneratedDTOTrueSql.Clinic2;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
 
-@ExtendWith(TrueSqlTests2.class)
-@TrueSqlTests2.Message(
+@ExtendWith(TrueSqlTests.class)
+@TrueSqlTests.Message(
     kind = ERROR, text = "Inner groups not allowed for group with one element"
 )
 @TrueSql public class __18__InnerGroupAreNotAllowedForGroupWithOneElement {

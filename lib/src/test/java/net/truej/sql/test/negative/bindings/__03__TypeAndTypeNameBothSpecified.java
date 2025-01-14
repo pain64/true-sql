@@ -3,7 +3,7 @@ package net.truej.sql.test.negative.bindings;
 import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.StringReadWrite;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.TypeBinding;
 import net.truej.sql.source.ConnectionW;
@@ -14,11 +14,11 @@ import java.sql.Connection;
 import java.sql.Types;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
-import static net.truej.sql.compiler.TrueSqlTests2.Message;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.EnableOn;
+import static net.truej.sql.compiler.TrueSqlTests.Message;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @EnableOn(HSQLDB)
 @Message(
     kind = ERROR, text =
     "For source net.truej.sql.test.negative.bindings.__03__TypeAndTypeNameBothSpecified_.Cn1: " +

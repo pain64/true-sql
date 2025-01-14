@@ -1,9 +1,8 @@
 package net.truej.sql.test.negative.dsl;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.bindings.NullParameter;
@@ -13,9 +12,7 @@ import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static javax.tools.Diagnostic.Kind.ERROR;
-
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 @TrueSql public class __14__NullParameterUnreacheble {
     @TestTemplate void test() throws SQLException {
         var np = new NullParameter();

@@ -3,15 +3,15 @@ package net.truej.sql.test;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB, MSSQL, ORACLE})
+@ExtendWith(TrueSqlTests.class) @DisabledOn({MYSQL, MARIADB, MSSQL, ORACLE})
 @TrueSql public class __11__ConstraintViolation_Resolve {
     static class Handled extends Exception { }
 

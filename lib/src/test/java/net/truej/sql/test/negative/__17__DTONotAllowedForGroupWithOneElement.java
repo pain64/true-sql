@@ -2,17 +2,15 @@ package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.test.negative.GeneratedDTOTrueSql.Clinic;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.test.negative.GeneratedDTOTrueSql.Clinic2;
-import net.truej.sql.test.negative.GeneratedDTOTrueSql.Name2;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
 
-@ExtendWith(TrueSqlTests2.class)
-@TrueSqlTests2.Message(
+@ExtendWith(TrueSqlTests.class)
+@TrueSqlTests.Message(
     kind = ERROR, text = "Dto class name not allowed for group with one element - thees groups converts to List<single group element class name>"
 )
 @TrueSql public class __17__DTONotAllowedForGroupWithOneElement {

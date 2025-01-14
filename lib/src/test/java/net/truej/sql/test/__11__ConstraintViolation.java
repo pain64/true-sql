@@ -4,20 +4,19 @@ import net.truej.sql.compiler.MainDataSourceUnchecked;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.fetch.SqlExceptionR;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // TODO: report bug to mysql and mariadb drivers. table name, schema name not avail in exception
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({MYSQL, MARIADB})
+@ExtendWith(TrueSqlTests.class) @DisabledOn({MYSQL, MARIADB})
 @TrueSql public class __11__ConstraintViolation {
     static class Handled extends Exception { }
 

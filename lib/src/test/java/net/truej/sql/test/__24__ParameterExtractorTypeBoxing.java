@@ -3,10 +3,8 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.TrueSqlTests2.EnableOn;
-import net.truej.sql.compiler.UserSex;
+import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import net.truej.sql.fetch.Parameters;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
@@ -14,9 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(MSSQL)
+@ExtendWith(TrueSqlTests.class) @EnableOn(MSSQL)
 @TrueSql public class __24__ParameterExtractorTypeBoxing {
 
     record V(boolean f1, byte f2, short f3, int f4, long f5, float f6, double f7) { }

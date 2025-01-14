@@ -2,7 +2,7 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.TestTemplate;
@@ -13,13 +13,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.inout;
 import static net.truej.sql.fetch.Parameters.out;
 
 // FIXME: MariaDB?
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL, ORACLE})
+@ExtendWith(TrueSqlTests.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL, ORACLE})
 @TrueSql public class __17__TypeBindingsStoredProcedures {
     record DataTypes(
         @NotNull BigDecimal bigdecimal_type, @Nullable BigDecimal bigdecimal_type_null,

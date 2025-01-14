@@ -1,16 +1,12 @@
 package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
-
 @Disabled
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 //@TrueSqlTests2.Message(
 //    kind = ERROR, text = "target type implies 1 columns but result has 3"
 //)

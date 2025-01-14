@@ -2,15 +2,14 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.fetch.Parameters;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
+import static net.truej.sql.compiler.TrueSqlTests.Database.ORACLE;
 import static net.truej.sql.fetch.Parameters.NotNull;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(ORACLE)
 @TrueSql public class __25__ORACLENumberMapping {
     @TestTemplate public void test(MainDataSource ds) {
         ds.q("select 99 from dual").fetchOne(byte.class);

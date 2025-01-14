@@ -2,7 +2,7 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -14,13 +14,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.out;
 
 // FIXME: mariadb
 // TODO: test for postgresql
-@ExtendWith(TrueSqlTests2.class) @EnableOn(MSSQL)
+@ExtendWith(TrueSqlTests.class) @EnableOn(MSSQL)
 @TrueSql public class __17__TypeBindingsStoredProcedures_MSSQL {
     // FIXME: dedup with __09__DefaultTypes
     record DataTypes(

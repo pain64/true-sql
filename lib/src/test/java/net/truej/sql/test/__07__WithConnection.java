@@ -2,17 +2,17 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.NotNull;
 
 // FIXME: migrate this test to HSQLDB
-@ExtendWith(TrueSqlTests2.class) @EnableOn(POSTGRESQL)
+@ExtendWith(TrueSqlTests.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __07__WithConnection {
 
     @TestTemplate public void test(MainDataSource ds) {

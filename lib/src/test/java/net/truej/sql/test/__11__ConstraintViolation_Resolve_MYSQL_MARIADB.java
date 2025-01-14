@@ -3,18 +3,18 @@ package net.truej.sql.test;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // Enjoy https://bugs.mysql.com/bug.php?id=1956
 
 // FIXME: MariaDB - заставить дебилов сделать нормальное исключение для ConstraintViolation
-@ExtendWith(TrueSqlTests2.class) @EnableOn({MYSQL})
+@ExtendWith(TrueSqlTests.class) @EnableOn({MYSQL})
 @TrueSql public class __11__ConstraintViolation_Resolve_MYSQL_MARIADB {
     static class Handled extends Exception { }
 

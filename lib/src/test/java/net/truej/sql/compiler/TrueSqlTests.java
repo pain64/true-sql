@@ -1,6 +1,6 @@
 package net.truej.sql.compiler;
 
-import net.truej.sql.util.TestCompiler2;
+import net.truej.sql.util.TestCompiler;
 import org.junit.jupiter.api.extension.*;
 import org.testcontainers.containers.*;
 import org.testcontainers.utility.DockerImageName;
@@ -10,7 +10,6 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
 import java.lang.annotation.*;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -24,7 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class TrueSqlTests2 implements
+public class TrueSqlTests implements
     TestTemplateInvocationContextProvider, TestInstanceFactory, ExecutionCondition {
 
     public enum Database {HSQLDB, POSTGRESQL, MYSQL, MARIADB, MSSQL, ORACLE /*, DB2 */}
@@ -212,7 +211,7 @@ public class TrueSqlTests2 implements
             var expectedMessages = Arrays.stream(
                     factoryContext.getTestClass().getAnnotationsByType(Message.class)
                 )
-                .map(m -> new TestCompiler2.Message(m.kind(), m.text())).toList();
+                .map(m -> new TestCompiler.Message(m.kind(), m.text())).toList();
 
             var containsOutput = factoryContext.getTestClass().getAnnotation(ContainsOutput.class);
 
@@ -222,13 +221,13 @@ public class TrueSqlTests2 implements
             if (envToSet != null)
                 mutableEnv.put(envToSet.key(), envToSet.value());
 
-            var compiled = TestCompiler2.compile(
+            var compiled = TestCompiler.compile(
                 compilationUnits, expectedMessages,
                 containsOutput == null ? null : containsOutput.value()
             );
 
             var forDefine = expectCompilationError ?
-                TestCompiler2.compile(List.of( // empty test class stub
+                TestCompiler.compile(List.of( // empty test class stub
                     new SimpleJavaFileObject(uri, JavaFileObject.Kind.SOURCE) {
                         @Override public CharSequence getCharContent(
                             boolean ignoreEncodingErrors

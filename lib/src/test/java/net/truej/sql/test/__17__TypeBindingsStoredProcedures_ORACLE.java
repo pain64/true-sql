@@ -2,7 +2,7 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -15,12 +15,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.inout;
 import static net.truej.sql.fetch.Parameters.out;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @EnableOn(ORACLE)
 @TrueSql public class __17__TypeBindingsStoredProcedures_ORACLE {
     record DataTypes(
         @NotNull BigDecimal bigDecimalType, @Nullable BigDecimal bigDecimalTypeNull,

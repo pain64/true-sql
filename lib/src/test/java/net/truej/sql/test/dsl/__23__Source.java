@@ -1,14 +1,14 @@
 package net.truej.sql.test.dsl;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.source.ConnectionW;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.source.DataSourceW;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(HSQLDB)
 @TrueSql public class __23__Source {
     @TestTemplate public void DataSourceWTest() {
         var u0 = new DataSourceW.AsCall();

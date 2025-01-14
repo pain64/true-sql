@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import net.truej.sql.test.__05__GenerateDtoG.TypeTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -15,10 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.*;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @EnableOn(HSQLDB)
 @TrueSql public class __10__DefaultTypesHSQLDB {
     record DataTypes(
         byte byte_type, @Nullable Byte byte_null,

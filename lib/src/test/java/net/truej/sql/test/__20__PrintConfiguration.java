@@ -1,10 +1,10 @@
 package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.TrueSqlTests2;
-import net.truej.sql.compiler.TrueSqlTests2.EnableOn;
-import net.truej.sql.compiler.TrueSqlTests2.ContainsOutput;
-import net.truej.sql.compiler.TrueSqlTests2.Env;
+import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.compiler.TrueSqlTests.EnableOn;
+import net.truej.sql.compiler.TrueSqlTests.ContainsOutput;
+import net.truej.sql.compiler.TrueSqlTests.Env;
 import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.source.ConnectionW;
@@ -14,9 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @EnableOn(HSQLDB)
 @ContainsOutput("""
     TrueSql configuration:
     	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.url=jdbc:hsqldb:mem:xxx

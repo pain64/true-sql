@@ -3,12 +3,12 @@ package net.truej.sql.test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSourceUnchecked;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 @TrueSql public class __27__ToDtoUnchecked {
 
     public record City(Long id, String name) { }

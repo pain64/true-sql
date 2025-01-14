@@ -1,15 +1,12 @@
 package net.truej.sql.test.negative;
 
 import net.truej.sql.TrueSql;
-import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
-import org.jetbrains.annotations.Nullable;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Disabled
-@ExtendWith(TrueSqlTests2.class)
+@ExtendWith(TrueSqlTests.class)
 //@TrueSqlTests2.Message(
 //    kind = ERROR, text = "has no type binding for net.truej.sql.test.negative.__07__NoTypeBinding_.User.Trap"
 //)

@@ -3,13 +3,13 @@ package net.truej.sql.test.bindings;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.bindings.OffsetTimeReadWrite;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(HSQLDB)
 @TrueSql public class __01__OffsetTimeCoverage {
     //There is NO db  (drivers) supporting OffsetTime type
     //need coverage

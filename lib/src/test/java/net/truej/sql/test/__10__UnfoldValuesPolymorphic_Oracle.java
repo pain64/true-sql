@@ -2,18 +2,18 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.Database.ORACLE;
-import static net.truej.sql.compiler.TrueSqlTests2.EnableOn;
+import static net.truej.sql.compiler.TrueSqlTests.Database.ORACLE;
+import static net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import static net.truej.sql.fetch.Parameters.*;
 
-@ExtendWith(TrueSqlTests2.class) @EnableOn(ORACLE)
+@ExtendWith(TrueSqlTests.class) @EnableOn(ORACLE)
 @TrueSql public class __10__UnfoldValuesPolymorphic_Oracle {
 
     @TestTemplate public void unfold_values(MainDataSource ds) {

@@ -2,8 +2,7 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
-import net.truej.sql.compiler.TrueSqlTests2;
-import org.jetbrains.annotations.NotNull;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,14 +10,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static net.truej.sql.compiler.TrueSqlTests2.*;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.*;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.*;
 
 // TODO: split this test to 3 - in, inout and out parameters support
 //  because mssql does not supports (nominal) for inout parameters
 // FIXME: MARIADB
-@ExtendWith(TrueSqlTests2.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
+@ExtendWith(TrueSqlTests.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
 @TrueSql public class __03__Call {
     // todo: подумать над nullability для out параметров???
     record IntPair(

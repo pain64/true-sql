@@ -2,13 +2,13 @@ package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
-import net.truej.sql.compiler.TrueSqlTests2;
+import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import net.truej.sql.test.__05__GenerateDtoG.GroupTest;
-import static net.truej.sql.compiler.TrueSqlTests2.Database.HSQLDB;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests2.class) @TrueSqlTests2.EnableOn(HSQLDB)
+@ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(HSQLDB)
 @TrueSql public class __19__GroupingDefaultTypesBoxedNames  {
     @TestTemplate public void test(MainDataSource ds) {
             ds.q("""
