@@ -169,8 +169,8 @@ Moreover, by communicating directly with the database, we can generate DTO in co
 var user = ds.q("select id, name from users").g.fetchList(User.class);
 ```
 
-### List grouping
-
+### Tree select
+select city with associated clinic addresses in one time
 ```java
 var clinicAddresses = ds.q("""
     select distinct
@@ -181,8 +181,8 @@ var clinicAddresses = ds.q("""
     """).g.fetchList(ClinicAddresses.class);
 ```
 
-### Nested DTO
-
+### Tree select: tree (dto) nesting
+select clinic with associated users in one time
 ```java
 var clinics = ds.q("""
     select
@@ -197,7 +197,7 @@ var clinics = ds.q("""
 ```
 
 ### RAMPAGE!
-
+select clinic with associated users with user bills in one time
 ```java
 var clinics = ds.q("""
     select
