@@ -96,8 +96,7 @@ public class TrueSqlPlugin implements Plugin {
 
     public sealed interface MethodInvocationResult { }
 
-    public static final class ValidationException
-        extends RuntimeException implements MethodInvocationResult {
+    public static final class ValidationException extends RuntimeException {
         final JCTree tree;
 
         public ValidationException(JCTree tree, String message) {
@@ -105,6 +104,8 @@ public class TrueSqlPlugin implements Plugin {
             this.tree = tree;
         }
     }
+
+    public record ValidationError(JCTree tree, String message) implements MethodInvocationResult {}
 
     public record CompilationWarning(JCTree tree, String message) { }
 
@@ -517,10 +518,10 @@ public class TrueSqlPlugin implements Plugin {
                         ) context.get(HashMap.class);
 
                     var hasNoErrors = true;
-                    var sendCompilationError = (Consumer<ValidationException>) ex ->
+                    var sendCompilationError = (Consumer<ValidationError>) error ->
                         messages.write(
                             (JCTree.JCCompilationUnit) e.getCompilationUnit(),
-                            ex.tree, JCDiagnostic.DiagnosticType.ERROR, ex.getMessage()
+                            error.tree, JCDiagnostic.DiagnosticType.ERROR, error.message
                         );
 
                     if (dataFromAnnotationProcessor != null) {
@@ -544,14 +545,16 @@ public class TrueSqlPlugin implements Plugin {
 
                                             handle(symtab, names, maker, messages, cu, tree, fi);
                                         }
-                                        case ValidationException ex -> {
+                                        case ValidationError error -> {
                                             hasNoErrors = false;
-                                            sendCompilationError.accept(ex);
+                                            sendCompilationError.accept(error);
                                         }
                                     }
                                 } catch (ValidationException ex) {
                                     hasNoErrors = false;
-                                    sendCompilationError.accept(ex);
+                                    sendCompilationError.accept(
+                                        new ValidationError(ex.tree, ex.getMessage())
+                                    );
                                 }
                             }
                     }
@@ -560,7 +563,9 @@ public class TrueSqlPlugin implements Plugin {
                         if (hasNoErrors)
                             assertHasNoDanglingTrueSqlCalls(symtab, names, cu);
                     } catch (ValidationException ex) {
-                        sendCompilationError.accept(ex);
+                        sendCompilationError.accept(
+                            new ValidationError(ex.tree, ex.getMessage())
+                        );
                     }
                 }
             }

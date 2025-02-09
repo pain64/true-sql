@@ -708,8 +708,6 @@ public class InvocationsFinder {
                         if (fetchInvocation != null)
                             result.put(tree, fetchInvocation);
                     }
-                } catch (ValidationException e) {
-                    result.put(tree, e);
                 } catch (SQLException e) {
                     // Эту ошибку нужно отдать в javac именно в этот момент.
                     // Если закончится раунд процессинга аннотаций, а ошибка не записана
@@ -717,11 +715,12 @@ public class InvocationsFinder {
                     // и до плагина компилятора мы не дойдем!
                     messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
                 } catch (
+                    ValidationException |
                     GLangParser.ParseException |
                     ExistingDtoParser.ParseException |
                     ConfigurationParser.ParseException e
                 ) {
-                    result.put(tree, new ValidationException(tree, e.getMessage()));
+                    result.put(tree, new ValidationError(tree, e.getMessage()));
                 }
 
                 super.visitApply(tree);
