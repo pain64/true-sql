@@ -6,6 +6,7 @@ It's development is motivated by the pain of thousands of developers. Therefore,
 
 ##### Contact us via
 tg: @overln2, @aka_naked_gun<br>
+site: [truej.net](https://truej.net)<br>
 email: [net.truej.sql@gmail.com]()
 
 ## FEATURES
@@ -26,11 +27,6 @@ email: [net.truej.sql@gmail.com]()
 - [DB constraint violation checks](#db-constraint-violation-checks)
 - [100% sql-injection safety guarantee](#100-sql-injection-safety-guarantee)
 - [Exceptional performance. Equal to JDBC](#exceptional-performance-equal-to-jdbc)
-
-#### More information about TrueSql and community
-IN PROGRESS [Article about TrueSql.]() <br>
-[Our youtube channel about TrueSql.](https://www.youtube.com/@TrueSql64)<br>
-[In this telegram channel we answer questions about TrueSql.](https://t.me/TrueSql)
 
 #### TESTED ON ALL MAJOR DATABASES
 
@@ -57,10 +53,10 @@ IN PROGRESS [Article about TrueSql.]() <br>
 </table>
 
 ## Get started
-1. Get artifacts here: [Maven repository link](https://central.sonatype.com/artifact/net.truej/sql).<br>
-2. Have fun!
+1. Get artifacts here: [Maven repository link](https://central.sonatype.com/artifact/net.truej/sql)<br>
+2. Have fun! [Check out samples](https://github.com/pain64/true-sql/tree/main/samples/spring-gradle) 
 
-[Check out samples](https://github.com/pain64/true-sql/tree/main/samples/spring-gradle) 
+[gradle.properties](https://github.com/pain64/true-sql/blob/main/samples/spring-gradle/gradle.properties)
 
 [build.gradle.kts](https://github.com/pain64/true-sql/blob/main/samples/spring-gradle/build.gradle.kts)
 
@@ -90,14 +86,15 @@ IN PROGRESS [Article about TrueSql.]() <br>
     }
 }
 ```
-[schema.sql](https://github.com/pain64/true-sql/tree/main/lib/src/test/resources/schemal) (also used for all examples below)
+[database schema](https://github.com/pain64/true-sql/tree/main/lib/src/test/resources/schema) (also used for all examples below)
 
 ###### NB: Pass parameters one by one after query text.
 
 ## Connection configuration
-If you want TrueSql to do compile time checks you need to configure DataSourceW or ConnectionW (**STRONGLY RECOMENDED**)
+If you want TrueSql to do compile time checks you need to configure `checks` property (**STRONGLY RECOMENDED**)
 
 ```java
+package xxx;
 import net.truej.sql.source.DataSourceW;
 import net.truej.sql.config.Configuration;
 import net.truej.sql.config.CompileTimeChecks;
@@ -113,17 +110,14 @@ import net.truej.sql.config.CompileTimeChecks;
 }
 ```
 
-You can configure db connection for compile-time checks with next ENV variables
-
-    truesql.xxx.PgDs.url=null
-    truesql.xxx.PgDs.username=null
-    truesql.xxx.PgDs.password=null
-
-To check configuration when build use flag
+You can reconfigure it with ENV variables.
+Check configuration with this build flag and set needed ENV
 
     ./gradlew build -Dtruesql.printConfig=true
-
-###### NB: Without compile-time validation generate DTO and compile-time query validation don't work. asCall() and constraint violations checks don't works, but without compile-time verification.
+    gradlew>
+        truesql.xxx.PgDs.url=jdbc:postgresql://localhost:5432/test_db
+        truesql.xxx.PgDs.username=user
+        truesql.xxx.PgDs.password=userpassword
 
 ## ResultSet to DTO mapping. Grouped object-tree fetching.
 TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (jdbc representation of query result) to DTO. TrueSql map fields into record according to the declare order:
@@ -133,7 +127,7 @@ TrueSql has a set of fetchers, explore them with comma. You can map ResultSet (j
 record User(String name, BigDecimal amount) { }
 record Report(String city, List<String> clinics, List<User> users) { }
 
-ds.q("""
+var reportsData = ds.q("""
     select
         ci.name as city,
         cl.name as clinic,
@@ -174,13 +168,6 @@ Moreover, by communicating directly with the database, we can generate DTO in co
 ```java
 var user = ds.q("select id, name from users").g.fetchList(User.class);
 ```
-<details>
-    <summary>User</summary>
-    
-```java
-record User(long id, String name) { }
-```
-</details>
 
 ### List grouping
 
@@ -193,13 +180,6 @@ var clinicAddresses = ds.q("""
         left join clinic cl on ci.id = cl.city_id
     """).g.fetchList(ClinicAddresses.class);
 ```
-<details>
-    <summary>CitiesClinics</summary>
-    
-```java
-record CitiesClinics(String city, List<String> clinics) { }
-```
-</details>
 
 ### Nested DTO
 
@@ -215,17 +195,6 @@ var clinics = ds.q("""
         left join users u on u.id = cu.user_id
     """).g.fetchList(Clinic.class);
 ```
-
-<details>
-    <summary>Clinic, User</summary>
-    
-```java
-record Clinic(long id, String name, List<User> users) {
-	record User(Long id, String name) {}
-}
-```
-</details>
-
 
 ### RAMPAGE!
 
@@ -248,18 +217,6 @@ var clinics = ds.q("""
     """).g.fetchList(Clinic.class);
 
 ```
-
-<details>
-    <summary>Clinic, User, Bill</summary>
-
-```java
-record Clinic(long id, String name, List<String> addresses, List<User> users) {
-	record User(Long id, String name, List<Bill> bills) {
-		record Bill(Long id, OffsetDateTime date, BigDecimal amount) {}
-    }
-}
-```
-</details>
 
 ###### NB: Queries stay static. All grouping work happens in Java.
 <details>
@@ -518,11 +475,11 @@ This table represents all possible situations.
 </table>
 
 ### Fetch scalar
-Use fetch method overload to tell TrueSql interpret column as Nullable or NotNull.
+Use fetch method overload to tell TrueSql to interpret result value as Nullable or NotNull.
 
 ```java
-import static com.truej.sql.v3.source.Parameters.Nullable;
-import static com.truej.sql.v3.source.Parameters.NotNull;
+import static net.truej.sql.fetch.Parameters.Nullable;
+import static net.truej.sql.fetch.Parameters.NotNull;
 // ...
 var infos = ds.q("select info from users where id = ?", 42)
     .fetchOne(Nullable, String.class);
@@ -543,7 +500,10 @@ record Clinic(long id, @NotNull String info) { }
 ```
 
 ### Fetch with .g
-By default TrueSql annotate fields in line with db driver. You can change it with next syntax:
+By default TrueSql annotates fields (@Nullable / @NotNull) in line with db driver.
+You can change it with next syntax:
+- :t? - field is nullable
+- :t! - field is not null
 
 ```java
 var user = ds.q("""
@@ -555,15 +515,6 @@ var user = ds.q("""
     .g.fetchList(User.class);
 ```
 
-<details>
-    <summary>generated User</summary>
-
-```java
-record User(Long id, @Nullable String name) { }
-```
-</details>
-
-
 ```java
 var user = ds.q("""
     select 
@@ -573,14 +524,6 @@ var user = ds.q("""
     """)
     .g.fetchList(User.class);
 ```
-
-<details>
-    <summary>generated User</summary>
-
-```java
-record User(Long id, String name) { }
-```
-</details>
 
 ###### NB: driver can say "Unknown" nullability. Then TrueSql accept user decision and dont print warnings
 
@@ -592,7 +535,7 @@ We save and ***improve*** all necessary JDBC possibilities.<br>
 
 ```java
 var user = ds.q("insert into users(name) values (?)", "Pavel")
-            .asGeneratedKeys("id").fetchOne(Long.class);
+            .asGeneratedKeys("id").fetchOne(long.class);
 ```
 
 ### UpdateCount
@@ -632,8 +575,7 @@ ds.withConnection(cn -> {
     cn.q("set time zone 'America/New_York'").fetchNone();
 
     return cn.q("select amount, date from bill").g.fetchOne(Bill.class);
-    }
-)
+})
 ```
 
 In case you need transaction mode
@@ -643,15 +585,13 @@ try {
         cn.q("insert into clinic values(?, ?, ?)", 4, "Paris St. Marie Hospital", 2)
             .fetchNone();
 
-        // do something dangerous
-
+        // do something dangerous that may throw
         throw new ForceRollback();
     });
 } catch (ForceRollback ex) {
-    // null
     var name = cn.q("select name from clinic where id = ?", 4)
         .fetchOneOrZero(String.class)
-
+    // transcaction was rolled back and name is `null` now
 }
 ```
 
@@ -672,7 +612,7 @@ ds.withConnection(cn -> {
 TrueSql provide next way to use stored procedures and fetch out parameters
 
 ```java
-import static com.truej.sql.v3.source.Parameters.*;
+import static net.truej.sql.fetch.Parameters.*;
 
 ds.q("{ call ? = some_procedure(?, ?) }", out(Integer.class), 42, inout(42))
     .asCall().fetchOne(Integer.class)
@@ -709,10 +649,13 @@ Nowadays bind custom types is a casual need. TrueSql provides two ways to bind t
 If bound type may be mapped as preparedStatement.getObject()/setObject()
 
 ```java
-import com.truej.sql.v3.bindings.AsObjectReadWrite;
+import net.truej.sql.bindings.AsObjectReadWrite;
 
 class PgPoint { }; // in pg jdbc library
-class PgPointRW extends AsObjectReadWrite<PGPoint> { };
+class PgPointRW extends AsObjectReadWrite<PGPoint> {
+    @Override public Class<PGpoint> aClass() { return PGpoint.class; }
+    @Override public int sqlType() { return Types.OTHER; }
+};
 
 @Configuration(
     typeBindings = {
@@ -782,12 +725,12 @@ class PgUserSexRW extends PgEnumRW<UserSex> {
 ```
 
 ### Type inference
-As you can see, in examples above we use compatibleSqlTypeName parameter. You should use this mapping in case you want bind java class to custom sql type, which is not default sql type, i.e. point. If you have made this binding, you can use this in fetches, parameters, generating dto as well as default types
+As you can see, in examples above we use compatibleSqlTypeName parameter. You should use this mapping in case you want bind java class to custom sql type, which is not default sql type, i.e. `point`. If you have made this binding, you can use it in fetches, parameters, generating dto as well as default types
 
 ```java
 var userSex = ds.q("select sex from users where id = ?", 42).g.fetchOne(UserSex.class);
 ```
-<br>If database has no custom sql types, or, you want wrap default type you should use compatibleSqlType parameter
+<br>If database has no custom sql types you should use compatibleSqlType parameter
 
 ```java
 enum UserSex {MALE, FEMALE}
@@ -807,7 +750,7 @@ class MySqlUserSexRW extends MySqlEnumRW<UserSex> {
     public MySqlDs(DataSource w) { super(w); }
 }
 ```
-If you want generate dto with this type, you should specify type like this
+If you want generate dto with field of this type, you should specify type like this
 
 
 ```java
@@ -868,7 +811,7 @@ public class MainDataSource extends DataSourceW {
     }
 }
 ```
-If you use net.truej.sql.dsl.ConstraintViolationException then TrueSql will check constraint existence in database. The way you can catch wrapped DB constraint violations:
+If you use net.truej.sql.fetch.ConstraintViolationException then TrueSql will check constraint existence in database. The way you can catch wrapped DB constraint violations:
 
 ```java
 try {
@@ -886,7 +829,7 @@ try {
 ###### NB: also has overloads with database and schema
 
 ## 100% sql-injection safety guarantee
-1. In case of unfold feature, TrueSql only add parameters nests to query text. In other cases query text stay static.
+1. In case of unfold feature, TrueSql only adds prepared statement parameters  dynamically. In other cases query text stay static.
 2. All parameters passes as PreparedStatement parameters.
 
 For these reasons, sql-injection can't happen.
