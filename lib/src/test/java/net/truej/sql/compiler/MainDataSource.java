@@ -1,6 +1,7 @@
 package net.truej.sql.compiler;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import net.truej.sql.bindings.AsObjectReadWrite;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
@@ -8,6 +9,7 @@ import net.truej.sql.config.TypeBinding;
 import net.truej.sql.source.DataSourceW;
 import oracle.jdbc.OracleDatabaseException;
 import org.hsqldb.HsqlException;
+import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PSQLException;
 
 import javax.sql.DataSource;
@@ -24,7 +26,7 @@ import java.sql.Types;
     typeBindings = {
         @TypeBinding(
             compatibleSqlTypeName = "point",
-            rw = PgPointRW.class
+            rw = MainDataSource.PgPointRW.class
         ),
         @TypeBinding(
             compatibleSqlType = Types.VARCHAR,
@@ -65,6 +67,11 @@ import java.sql.Types;
         )
     }
 ) public class MainDataSource extends DataSourceW {
+
+    public static class PgPointRW extends AsObjectReadWrite<PGpoint> {
+        @Override public Class<PGpoint> aClass() { return PGpoint.class; }
+        @Override public int sqlType() { return Types.OTHER; }
+    }
 
     public MainDataSource(DataSource w) { super(w); }
 

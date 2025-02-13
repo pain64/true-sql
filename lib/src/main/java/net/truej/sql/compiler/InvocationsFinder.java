@@ -54,6 +54,14 @@ public class InvocationsFinder {
 
     sealed interface DtoMode { }
 
+    private static class DeferredValidationException extends RuntimeException {
+        final JCTree tree;
+        DeferredValidationException(JCTree tree, String message) {
+            super(message);
+            this.tree = tree;
+        }
+    }
+
     static StatementGenerator.QueryMode parseQuery(
         Symtab symtab, JCTree.JCCompilationUnit cu, Names names,
         JCTree.JCMethodInvocation tree,
@@ -158,6 +166,7 @@ public class InvocationsFinder {
             ? new StatementGenerator.BatchedQuery(batchListDataExpression, batchLambda, result)
             : new StatementGenerator.SingleQuery(result);
     }
+
     static ValidationException badSource(JCTree tree) {
         return new ValidationException(
             tree,
@@ -214,10 +223,6 @@ public class InvocationsFinder {
                 if (
                     tree.args.length() >= 3 && tree.args.length() <= 5
                 ) {
-                    if (!(sourceExpression instanceof JCTree.JCIdent))
-                        throw new ValidationException(
-                            sourceExpression, "Expected identifier for source for `.constraint(...)`"
-                        );
 
                     if (
                         tree.args.get(tree.args.length() - 3) instanceof JCTree.JCLiteral l3 &&
@@ -248,12 +253,19 @@ public class InvocationsFinder {
                                 return;
                         }
 
+                        if (!(sourceExpression instanceof JCTree.JCIdent))
+                            throw new DeferredValidationException(
+                                sourceExpression, "Expected identifier for source for `.constraint(...)`"
+                            );
+
                         var vt = varTypes.get(((JCTree.JCIdent) sourceExpression).name);
                         if (
                             vt == null ||
                             vt.getSuperclass().tsym != clConnectionW &&
                             vt.getSuperclass().tsym != clDataSourceW
-                        ) throw badSource(tree);
+                        ) throw new DeferredValidationException(
+                            tree, badSource(tree).getMessage()
+                        );
 
                         var parsedConfig = ConfigurationParser.parseConfig(
                             symtab, names, cu, vt, (__, ___) -> { }
@@ -270,6 +282,7 @@ public class InvocationsFinder {
                 JCTree.JCMethodInvocation tree, JCTree.JCFieldAccess f
             ) throws SQLException {
 
+                var lastError = (ValidationException) null;
                 var warnings = new ArrayList<CompilationWarning>();
                 var fetchMethodName = f.name.toString();
 
@@ -283,7 +296,7 @@ public class InvocationsFinder {
                     return null;
 
                 var lineNumber = cu.getLineMap().getLineNumber(tree.getStartPosition());
-                final DtoMode dtoMode;
+                var dtoMode = (DtoMode) null;
 
                 if (
                     f.selected instanceof JCTree.JCFieldAccess fa &&
@@ -298,7 +311,7 @@ public class InvocationsFinder {
                     )
                         dtoMode = new GenerateDto(gid.name);
                     else
-                        throw new ValidationException(tree.args.head, "Expected %NewDtoClassName%.class");
+                        lastError = new ValidationException(tree.args.head, "Expected %NewDtoClassName%.class");
 
                     f = fa;
                 } else {
@@ -375,7 +388,7 @@ public class InvocationsFinder {
                                 inv.args.stream()
                                     .anyMatch(arg -> ((JCTree.JCLiteral) arg).getValue() == null)
                             )
-                                throw new ValidationException(
+                                lastError = new ValidationException(
                                     tree, "unexpected null literal as asGeneratedKeys column name"
                                 );
 
@@ -394,10 +407,10 @@ public class InvocationsFinder {
                     }
                 }
 
-                final StatementGenerator.QueryMode queryMode;
-                final JCTree.JCIdent sourceExpression;
-                final StatementGenerator.SourceMode sourceMode;
-                final ConfigurationParser.ParsedConfiguration parsedConfig;
+                var queryMode = (StatementGenerator.QueryMode) null;
+                var sourceExpression = (JCTree.JCIdent) null;
+                var sourceMode = (StatementGenerator.SourceMode) null;
+                var parsedConfig = (ConfigurationParser.ParsedConfiguration) null;
 
                 if (
                     f.selected instanceof JCTree.JCMethodInvocation inv &&
@@ -412,9 +425,13 @@ public class InvocationsFinder {
 
                     var queryText = tryAsQuery.apply(0);
                     if (queryText != null) // single
-                        queryMode = parseQuery(
-                            symtab, cu, names, tree, null, null, queryText, inv.args.tail
-                        );
+                        try {
+                            queryMode = parseQuery(
+                                symtab, cu, names, tree, null, null, queryText, inv.args.tail
+                            );
+                        } catch (ValidationException e) {
+                            lastError = e;
+                        }
                     else {
                         queryText = tryAsQuery.apply(1);
                         if (queryText != null) { // batch
@@ -427,16 +444,20 @@ public class InvocationsFinder {
                                 array.elemtype instanceof JCTree.JCIdent elementTypeId &&
                                 elementTypeId.name.equals(names.fromString("Object"))
                             )
-                                queryMode = parseQuery(
-                                    symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
-                                );
-                            else throw new ValidationException(
+                                try {
+                                    queryMode = parseQuery(
+                                        symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
+                                    );
+                                } catch (ValidationException e) {
+                                    lastError = e;
+                                }
+                            else lastError = new ValidationException(
                                 tree,
                                 "Batch parameter extractor must be lambda literal returning " +
                                 "object array literal (e.g. `b -> new Object[]{b.f1, b.f2}`)"
                             );
                         } else
-                            throw new ValidationException(
+                            lastError = new ValidationException(
                                 tree, "Query text must be a string literal"
                             );
                     }
@@ -466,9 +487,15 @@ public class InvocationsFinder {
                 } else
                     return null;
 
+                if (lastError != null) throw lastError;
+
+                // mitigate Java language limitations
+                var _queryMode = queryMode;
+                var _parsedConfig = parsedConfig;
+
                 var parseExistingDto = (Function<ExistingDto, GLangParser.FetchToField>) existing ->
                     (GLangParser.FetchToField) ExistingDtoParser.parse(
-                        parsedConfig.typeBindings(), true, false, "result",
+                        _parsedConfig.typeBindings(), true, false, "result",
                         existing.nullMode, names.init, existing.toType
                     );
 
@@ -504,7 +531,7 @@ public class InvocationsFinder {
                             var pMetadata = jdbcMetadata.parameters();
                             if (pMetadata == null) yield null;
 
-                            yield Arrays.stream(getOutParametersNumbers(queryMode))
+                            yield Arrays.stream(getOutParametersNumbers(_queryMode))
                                 .mapToObj(i -> {
                                     var p = pMetadata.get(i - 1);
                                     return new GLangParser.ColumnMetadata(
@@ -615,7 +642,7 @@ public class InvocationsFinder {
                                 final Standard.Binding binding;
                                 if (javaClassNameHint != null) {
                                     binding = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), false, javaClassNameHint
+                                        tree, _parsedConfig.typeBindings(), false, javaClassNameHint
                                     );
 
                                     TypeChecker.assertTypesCompatible(
@@ -629,8 +656,8 @@ public class InvocationsFinder {
                                     );
                                 } else
                                     binding = TypeChecker.getBindingForClass(
-                                        tree, parsedConfig.typeBindings(), true, TypeChecker.inferType(
-                                            parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
+                                        tree, _parsedConfig.typeBindings(), true, TypeChecker.inferType(
+                                            _parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
                                         )
                                     );
 
@@ -656,15 +683,15 @@ public class InvocationsFinder {
 
                 var generatedCode = StatementGenerator.generate(
                     className ->
-                        parsedConfig.typeBindings().stream()
+                        _parsedConfig.typeBindings().stream()
                             .filter(b -> b.className().equals(className))
-                            .findFirst().get().rwClassName(),
+                            .findFirst().get().rwClassName().replace('$', '.'),
                     lineNumber,
                     sourceMode,
                     queryMode,
                     statementMode,
                     fetchMode,
-                    dtoMode instanceof InvocationsFinder.GenerateDto,
+                    dtoMode instanceof GenerateDto,
                     isWithUpdateCount
                 );
 
@@ -708,17 +735,20 @@ public class InvocationsFinder {
                         if (fetchInvocation != null)
                             result.put(tree, fetchInvocation);
                     }
-                } catch (SQLException e) {
-                    // Эту ошибку нужно отдать в javac именно в этот момент.
+                } catch (
+                    ValidationException |
+                    GLangParser.ParseException |
+                    ExistingDtoParser.ParseException |
+                    ConfigurationParser.ParseException |
+                    SQLException e
+                ) {
+                    // Эти ошибки нужно отдать в javac именно в этот момент.
                     // Если закончится раунд процессинга аннотаций, а ошибка не записана
                     // то у нас не сгенерируются Dto и будет ошибка компиляции
                     // и до плагина компилятора мы не дойдем!
                     messages.write(cu, tree, JCDiagnostic.DiagnosticType.ERROR, e.getMessage());
                 } catch (
-                    ValidationException |
-                    GLangParser.ParseException |
-                    ExistingDtoParser.ParseException |
-                    ConfigurationParser.ParseException e
+                    DeferredValidationException e
                 ) {
                     result.put(tree, new ValidationError(tree, e.getMessage()));
                 }

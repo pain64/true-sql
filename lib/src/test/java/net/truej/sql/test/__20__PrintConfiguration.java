@@ -20,8 +20,8 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 @ContainsOutput("""
     TrueSql configuration:
     	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.url=jdbc:hsqldb:mem:xxx
-    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.username=null
-    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.password=null"""
+    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.username UNDEFINED
+    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.password UNDEFINED"""
 )
 @Env(key = "truesql.printConfig", value = "true")
 @TrueSql public class __20__PrintConfiguration {

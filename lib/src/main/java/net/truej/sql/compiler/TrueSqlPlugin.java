@@ -96,7 +96,7 @@ public class TrueSqlPlugin implements Plugin {
 
     public sealed interface MethodInvocationResult { }
 
-    public static final class ValidationException extends RuntimeException {
+    public static class ValidationException extends RuntimeException {
         final JCTree tree;
 
         public ValidationException(JCTree tree, String message) {

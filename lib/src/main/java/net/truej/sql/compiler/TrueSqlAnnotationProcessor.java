@@ -66,7 +66,9 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 var found = elements.getTreeAndTopLevel(element, null, null);
                 ConfigurationParser.parseConfig(
                     symtab, names, found.snd, (Symbol.ClassSymbol) element,
-                    (propName, propValue) -> javacLog.printRawLines("\t" + propName + "=" + propValue)
+                    (propName, propValue) -> javacLog.printRawLines(
+                        "\t" + propName + (propValue == null ? " UNDEFINED" : "=" + propValue)
+                    )
                 );
             }
         }

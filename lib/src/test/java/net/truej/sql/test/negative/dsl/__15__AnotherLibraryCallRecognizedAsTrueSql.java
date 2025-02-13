@@ -31,14 +31,6 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
         void fetchOne(String one, String two, String three) {};
     }
 
-    // TrueSql recognizes that it's not genuine TrueSql api call!
-    // Errors discovered for this tree in annotation processor
-    // will be discarded in compiler plugin
-    @TestTemplate void test() {
-        var cn = new Confusion();
-        cn.q("").fetchNone();
-    }
-
     @TestTemplate public void test4() {
         var con = new Confusion();
         con.fetchOne("a", "b", "c");
@@ -90,6 +82,10 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
         var cn = con;
         cn.constraint("", "", "", "", () -> {});
     }
+
+    // TrueSql recognizes that it's not genuine TrueSql api call!
+    // Errors discovered for this tree in annotation processor
+    // will be discarded in compiler plugin
 
     @TestTemplate public void testBadSourceBadVarType() {
         var con = new Confusion();

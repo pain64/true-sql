@@ -12,7 +12,7 @@ repositories {
     mavenCentral()
 }
 
-var trueSqlVersion = "3.0.0-beta5"
+var trueSqlVersion = "3.0.0-beta6"
 
 dependencies {
 	annotationProcessor("net.truej:sql:$trueSqlVersion")
