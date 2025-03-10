@@ -12,7 +12,7 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 import static net.truej.sql.compiler.TrueSqlTests.Message;
 
 @ExtendWith(TrueSqlTests.class) @Message(
-    kind = ERROR, text = "expected Name.class or full.qualified.Name.class or array[].class"
+    kind = ERROR, text = "Type not found (expected Name.class or full.qualified.Name.class or array[].class)"
 ) @EnableOn(HSQLDB)
 @TrueSql public class __13__FetchTo_IsNotClassLiteral_FieldAccess {
     class AAA {

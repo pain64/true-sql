@@ -37,11 +37,6 @@ create table if not exists user_bills (
     constraint user_bills_fk1   foreign key (bill_id)   references bill(id)
 );
 
-create table if not exists all_default_data_types(
-    byte_type tinyint not null,
-    byte_type_null tinyint
-);
-
 create procedure if not exists digit_magic(in x int, inout y int, out z int)
     begin
         set y = y + x;
@@ -60,31 +55,65 @@ modifies sql data
         update bill set discount = amount * 0.1 where date = datedisc;
     end;
 
-create procedure if not exists test_types_procedure(
-   inout bigdecimal_type decimal(15,3),
-   out bigdecimal_type_null decimal(15,3),
-   inout boolean_type boolean,
-   out boolean_type_null boolean,
-   -- bytearray_type bytea not null,
-   -- bytearray_type_null bytea,
-   inout date_type date,
-   out date_type_null date,
-   inout integer_type integer,
-   out integer_type_null integer,
-   inout long_type bigint,
-   out long_type_null bigint,
-   inout string_type varchar(200),
-   out string_type_null varchar(200),
-   inout short_type smallint,
-   out short_type_null smallint,
-   inout byte_type tinyint,
-   out byte_type_null tinyint,
-   inout time_type time,
-   out time_type_null time,
-   inout timestamp_type datetime,
-   out timestamp_type_null datetime
-)
-   begin
-       declare b boolean;
-       set b = true;
-   end;
+create function f_tinyint_1(x tinyint(1))
+    RETURNS tinyint(1) DETERMINISTIC RETURN x;
+create procedure p_tinyint_1(in x tinyint(1), out y tinyint(1))
+    begin set y = x; end;
+
+create function f_tinyint(x tinyint)
+    RETURNS tinyint DETERMINISTIC RETURN x;
+create procedure p_tinyint(in x tinyint, out y tinyint)
+    begin set y = x; end;
+
+create function f_smallint(x smallint)
+    RETURNS smallint DETERMINISTIC RETURN x;
+create procedure p_smallint(in x smallint, out y smallint)
+    begin set y = x; end;
+
+create function f_int(x int)
+    RETURNS int DETERMINISTIC RETURN x;
+create procedure p_int(in x int, out y int)
+    begin set y = x; end;
+
+create function f_bigint(x bigint)
+    RETURNS bigint DETERMINISTIC RETURN x;
+create procedure p_bigint(in x bigint, out y bigint)
+    begin set y = x; end;
+
+create function f_float(x float)
+    RETURNS float DETERMINISTIC RETURN x;
+create procedure p_float(in x float, out y float)
+    begin set y = x; end;
+
+create function f_double(x double)
+    RETURNS double DETERMINISTIC RETURN x;
+create procedure p_double(in x double, out y double)
+    begin set y = x; end;
+
+create procedure p_decimal(in x decimal(15, 3), out y decimal(15, 3))
+    begin set y = x; end;
+
+create function f_varchar(x varchar(100))
+    RETURNS varchar(100) DETERMINISTIC RETURN x;
+create procedure p_varchar(in x varchar(100), out y varchar(100))
+    begin set y = x; end;
+
+create function f_date(x date)
+    RETURNS date DETERMINISTIC RETURN x;
+create procedure p_date(in x date, out y date)
+    begin set y = x; end;
+
+create function f_time(x time)
+    RETURNS time DETERMINISTIC RETURN x;
+create procedure p_time(in x time, out y time)
+    begin set y = x; end;
+
+create function f_datetime(x datetime)
+    RETURNS datetime DETERMINISTIC RETURN x;
+create procedure p_datetime(in x datetime, out y datetime)
+    begin set y = x; end;
+
+create function f_varbinary(x varbinary(32))
+    RETURNS varbinary(32) DETERMINISTIC RETURN x;
+create procedure p_varbinary(in x varbinary(32), out y varbinary(32))
+    begin set y = x; end;

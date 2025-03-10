@@ -70,41 +70,41 @@ public non-sealed class DataSourceW implements
     public static class Single implements
         As<AsCall, Single.AsGeneratedKeys>,
         NoUpdateCount.None, NoUpdateCount.One,
-        NoUpdateCount.OneOrZero, NoUpdateCount.List_ {
+        NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ {
 
         public static class G implements
-            NoUpdateCount.None, NoUpdateCount.OneG,
-            NoUpdateCount.OneOrZeroG, NoUpdateCount.ListG {}
+            NoUpdateCount.OneG, NoUpdateCount.OneOrZeroG,
+            NoUpdateCount.ListG, NoUpdateCount.StreamG {}
 
         public static class WithUpdateCount implements
             UpdateCount.None<Long>, UpdateCount.One<Long>,
-            UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long> {
+            UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long>, UpdateCount.Stream_<Long> {
 
             public static class G implements
-                UpdateCount.None<Long>, UpdateCount.OneG<Long>,
-                UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long> { }
+                UpdateCount.OneG<Long>, UpdateCount.OneOrZeroG<Long>,
+                UpdateCount.ListG<Long>, UpdateCount.StreamG<Long> { }
 
             public final G g = new G();
         }
 
         public static class AsGeneratedKeys implements
             NoUpdateCount.None, NoUpdateCount.One,
-            NoUpdateCount.OneOrZero, NoUpdateCount.List_ {
+            NoUpdateCount.OneOrZero, NoUpdateCount.List_, NoUpdateCount.Stream_ {
 
             public static class WithUpdateCount implements
                 UpdateCount.None<Long>, UpdateCount.One<Long>,
-                UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long> {
+                UpdateCount.OneOrZero<Long>, UpdateCount.List_<Long>, UpdateCount.Stream_<Long> {
 
                 public static class G implements
-                    UpdateCount.None<Long>, UpdateCount.OneG<Long>,
-                    UpdateCount.OneOrZeroG<Long>, UpdateCount.ListG<Long> { }
+                    UpdateCount.OneG<Long>, UpdateCount.OneOrZeroG<Long>,
+                    UpdateCount.ListG<Long>, UpdateCount.StreamG<Long> { }
 
                 public final G g = new G();
             }
 
             public static class G implements
-                NoUpdateCount.None, NoUpdateCount.OneG,
-                NoUpdateCount.OneOrZero, NoUpdateCount.List_ { }
+                NoUpdateCount.OneG, NoUpdateCount.OneOrZero,
+                NoUpdateCount.List_, NoUpdateCount.Stream_ { }
 
             public final WithUpdateCount withUpdateCount = new WithUpdateCount();
             public final G g = new G();
@@ -124,16 +124,14 @@ public non-sealed class DataSourceW implements
             public static class WithUpdateCount implements
                 UpdateCount.None<long[]>, UpdateCount.List_<long[]> {
 
-                public static class G implements
-                    UpdateCount.None<long[]>, UpdateCount.ListG<long[]> { }
+                public static class G implements UpdateCount.ListG<long[]> { }
 
                 public final G g = new G();
             }
 
             public final WithUpdateCount withUpdateCount = new WithUpdateCount();
 
-            public static class G implements
-                NoUpdateCount.None, NoUpdateCount.OneG { }
+            public static class G implements NoUpdateCount.OneG { }
 
             public final G g = new G();
         }
@@ -141,16 +139,14 @@ public non-sealed class DataSourceW implements
         public static class WithUpdateCount implements
             UpdateCount.None<long[]>, UpdateCount.List_<long[]> {
 
-            public static class G implements
-                UpdateCount.None<long[]>, UpdateCount.ListG<long[]> { }
+            public static class G implements UpdateCount.ListG<long[]> { }
 
             public final G g = new G();
         }
 
         public final WithUpdateCount withUpdateCount = new WithUpdateCount();
 
-        public static class G implements
-            NoUpdateCount.None, NoUpdateCount.ListG {}
+        public static class G implements NoUpdateCount.ListG {}
 
         public final G g = new G();
     }

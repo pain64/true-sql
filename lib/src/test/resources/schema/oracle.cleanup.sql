@@ -8,7 +8,6 @@ execute immediate 'delete from bill';
 execute immediate 'delete from clinic';
 execute immediate 'delete from city';
 execute immediate 'delete from users';
-execute immediate 'delete from all_default_data_types';
 
 execute immediate 'ALTER TABLE users MODIFY(ID GENERATED AS IDENTITY (START WITH 1))';
 

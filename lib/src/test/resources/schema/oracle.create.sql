@@ -1,5 +1,5 @@
  declare
-    type array_t is varray(16) of varchar2(100);
+    type array_t is varray(24) of varchar2(100);
     array array_t := array_t(
        'alter table clinic       drop constraint clinic_fk2',
        'alter table clinic_users drop constraint clinic_users_fk0',
@@ -13,12 +13,20 @@
        'DROP table bill',
        'DROP table clinic_users',
        'DROP table user_bills',
-       'DROP table all_default_data_types',
 
        'DROP procedure digit_magic',
        'DROP procedure bill_zero',
        'DROP procedure discount_bill',
-       'DROP procedure test_types_procedure'
+       'DROP procedure p_boolean',
+       'DROP procedure p_number',
+       'DROP procedure p_int',
+       'DROP procedure p_float',
+       'DROP procedure p_double',
+       'DROP procedure p_varchar',
+       'DROP procedure p_date',
+       'DROP procedure p_timestamp',
+       'DROP procedure p_timestamptz',
+       'DROP procedure p_raw'
     );
 begin
    for i in 1..array.count loop
@@ -68,25 +76,6 @@ begin
               user_id number(19) not null,
               bill_id number(19) not null
           )';
-   execute immediate '
-          create table all_default_data_types(
-              bigdecimal_type number(15,3) not null,
-              bigdecimal_type_null number(15,3),
-              boolean_type      char(1) not null,
-              boolean_type_null char(1),
-              date_type date not null,
-              date_type_null date,
-              integer_type number(10) not null,
-              integer_type_null number(10),
-              long_type number(19) not null,
-              long_type_null number(19),
-              string_type varchar(200) not null,
-              string_type_null varchar(200),
-              short_type number(5) not null,
-              short_type_null number(5),
-              timestamp_type timestamp not null,
-              timestamp_type_null timestamp
-          )';
 
    execute immediate 'alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id)';
    execute immediate 'alter table clinic_users add constraint clinic_users_fk0 foreign key (clinic_id) references clinic(id)';
@@ -113,47 +102,34 @@ begin
           end;';
 
    execute immediate '
-       create or replace procedure test_types_procedure (
-
-           bigdecimal_type      IN OUT number,
-           bigdecimal_type_null OUT    number,
-
-           boolean_type         in out boolean,
-           boolean_type_null    out    boolean,
-
-           date_type            in out  date,
-           date_type_null       out     date,
-
-           integer_type         in out integer,
-           integer_type_null    out    integer,
-
-           long_type            in out number,
-           long_type_null       out    number,
-
-           string_type          in out varchar,
-           string_type_null     out    varchar,
-
-           short_type          in out smallint,
-           short_type_null     out   smallint,
-
-           byte_type           in out number,
-           byte_type_null      out    number,
-
-           timestamp_type      in out timestamp,
-           timestamp_type_null out    timestamp,
-
-           float_type          in out binary_float,
-           float_type_null     out    binary_float,
-
-           double_type         in out binary_double,
-           double_type_null    out    binary_double,
-
-           zoned_datetime_type         in out timestamp with time zone,
-           zoned_datetime_type_null    out    timestamp with time zone
-
-       ) is begin
-           null;
-       end;
-   ';
+          create procedure p_boolean(x IN boolean, y OUT boolean)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_number(x IN number, y OUT number)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_int(x IN int, y OUT int)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_float(x IN binary_float, y OUT binary_float)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_double(x IN binary_double, y OUT binary_double)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_varchar(x IN varchar, y OUT varchar)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_date(x IN date, y OUT date)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_timestamp(x IN timestamp, y OUT timestamp)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_timestamptz(x IN timestamp with time zone, y OUT timestamp with time zone)
+          is begin y := x; end;';
+   execute immediate '
+          create procedure p_raw(x IN raw, y OUT raw)
+          is begin y := x; end;';
 end;
 

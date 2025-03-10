@@ -85,4 +85,46 @@ end; $$;
 create table grouped_dto(
     gg varchar(50) not null,
     flo real not null
-)
+);
+
+create procedure p_bool(in a bool, out b bool)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_smallint(in a smallint, out b smallint)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_int(in a int, out b int)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_bigint(in a bigint, out b bigint)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_real(in a real, out b real)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_float(in a float, out b float)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_decimal(in a decimal(15, 3), out b decimal(15, 3))
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_varchar(in a varchar, out b varchar)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_date(in a date, out b date)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_time(in a time, out b time)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_timestamp(in a timestamp, out b timestamp)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_timestamptz(in a timestamptz, out b timestamptz)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_timetz(in a timetz, out b timetz)
+language plpgsql AS $$ begin b = a; end; $$;
+
+create procedure p_uuid(in a uuid, out b uuid)
+language plpgsql AS $$ begin b = a; end; $$;

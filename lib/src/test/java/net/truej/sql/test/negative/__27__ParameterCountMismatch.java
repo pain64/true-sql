@@ -18,9 +18,9 @@ import static net.truej.sql.compiler.TrueSqlTests.Message;
 )
 @TrueSql public class __27__ParameterCountMismatch {
     record AB(int a, int b) { }
-
+    // FIXME ???
     @TestTemplate public void test(MainConnection cn) {
         cn.q("values ?, ?, ?", 1, 2)
-            .asCall().fetchOne(AB.class);
+            .fetchOne(AB.class);
     }
 }

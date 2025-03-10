@@ -30,7 +30,16 @@ create table user_bills (
 create global temporary table names2(
     name varchar(100)
 );
-
+create table grouped_dto(
+    gg varchar(50) not null,
+    bool boolean not null,
+    byte tinyint not null,
+    short smallint not null,
+    intt int not null,
+    long bigint not null,
+    flo float not null,
+    doub double not null
+)
 ---
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);
@@ -38,6 +47,8 @@ alter table clinic_users add constraint clinic_users_fk0 foreign key (clinic_id)
 alter table clinic_users add constraint clinic_users_fk1 foreign key (user_id)   references users(id);
 alter table user_bills   add constraint user_bills_fk0   foreign key (user_id)   references users(id);
 alter table user_bills   add constraint user_bills_fk1   foreign key (bill_id)   references bill(id);
+---
+insert into grouped_dto values ('', true, 1, 2, 3, 4, 5.0, 6.0);
 ---
 
 create procedure digit_magic(in x int, inout y int, out z int)
@@ -56,48 +67,31 @@ modifies sql data
         update bill set discount = amount * 0.1 where date = datedisc;
     end;
 
-create table all_default_data_types(
-    byte_type tinyint not null,
-    byte_type_null tinyint,
-  time_offset_type time with time zone not null,
-  time_offset_type_null time with time zone
-)
-
-create table grouped_dto(
-    gg varchar(50) not null,
-    bool boolean not null,
-    byte tinyint not null,
-    short smallint not null,
-    intt int not null,
-    long bigint not null,
-    flo float not null,
-    doub double not null
-)
-
-create procedure test_types_procedure(
-        inout bigdecimal_type decimal(15,3),
-        out bigdecimal_type_null decimal(15,3),
-        inout boolean_type boolean,
-        out boolean_type_null boolean,
-        --bytearray_type bytea not null,
-        --bytearray_type_null bytea,
-        inout date_type date,
-        out date_type_null date,
-        inout integer_type integer,
-        out integer_type_null integer,
-        inout long_type bigint,
-        out long_type_null bigint,
-        inout string_type varchar(200),
-        out string_type_null varchar(200),
-        inout short_type smallint,
-        out short_type_null smallint,
-        inout byte_type tinyint,
-        out byte_type_null tinyint,
-        inout time_type time,
-        out time_type_null time,
-        inout timestamp_type timestamp,
-        out timestamp_type_null timestamp)
-    begin atomic
-        declare b boolean;
-        set b = true;
-    end;
+create procedure p_boolean(in x boolean, out y boolean)
+    begin atomic set y = x; end;
+create procedure p_tinyint(in x tinyint, out y tinyint)
+    begin atomic set y = x; end;
+create procedure p_smallint(in x smallint, out y smallint)
+    begin atomic set y = x; end;
+create procedure p_int(in x int, out y int)
+    begin atomic set y = x; end;
+create procedure p_bigint(in x bigint, out y bigint)
+    begin atomic set y = x; end;
+create procedure p_float(in x float, out y float)
+    begin atomic set y = x; end;
+create procedure p_decimal(in x decimal(15, 3), out y decimal(15, 3))
+    begin atomic set y = x; end;
+create procedure p_varchar(in x varchar(100), out y varchar(100))
+    begin atomic set y = x; end;
+create procedure p_date(in x date, out y date)
+    begin atomic set y = x; end;
+create procedure p_time(in x time, out y time)
+    begin atomic set y = x; end;
+create procedure p_timestamp(in x timestamp, out y timestamp)
+    begin atomic set y = x; end;
+create procedure p_timestamptz(in x timestamp with time zone, out y timestamp with time zone)
+    begin atomic set y = x; end;
+create procedure p_varbinary(in x varbinary, out y varbinary)
+    begin atomic set y = x; end;
+create procedure p_uuid(in x uuid, out y uuid)
+    begin atomic set y = x; end;

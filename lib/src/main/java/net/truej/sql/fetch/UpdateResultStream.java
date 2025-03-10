@@ -14,4 +14,11 @@ public class UpdateResultStream<U, V> implements AutoCloseable {
     @Override public void close() {
         value.close();
     }
+
+    @Override public String toString() {
+        return "UpdateResultStream[" +
+               "updateCount=" + updateCount +
+               ", value=" + value +
+               ']';
+    }
 }

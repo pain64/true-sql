@@ -197,7 +197,7 @@ class TypeChecker {
         } else {
             if (
                 javaBinding.compatibleSqlTypeName() != null &&
-                !javaBinding.compatibleSqlTypeName().equals(sqlTypeName)
+                !javaBinding.compatibleSqlTypeName().equalsIgnoreCase(sqlTypeName)
             )
                 throw handler.onError(
                     "sql type name", javaBinding.compatibleSqlTypeName(), sqlTypeName

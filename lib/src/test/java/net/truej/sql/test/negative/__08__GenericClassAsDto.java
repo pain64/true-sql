@@ -8,11 +8,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
 @ExtendWith(TrueSqlTests.class) @Message(
     kind = ERROR, text = "To Dto class cannot be generic"
 )
-@TrueSql public class __08__GenericClassAsDto {
+@EnableOn(HSQLDB) @TrueSql public class __08__GenericClassAsDto {
     static class User<T> {
         public User(T t) { }
     }

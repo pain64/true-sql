@@ -103,25 +103,22 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
     @TestTemplate public void testDataSourceThrowsSQLException(MainDataSource ds) {
         Assertions.assertThrows(
-            SqlExceptionR.class,
-            () -> ds.withConnection( cn -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
-                        .fetchNone();
-                    throw new SQLException("Nice");
-                }
-            )
+            SqlExceptionR.class, () -> ds.withConnection(cn -> {
+                cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
+                    .fetchNone();
+                throw new SQLException("Nice");
+            })
         );
+        // TODO: check that commited ???
     }
 
     @TestTemplate public void testDataSourceThrowsSQLException2(MainDataSource ds) {
         Assertions.assertThrows(
-            SqlExceptionR.class,
-            () -> ds.inTransaction( cn -> {
-                    cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
-                        .fetchNone();
-                    throw new SQLException("Nice");
-                }
-            )
+            SqlExceptionR.class, () -> ds.inTransaction(cn -> {
+                cn.q("insert into clinic values(?, ?, ?)", 4L, "Paris St. Marie Hospital", 2L)
+                    .fetchNone();
+                throw new SQLException("Nice");
+            })
         );
     }
 }

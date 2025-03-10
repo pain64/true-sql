@@ -14,35 +14,26 @@ import static net.truej.sql.compiler.TrueSqlTests.*;
 import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.fetch.Parameters.*;
 
-// TODO: split this test to 3 - in, inout and out parameters support
-//  because mssql does not supports (nominal) for inout parameters
-// FIXME: MARIADB
-@ExtendWith(TrueSqlTests.class) @DisabledOn({POSTGRESQL, MARIADB, MSSQL})
+@ExtendWith(TrueSqlTests.class) @DisabledOn(MSSQL)
 @TrueSql public class __03__Call {
-    // todo: подумать над nullability для out параметров???
-    record IntPair(
-        int first, int second
-    ) { }
+    record IntPair(int first, int second) { }
 
     @TestTemplate public void test(MainConnection cn) {
         Assertions.assertEquals(
             new IntPair(20, 30),
-            cn.q("{call digit_magic(?, ?, ?)}", 10, inout(10), out(Integer.class))
+            cn.q("call digit_magic(?, ?, ?)", 10, inout(10), out(Integer.class))
                 .asCall().fetchOne(IntPair.class)
         );
-        //TODO: test on mssql
-//        Assertions.assertEquals(
-//                5L,
-//                cn.q("{call bill_zero()}").asCall().withUpdateCount.fetchNone()
-//        );
 
+
+        // batch call
         Assertions.assertNull(
             cn.q(
                 List.of(
                     LocalDateTime.of(2024, 7, 1, 0, 0, 0),
                     LocalDateTime.of(2024, 8, 1, 0, 0, 0)
                 ),
-                "{call discount_bill(?)}",
+                "call discount_bill(?)",
                 d -> new Object[]{d}
             ).asCall().fetchNone()
         );

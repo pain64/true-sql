@@ -157,7 +157,7 @@ public class JdbcMetadataFetcher {
 
     static JdbcMetadata fetch(
         String url, String username, String password,
-        StatementGenerator.QueryMode queryMode,
+        StatementGenerator.Query queryMode,
         StatementGenerator.StatementMode statementMode
     ) throws SQLException {
 

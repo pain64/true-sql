@@ -11,9 +11,6 @@ import java.sql.Connection;
         url = "jdbc:hsqldb:mem:db",
         username = "SA",
         password = ""
-//        url = "jdbc:postgresql://localhost:5432/uikit_sample",
-//        username = "uikit",
-//        password = "1234"
     )
 ) public class MainConnection extends ConnectionW {
     public MainConnection(Connection w) { super(w); }

@@ -45,10 +45,12 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.*;
         var u1 = getUser.get();
         var u2 = getUser.get();
 
-        // check generated equals
+        // check generated equals, hashCode and toString
         Assertions.assertEquals(u1, u2);
+        Assertions.assertEquals(4613564, u2.hashCode());
+        Assertions.assertEquals("User1[id=1, name=Joe, info=null]", u2.toString());
 
-        // check generated equals and hashCode
+        // check generated equals and hashCode contract
         var hmap = new HashMap<Object, String>();
 
         hmap.put(u1, "True");

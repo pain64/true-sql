@@ -9,11 +9,13 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
-@ExtendWith(TrueSqlTests.class) @TrueSqlTests.Message(
+@ExtendWith(TrueSqlTests.class) @Message(
     kind = ERROR, text = "has more than one non-empty args constructor"
 )
-@TrueSql public class __06__TooMuchNonEmptyConstructors {
+@EnableOn(HSQLDB) @TrueSql public class __06__TooMuchNonEmptyConstructors {
     static class User {
         Long id;
         String name;

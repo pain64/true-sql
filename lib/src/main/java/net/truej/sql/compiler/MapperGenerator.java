@@ -1,6 +1,7 @@
 package net.truej.sql.compiler;
 
 import net.truej.sql.compiler.GLangParser.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -209,7 +210,7 @@ public class MapperGenerator {
 
     public static void generate(
         Out out, FetchToField toType,
-        int[] outParametersNumbers,
+        @Nullable int[] outParametersNumbers,
         Function<String, String> typeToRwClass
     ) {
 

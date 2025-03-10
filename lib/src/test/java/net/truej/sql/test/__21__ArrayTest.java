@@ -12,6 +12,7 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.POSTGRESQL;
 
 @ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(POSTGRESQL)
 @TrueSql public class __21__ArrayTest {
+    // FIXME: as "privet" ???
     @TestTemplate public void testInt(MainDataSource ds) {
         var result = ds.q("""
             select

@@ -1,21 +1,26 @@
 package net.truej.sql.compiler;
 
+import net.truej.sql.source.ConnectionW;
+import net.truej.sql.source.DataSourceW;
 import net.truej.sql.util.TestCompiler;
 import org.junit.jupiter.api.extension.*;
 import org.testcontainers.containers.*;
 import org.testcontainers.utility.DockerImageName;
 
+import javax.sql.DataSource;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
 import java.lang.annotation.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -66,6 +71,7 @@ public class TrueSqlTests implements
         var pgContainer = new PostgreSQLContainer<>("postgres:16.3")
             .withReuse(true);
         var mysqlContainer = new MySQLContainer<>("mysql:9.0.1")
+            .withUsername("root")
             .withReuse(true);
         var mariaDbContainer = new MariaDBContainer<>("mariadb:11.4.2-ubi9")
             .withReuse(true);
@@ -96,8 +102,9 @@ public class TrueSqlTests implements
         oracleContainer.start();
 
         instances = Map.of(
-            Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb")
-            , Database.POSTGRESQL, new TestDataSource(
+            Database.HSQLDB, new TestDataSource("jdbc:hsqldb:mem:test", "SA", "", "hsqldb") // +
+            ,
+            Database.POSTGRESQL, new TestDataSource( // +
                 pgContainer.getJdbcUrl(),
                 pgContainer.getUsername(),
                 pgContainer.getPassword(),
@@ -110,14 +117,15 @@ public class TrueSqlTests implements
                 mysqlContainer.getPassword(),
                 "mysql"
             )
-            , Database.MARIADB, new TestDataSource(
+            ,
+            Database.MARIADB, new TestDataSource( // +
                 mariaDbContainer.getJdbcUrl() + "?allowMultiQueries=true",
                 mariaDbContainer.getUsername(),
                 mariaDbContainer.getPassword(),
-                "mysql"
+                "mariadb"
             )
             ,
-            Database.MSSQL, new TestDataSource(
+            Database.MSSQL, new TestDataSource( // +?
                 mssqlContainer.getJdbcUrl() + ";encrypt=false;TRUSTED_CONNECTION=TRUE",
                 mssqlContainer.getUsername(),
                 mssqlContainer.getPassword(),
@@ -267,7 +275,7 @@ public class TrueSqlTests implements
                  IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         } finally {
-            if(envToSet != null) mutableEnv.remove(envToSet.key());
+            if (envToSet != null) mutableEnv.remove(envToSet.key());
         }
     }
 
@@ -294,29 +302,31 @@ public class TrueSqlTests implements
                         ParameterContext parameterContext, ExtensionContext extensionContext
                     ) throws ParameterResolutionException {
                         var pType = parameterContext.getParameter().getType();
-                        return pType == MainConnection.class ||
-                               pType == MainDataSource.class ||
-                               pType == MainDataSourceUnchecked.class;
+                        return ConnectionW.class.isAssignableFrom(pType) ||
+                               DataSourceW.class.isAssignableFrom(pType);
                     }
 
                     @Override public Object resolveParameter(
                         ParameterContext parameterCtx, ExtensionContext extensionCtx
                     ) {
-                        var pType = parameterCtx.getParameter().getType();
-                        if (pType == MainConnection.class) {
-                            try {
-                                return new MainConnection(
-                                    instance.getConnection()
-                                );
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else if (pType == MainDataSource.class)
-                            return new MainDataSource(instance);
-                        else if (pType == MainDataSourceUnchecked.class)
-                            return new MainDataSourceUnchecked(instance);
+                        try {
+                            var pType = parameterCtx.getParameter().getType();
 
-                        throw new IllegalStateException("unreachable");
+                            if (ConnectionW.class.isAssignableFrom(pType))
+                                return pType.getConstructor(Connection.class)
+                                    .newInstance(instance.getConnection());
+                            else if (DataSourceW.class.isAssignableFrom(pType))
+                                return pType.getConstructor(DataSource.class)
+                                    .newInstance(instance);
+
+                            throw new IllegalStateException("unreachable");
+
+                        } catch (SQLException | InvocationTargetException |
+                                 InstantiationException | IllegalAccessException |
+                                 NoSuchMethodException e) {
+                            throw new RuntimeException(e);
+                        }
+
                     }
                 });
             }

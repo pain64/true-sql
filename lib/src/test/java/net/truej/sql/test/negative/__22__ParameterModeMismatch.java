@@ -16,6 +16,6 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 )
 @TrueSql public class __22__ParameterModeMismatch {
     @TestTemplate public void test(MainConnection cn) {
-        cn.q("{ call digit_magic(?, ?, ?) }", 1, 2, 3).asCall().fetchNone();
+        cn.q("call digit_magic(?, ?, ?)", 1, 2, 3).fetchNone();
     }
 }

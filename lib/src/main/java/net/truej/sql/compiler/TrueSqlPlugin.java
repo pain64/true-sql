@@ -113,7 +113,7 @@ public class TrueSqlPlugin implements Plugin {
         String onDatabase, java.util.List<Standard.Binding> bindings,
         String generatedClassName, String fetchMethodName, int lineNumber,
         java.util.List<CompilationWarning> warnings,
-        JCTree.JCIdent sourceExpression, QueryMode queryMode,
+        JCTree.JCIdent sourceExpression, Query query,
         @Nullable java.util.List<JdbcMetadataFetcher.SqlParameterMetadata> parametersMetadata,
         String generatedCode
     ) implements MethodInvocationResult { }
@@ -168,8 +168,7 @@ public class TrueSqlPlugin implements Plugin {
     }
 
     void checkParameters(
-        CompilerMessages messages, Symtab symtab, JCTree.JCCompilationUnit cu,
-        JCTree.JCMethodInvocation tree, FetchInvocation invocation
+        Symtab symtab, JCTree.JCMethodInvocation tree, FetchInvocation invocation
     ) {
         if (invocation.parametersMetadata == null) return;
 
@@ -182,7 +181,10 @@ public class TrueSqlPlugin implements Plugin {
         var checkParameter = (ParameterChecker) (pIndex, javaParameterType, javaParameterMode) -> {
             var pMetadata = invocation.parametersMetadata.get(pIndex);
 
-            if (pMetadata.mode() != javaParameterMode)
+            if (
+                !invocation.onDatabase.equals(DatabaseNames.POSTGRESQL_DB_NAME) &&
+                pMetadata.mode() != javaParameterMode
+            )
                 throw new ValidationException(
                     tree, "for parameter " + (pIndex + 1) + " expected mode " +
                           pMetadata.mode() + " but has " + javaParameterMode
@@ -213,7 +215,7 @@ public class TrueSqlPlugin implements Plugin {
 
         var pIndex = 0;
 
-        for (var part : invocation.queryMode.parts())
+        for (var part : invocation.query.parts())
             switch (part) {
                 case TextPart __ -> { }
                 case InOrInoutParameter p -> {
@@ -274,11 +276,10 @@ public class TrueSqlPlugin implements Plugin {
 
     void handle(
         Symtab symtab, Names names, TreeMaker maker,
-        CompilerMessages messages, JCTree.JCCompilationUnit cu,
         JCTree.JCMethodInvocation tree, FetchInvocation invocation
     ) {
 
-        checkParameters(messages, symtab, cu, tree, invocation);
+        checkParameters(symtab, tree, invocation);
 
         var clParameterExtractor = symtab.getClass(
             symtab.java_base, names.fromString(
@@ -330,7 +331,7 @@ public class TrueSqlPlugin implements Plugin {
             return newClass;
         };
 
-        switch (invocation.queryMode) {
+        switch (invocation.query) {
             case BatchedQuery bq:
                 tree.args = tree.args.append(bq.listDataExpression());
 
@@ -543,7 +544,7 @@ public class TrueSqlPlugin implements Plugin {
                                                     cu, warning.tree, JCDiagnostic.DiagnosticType.WARNING, warning.message
                                                 );
 
-                                            handle(symtab, names, maker, messages, cu, tree, fi);
+                                            handle(symtab, names, maker, tree, fi);
                                         }
                                         case ValidationError error -> {
                                             hasNoErrors = false;

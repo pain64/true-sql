@@ -4,7 +4,6 @@ delete from bill;
 delete from clinic;
 delete from city;
 delete from users;
-delete from all_default_data_types;
 
 alter sequence users_id_seq restart with 1;
 

@@ -41,7 +41,7 @@ dependencies {
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.4.1")
     testImplementation("org.testcontainers:mariadb:1.20.0")
 
-    testImplementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:12.9.0.jre11-preview")
     testImplementation("org.testcontainers:mssqlserver:1.20.0")
 
     testImplementation("org.testcontainers:oracle-xe:1.20.0")

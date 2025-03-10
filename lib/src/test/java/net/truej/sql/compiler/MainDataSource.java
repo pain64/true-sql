@@ -2,6 +2,7 @@ package net.truej.sql.compiler;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import net.truej.sql.bindings.AsObjectReadWrite;
+import net.truej.sql.bindings.UuidReadWrite;
 import net.truej.sql.fetch.ConstraintViolationException;
 import net.truej.sql.config.CompileTimeChecks;
 import net.truej.sql.config.Configuration;
@@ -64,6 +65,10 @@ import java.sql.Types;
         @TypeBinding(
             compatibleSqlTypeName = "_int2",
             rw = ShortArrayRW.class
+        ),
+        @TypeBinding(
+            compatibleSqlTypeName = "uuid",
+            rw = UuidReadWrite.class
         )
     }
 ) public class MainDataSource extends DataSourceW {

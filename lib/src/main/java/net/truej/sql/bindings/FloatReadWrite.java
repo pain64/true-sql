@@ -18,7 +18,7 @@ public class FloatReadWrite implements TypeReadWrite<Float> {
         PreparedStatement stmt, int parameterIndex, Float value
     ) throws SQLException {
         if (value == null)
-            stmt.setNull(parameterIndex, Types.FLOAT);
+            stmt.setNull(parameterIndex, Types.REAL);
         else
             stmt.setFloat(parameterIndex, value);
     }
@@ -36,6 +36,6 @@ public class FloatReadWrite implements TypeReadWrite<Float> {
     @Override public void registerOutParameter(
         CallableStatement stmt, int parameterIndex
     ) throws SQLException {
-        stmt.registerOutParameter(parameterIndex, Types.FLOAT);
+        stmt.registerOutParameter(parameterIndex, Types.REAL);
     }
 }

@@ -3,6 +3,7 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.fetch.As;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static net.truej.sql.compiler.TrueSqlTests.*;
+import static net.truej.sql.compiler.TrueSqlTests.Database.MYSQL;
 import static net.truej.sql.compiler.TrueSqlTests.Database.ORACLE;
 
 @ExtendWith(TrueSqlTests.class) @DisabledOn(ORACLE)
@@ -46,7 +48,5 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.ORACLE;
                 v -> new Object[]{v.discount, v.date}
             ).withUpdateCount.fetchNone()
         );
-
-        //TODO: ADD test with generated keys to fetch someone
     }
 }

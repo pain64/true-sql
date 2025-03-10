@@ -62,10 +62,10 @@ public class InvocationsFinder {
         }
     }
 
-    static StatementGenerator.QueryMode parseQuery(
+    static StatementGenerator.Query parseQuery(
         Symtab symtab, JCTree.JCCompilationUnit cu, Names names,
         JCTree.JCMethodInvocation tree,
-        // FIXME: two nullable parameters with corellation
+        // FIXME: two nullable parameters with corelation
         JCTree.JCExpression batchListDataExpression, JCTree.JCLambda batchLambda,
         String queryText, com.sun.tools.javac.util.List<JCTree.JCExpression> args
     ) {
@@ -407,7 +407,7 @@ public class InvocationsFinder {
                     }
                 }
 
-                var queryMode = (StatementGenerator.QueryMode) null;
+                var query = (StatementGenerator.Query) null;
                 var sourceExpression = (JCTree.JCIdent) null;
                 var sourceMode = (StatementGenerator.SourceMode) null;
                 var parsedConfig = (ConfigurationParser.ParsedConfiguration) null;
@@ -426,7 +426,7 @@ public class InvocationsFinder {
                     var queryText = tryAsQuery.apply(0);
                     if (queryText != null) // single
                         try {
-                            queryMode = parseQuery(
+                            query = parseQuery(
                                 symtab, cu, names, tree, null, null, queryText, inv.args.tail
                             );
                         } catch (ValidationException e) {
@@ -445,7 +445,7 @@ public class InvocationsFinder {
                                 elementTypeId.name.equals(names.fromString("Object"))
                             )
                                 try {
-                                    queryMode = parseQuery(
+                                    query = parseQuery(
                                         symtab, cu, names, tree, inv.args.head, lmb, queryText, array.elems
                                     );
                                 } catch (ValidationException e) {
@@ -490,7 +490,7 @@ public class InvocationsFinder {
                 if (lastError != null) throw lastError;
 
                 // mitigate Java language limitations
-                var _queryMode = queryMode;
+                var _query = query;
                 var _parsedConfig = parsedConfig;
 
                 var parseExistingDto = (Function<ExistingDto, GLangParser.FetchToField>) existing ->
@@ -503,35 +503,39 @@ public class InvocationsFinder {
                 var jdbcMetadata = parsedConfig.url() == null ? null :
                     JdbcMetadataFetcher.fetch(
                         parsedConfig.url(), parsedConfig.username(), parsedConfig.password(),
-                        queryMode, statementMode
+                        query, statementMode
                     );
 
                 var stMode = statementMode;
 
-                var makeColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () ->
-                    switch (stMode) {
-                        case StatementGenerator.StatementLike __ ->
-                            jdbcMetadata.columns() == null ? null :
-                                jdbcMetadata.columns().stream().map(c ->
-                                    new GLangParser.ColumnMetadata(
-                                        c.nullMode(),
-                                        c.sqlType(),
-                                        c.sqlTypeName(),
-                                        c.javaClassName(),
-                                        c.columnName(),
-                                        c.columnLabel(),
-                                        c.scale(),
-                                        c.precision()
-                                    )
-                                ).toList();
+                var makeColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () -> {
+                    var mapColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () ->
+                        jdbcMetadata.columns() == null ? null :
+                            jdbcMetadata.columns().stream().map(c ->
+                                new GLangParser.ColumnMetadata(
+                                    c.nullMode(),
+                                    c.sqlType(),
+                                    c.sqlTypeName(),
+                                    c.javaClassName(),
+                                    c.columnName(),
+                                    c.columnLabel(),
+                                    c.scale(),
+                                    c.precision()
+                                )
+                            ).toList();
 
+                    return switch (stMode) {
+                        case StatementGenerator.StatementLike __ -> mapColumns.get();
                         case StatementGenerator.AsCall __ -> {
+                            if (jdbcMetadata.onDatabase().equals(DatabaseNames.POSTGRESQL_DB_NAME))
+                                yield mapColumns.get();
+
                             // FIXME: проверка call и unfold одновременно? ???
                             // FIXME: проверка batch и unfold одновременно? ???
                             var pMetadata = jdbcMetadata.parameters();
                             if (pMetadata == null) yield null;
 
-                            yield Arrays.stream(getOutParametersNumbers(_queryMode))
+                            yield Arrays.stream(getOutParametersNumbers(_query))
                                 .mapToObj(i -> {
                                     var p = pMetadata.get(i - 1);
                                     return new GLangParser.ColumnMetadata(
@@ -547,6 +551,7 @@ public class InvocationsFinder {
                                 }).toList();
                         }
                     };
+                };
 
                 var handleNullabilityMismatch = (BiConsumer<Boolean, String>)
                     (isWarningOnly, message) -> {
@@ -688,7 +693,7 @@ public class InvocationsFinder {
                             .findFirst().get().rwClassName().replace('$', '.'),
                     lineNumber,
                     sourceMode,
-                    queryMode,
+                    query,
                     statementMode,
                     fetchMode,
                     dtoMode instanceof GenerateDto,
@@ -699,7 +704,7 @@ public class InvocationsFinder {
                     jdbcMetadata == null ? null : jdbcMetadata.onDatabase(),
                     parsedConfig.typeBindings(),
                     generatedClassName, fetchMethodName, lineNumber, warnings,
-                    sourceExpression, queryMode,
+                    sourceExpression, query,
                     jdbcMetadata == null ? null : jdbcMetadata.parameters(),
                     generatedCode
                 );
@@ -760,8 +765,8 @@ public class InvocationsFinder {
         return result;
     }
 
-    static int[] getOutParametersNumbers(StatementGenerator.QueryMode queryMode) {
-        var parameters = queryMode.parts().stream()
+    static int[] getOutParametersNumbers(StatementGenerator.Query query) {
+        var parameters = query.parts().stream()
             .filter(p -> !(p instanceof TextPart)).toList();
 
         return IntStream.range(

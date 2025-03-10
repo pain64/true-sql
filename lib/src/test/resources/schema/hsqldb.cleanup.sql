@@ -4,7 +4,6 @@ delete from bill;
 delete from clinic;
 delete from city;
 delete from users;
-delete from all_default_data_types;
 
 alter table users alter column id restart with 1;
 

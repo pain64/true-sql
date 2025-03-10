@@ -54,7 +54,10 @@ public record TestDataSource(
     }
 
     public void publishProperties() {
-        for (var cl : List.of(MainDataSource.class, MainConnection.class)) {
+        for (var cl : List.of(
+            MainDataSource.class, MainConnection.class,
+            MssqlConnection.class, OracleConnection.class, MariaDbConnection.class
+        )) {
             System.setProperty("truesql." + cl.getName() + ".url", jdbcUrl);
             System.setProperty("truesql." + cl.getName() + ".username", username);
             System.setProperty("truesql." + cl.getName() + ".password", password);

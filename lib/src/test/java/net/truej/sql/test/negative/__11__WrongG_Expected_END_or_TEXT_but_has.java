@@ -3,17 +3,19 @@ package net.truej.sql.test.negative;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests;
+import net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import net.truej.sql.test.negative.GeneratedDTOTrueSql.Clinic;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 
 @ExtendWith(TrueSqlTests.class)
 @TrueSqlTests.Message(
     kind = ERROR, text = "expected END or TEXT but has DOT"
 )
-@TrueSql public class __11__WrongG_Expected_END_or_TEXT_but_has {
+@EnableOn(HSQLDB) @TrueSql public class __11__WrongG_Expected_END_or_TEXT_but_has {
     @TestTemplate public void test(MainConnection cn) {
         cn.q("""
                     select

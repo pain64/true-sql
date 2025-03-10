@@ -15,7 +15,7 @@ public class TypeFinder {
 
     static RuntimeException badFormat(JCTree tree) {
         return new TrueSqlPlugin.ValidationException(
-            tree, "expected Name.class or full.qualified.Name.class or array[].class"
+            tree, "Type not found (expected Name.class or full.qualified.Name.class or array[].class)"
         );
     }
 

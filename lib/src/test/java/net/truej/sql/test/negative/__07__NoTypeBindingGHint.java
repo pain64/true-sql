@@ -15,8 +15,8 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.POSTGRESQL;
 @ExtendWith(TrueSqlTests.class)
 @Message(
     kind = ERROR, text = "has no binding for type XXX"
-) @EnableOn(POSTGRESQL)
-@TrueSql public class __07__NoTypeBindingGHint {
+)
+@EnableOn(POSTGRESQL) @TrueSql public class __07__NoTypeBindingGHint {
     @TestTemplate public void test(MainDataSource ds) {
         ds.q("select 1 as \":t XXX\"").g.fetchList(Dto6.class);
     }

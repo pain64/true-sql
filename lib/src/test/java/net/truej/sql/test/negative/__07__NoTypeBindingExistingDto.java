@@ -15,8 +15,8 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 @Message(
     kind = ERROR, text = "has no type binding for net.truej.sql.test.negative." +
                          "__07__NoTypeBindingExistingDto_$User$Trap"
-) @EnableOn(HSQLDB)
-@TrueSql public class __07__NoTypeBindingExistingDto {
+)
+@EnableOn(HSQLDB) @TrueSql public class __07__NoTypeBindingExistingDto {
     record User(Long id, String name, Trap trap) {
         record Trap(String name) {}
     }

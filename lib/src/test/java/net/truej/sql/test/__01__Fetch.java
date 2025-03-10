@@ -21,8 +21,6 @@ import static net.truej.sql.fetch.Parameters.Nullable;
 
     record User(Long id, String name, @Nullable String info) { }
     record Clinic(String name, String city) { }
-    // FIXME: rename to CityClinics
-    record CitiesClinics(String name, List<String> clinics) { }
 
     @TestTemplate public void test(MainConnection cn) {
 
@@ -87,7 +85,6 @@ import static net.truej.sql.fetch.Parameters.Nullable;
         ) {
             Assertions.assertEquals(allClinics, result.toList());
         }
-
 
         var info = new ArrayList<String>() {{
             add(null); add("Do not disturb");

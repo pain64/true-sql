@@ -201,14 +201,14 @@ select clinic with associated users with user bills in one time
 ```java
 var clinics = ds.q("""
     select
-        c.id   as       “id                          ”,
-        ca.address as   “addresses.                  ”,
-        c.name as       “name                        ”,
-        u.id   as       “User users.id               ”,
-        u.name as       “     users.name             ”,
-        b.id   as       “     users.Bill bills.id    ”,
-        b.date as       “     users.     bills.date  ”,
-        b.amount as     “     users.     bills.amount”
+        c.id   as       "id                          ",
+        ca.address as   "addresses.                  ",
+        c.name as       "name                        ",
+        u.id   as       "User users.id               ",
+        u.name as       "     users.name             ",
+        b.id   as       "     users.Bill bills.id    ",
+        b.date as       "     users.     bills.date  ",
+        b.amount as     "     users.     bills.amount"
     from clinic c
         join clinic_addresses ca on ca.id = c.id
         left join clinic_users cu on cu.clinic_id = c.id
@@ -598,14 +598,14 @@ try {
 ### Streaming fetching
 If you don't want to materialize all ResultSet rows, you could use fetchStream()
 ```java
-ds.withConnection(cn -> {
-    try (
-        var stream = cn.q("select id, name from users")
-            .g.fetchStream(User.class)
-    ) {
-    var users = stream.toList();
+try (
+    var users = ds.q("select id, name from users")
+        .g.fetchStream(User.class)
+) {
+    for (var user : user) {
+        // ...
     }
-})
+}
 ```
 
 ### Stored procedure call
@@ -614,7 +614,7 @@ TrueSql provide next way to use stored procedures and fetch out parameters
 ```java
 import static net.truej.sql.fetch.Parameters.*;
 
-ds.q("{ call ? = some_procedure(?, ?) }", out(Integer.class), 42, inout(42))
+ds.q("call ? = some_procedure(?, ?)", out(Integer.class), 42, inout(42))
     .asCall().fetchOne(Integer.class)
 ```
 ###### NB: functions out(), inout() has JDBC sense. Example provided on HSQLDB.

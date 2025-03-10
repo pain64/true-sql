@@ -58,6 +58,10 @@ public class DtoGenerator {
             o.w("h = h * 59 + java.util.Objects.hashCode(this.", f.name(), ");")
         );
 
+        var toStringGeneration = each(forGroup.fields(), " +\n\", \" + ", (o, __, f) ->
+            o.w("\"", f.name(), "=\" + ", f.name())
+        );
+
         out.w(
             nestedDto, "\n",
             "public static class ", forGroup.newJavaClassName(), " {\n",
@@ -80,6 +84,11 @@ public class DtoGenerator {
             "        int h = 1;\n",
             "        ", hashCodeCalculations, "\n",
             "        return h;\n",
+            "    }\n",
+            "    @Override public String toString() {\n",
+            "        return \"", forGroup.newJavaClassName() , "[\" +\n",
+            "        ", toStringGeneration, "\n",
+            "        + \"]\";\n",
             "    }\n",
             "}"
         );

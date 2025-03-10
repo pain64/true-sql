@@ -16,8 +16,7 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.POSTGRESQL;
 @Message(
     kind = ERROR, text = "Expected %NewDtoClassName%.class"
 )
-@EnableOn(POSTGRESQL)
-@TrueSql public class __32__GenerateDtoExpectedNewDtoClassName {
+@EnableOn(POSTGRESQL) @TrueSql public class __32__GenerateDtoExpectedNewDtoClassName {
     @TestTemplate public void test(MainConnection cn) {
         cn.q("select 1").g.fetchOne(__30__GenerateDtoTrueSql.BadTypeDto.class);
     }

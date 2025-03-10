@@ -8,4 +8,11 @@ public class UpdateResult<U, V> {
         this.updateCount = updateCount;
         this.value = value;
     }
+
+    @Override public String toString() {
+        return "UpdateResult[" +
+               "updateCount=" + updateCount +
+               ", value=" + value +
+               ']';
+    }
 }

@@ -1,6 +1,7 @@
 package net.truej.sql.compiler;
 
 import com.sun.tools.javac.tree.JCTree;
+import net.truej.sql.source.DataSourceW;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
@@ -17,16 +19,16 @@ import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
 public class StatementGenerator {
 
     public enum SourceMode {DATASOURCE, CONNECTION}
-    public sealed interface QueryMode {
+    public sealed interface Query {
         List<InvocationsFinder.QueryPart> parts();
     }
     public record BatchedQuery(
         JCTree.JCExpression listDataExpression,
         JCTree.JCLambda extractor,
         List<InvocationsFinder.QueryPart> parts
-    ) implements QueryMode { }
+    ) implements Query { }
 
-    public record SingleQuery(List<InvocationsFinder.QueryPart> parts) implements QueryMode { }
+    public record SingleQuery(List<InvocationsFinder.QueryPart> parts) implements Query { }
 
     public sealed interface StatementMode { }
     public sealed interface StatementLike extends StatementMode { }
@@ -110,13 +112,12 @@ public class StatementGenerator {
             ((JCTree.JCNewArray) extractor.body).elems.size();
     }
 
-    // TODO: deal with nullability in DTO Fields
     // TODO: deal with nullability in return type
     public static String generate(
         Function<String, String> typeToRwClass,
         int lineNumber,
         SourceMode source,
-        QueryMode query,
+        Query query,
         StatementMode prepareAs,
         FetchMode fetchAs,
         boolean generateDto,
@@ -339,8 +340,12 @@ public class StatementGenerator {
                 setParameters = o -> {
                     var setters = Out.each(
                         parameterParts, "\n", (oo, i, p) -> switch (p) {
-                            case InvocationsFinder.InOrInoutParameter __ ->
+                            case InvocationsFinder.InParameter __ ->
                                 oo.w("prw", i + 1, ".set(stmt, ++n, p", i + 1, ");");
+                            case InvocationsFinder.InoutParameter __ -> oo.w(
+                                "prw", i + 1, ".set(stmt, ++n, p", i + 1, ");\n",
+                                "prw", i + 1, ".registerOutParameter(stmt, n);"
+                            );
                             case InvocationsFinder.OutParameter __ ->
                                 oo.w("prw", i + 1, ".registerOutParameter(stmt, ++n);");
                             case InvocationsFinder.UnfoldParameter up -> {
@@ -450,8 +455,29 @@ public class StatementGenerator {
                         "\n",
                         "return ", wrapResultWithUpdateCount.apply("null"), ";"
                     );
-                    case FetchStream __ ->
-                        o.w("return ", wrapResultWithUpdateCount.apply("mapped"), ";");
+                    case FetchStream __ -> {
+                        var closeRoutine = (WriteNext) oo ->
+                            source == SourceMode.DATASOURCE ? oo.w(
+                                "try {\n" +
+                                "    stmt.close();\n" +
+                                "} finally {\n",
+                                "    connection.close();\n",
+                                "}"
+                            ) : oo.w(
+                                "stmt.close();"
+                            );
+
+                        yield o.w(
+                            "var closable = mapped.onClose(() -> {\n",
+                            "    try {\n",
+                            "    ", closeRoutine, "\n",
+                            "     } catch(SQLException e) {\n" +
+                            "         throw source.mapException(e);\n",
+                            "     }\n",
+                            "});\n",
+                            "return ", wrapResultWithUpdateCount.apply("closable"), ";"
+                        );
+                    }
                 };
             }
         };
@@ -490,21 +516,30 @@ public class StatementGenerator {
                     "}"
                 );
 
+        var handleSqlException = (WriteNext) o -> o.w(
+            "} catch (SQLException e) {\n",
+            "    throw source.mapException(e);\n",
+            "}"
+        );
+
         var doWithSource = (WriteNext) o -> switch (source) {
-            case DATASOURCE -> o.w(
-                "try (var connection = source.w.getConnection()) {\n",
-                "    ", acquireStatement, "\n",
-                "} catch (SQLException e) {\n",
-                "    throw source.mapException(e);\n",
-                "}"
-            );
+            case DATASOURCE -> fetchAs instanceof FetchStream ?
+                o.w(
+                    "try {\n",
+                    "    var connection = source.w.getConnection();\n",
+                    "    ", acquireStatement, "\n",
+                    handleSqlException
+                ) :
+                o.w(
+                    "try (var connection = source.w.getConnection()) {\n",
+                    "    ", acquireStatement, "\n",
+                    handleSqlException
+                );
             case CONNECTION -> o.w(
                 "try {\n",
                 "    var connection = source.w;\n",
                 "    ", acquireStatement, "\n",
-                "} catch (SQLException e) {\n",
-                "    throw source.mapException(e);\n",
-                "}"
+                handleSqlException
             );
         };
 
