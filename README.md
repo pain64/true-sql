@@ -602,7 +602,7 @@ try (
     var users = ds.q("select id, name from users")
         .g.fetchStream(User.class)
 ) {
-    for (var user : user) {
+    for (var user : users) {
         // ...
     }
 }
