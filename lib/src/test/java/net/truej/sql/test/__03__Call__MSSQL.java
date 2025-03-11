@@ -18,8 +18,6 @@ import static net.truej.sql.fetch.Parameters.out;
 
 @ExtendWith(TrueSqlTests.class) @EnableOn(MSSQL)
 @TrueSql public class __03__Call__MSSQL {
-    record IntPair(int first, int second) { }
-
     @TestTemplate public void test(MainConnection cn) {
         // batch call
         Assertions.assertNull(
@@ -33,5 +31,4 @@ import static net.truej.sql.fetch.Parameters.out;
             ).asCall().fetchNone()
         );
     }
-
 }

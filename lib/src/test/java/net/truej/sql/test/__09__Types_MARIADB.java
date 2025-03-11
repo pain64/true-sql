@@ -1,12 +1,15 @@
 package net.truej.sql.test;
 
 import net.truej.sql.TrueSql;
+import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.MariaDbConnection;
 import net.truej.sql.compiler.TrueSqlTests;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -21,11 +24,12 @@ import static net.truej.sql.test.__09__Types.*;
 @ExtendWith(TrueSqlTests.class) @EnableOn(MARIADB)
 @TrueSql public class __09__Types_MARIADB {
     @TestTemplate public void test(MariaDbConnection cn) {
-//        BOOLEAN.eq(
-//            v -> cn.q("select f_boolean(?)", v).fetchOne(Nullable, Boolean.class),
+        BOOLEAN.eq(
+            v -> cn.q("select f_boolean(?)", v).fetchOne(Nullable, Boolean.class),
+            v -> v
 //            v -> cn.q("call p_boolean(?, ?)", v, out(Boolean.class))
 //                .asCall().fetchOne(Nullable, Boolean.class)
-//        );
+        );
         BYTE.eq(
             v -> cn.q("select f_tinyint(?)", v).fetchOne(Nullable, Byte.class),
             v -> cn.q("call p_tinyint(?, ?)", v, out(Byte.class))
