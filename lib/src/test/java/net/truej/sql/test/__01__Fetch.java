@@ -56,17 +56,17 @@ import static net.truej.sql.fetch.Parameters.Nullable;
                 .fetchOneOrZero(Nullable, String.class)
         );
 
-        var allClinics = List.of("Paris Neurology Hospital", "London Heart Hospital", "Diagnostic center");
+        var allClinics = List.of("Diagnostic center", "London Heart Hospital", "Paris Neurology Hospital");
 
         Assertions.assertEquals(
             allClinics,
-            cn.q("select name from clinic").fetchList(String.class)
+            cn.q("select name from clinic order by name").fetchList(String.class)
         );
 
         var clinicsAndCities = List.of(
-            new Clinic("Paris Neurology Hospital", "Paris"),
+            new Clinic("Diagnostic center", "London"),
             new Clinic("London Heart Hospital", "London"),
-            new Clinic("Diagnostic center", "London")
+            new Clinic("Paris Neurology Hospital", "Paris")
         );
 
         Assertions.assertEquals(
@@ -76,11 +76,12 @@ import static net.truej.sql.fetch.Parameters.Nullable;
                     cl.name,
                     ci.name as city
                 from clinic cl join city ci on cl.city_id = ci.id
+                order by cl.name, ci.name
                 """).fetchList(Clinic.class)
         );
 
         try (
-            var result = cn.q("select name from clinic")
+            var result = cn.q("select name from clinic order by name")
                 .fetchStream(String.class)
         ) {
             Assertions.assertEquals(allClinics, result.toList());
@@ -96,22 +97,7 @@ import static net.truej.sql.fetch.Parameters.Nullable;
         );
 
         Assertions.assertNull(
-            cn.q(
-                "insert into users(name, info) values(?, ?)",
-                "Mike", "Strong left hook"
-            ).fetchNone()
-        );
-
-        Assertions.assertNull(
-            cn.q("insert into users(name, info) values(?, ?)", "Ali", null).fetchNone()
-        );
-
-        Assertions.assertEquals(
-            new User(4L, "Ali", null),
-            cn.q(
-                "select id, name, info from users where id = ?", 4L
-            ).fetchOne(User.class)
+            cn.q("update users set name = 'xxx' where id = 100").fetchNone()
         );
     }
 }
-

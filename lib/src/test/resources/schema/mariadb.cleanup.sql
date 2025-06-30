@@ -5,8 +5,6 @@ delete from clinic;
 delete from city;
 delete from users;
 
-alter table users AUTO_INCREMENT = 1;
-
 insert into users(id, name, info) values (1, 'Joe', null);
 insert into users(id, name, info) values (2, 'Donald', 'Do not disturb');
 

@@ -1,55 +1,54 @@
-drop database test;
-create database test;
-use test;
-
-create table if not exists users (
+create table users (
     id bigint not null AUTO_INCREMENT,
     name varchar(100) not null,
     info varchar(200),
     constraint users_pk PRIMARY KEY(id)
 );
-create table if not exists city (
+create table city (
     id bigint not null PRIMARY KEY,
     name varchar(50) not null
 );
-create table if not exists clinic (
+create table clinic (
     id bigint not null PRIMARY KEY,
     name varchar(100) not null,
     city_id bigint not null,
     constraint clinic_fk2       foreign key (city_id)   references city(id)
 );
-create table if not exists bill (
+create table bill (
     id bigint not null PRIMARY KEY,
     amount decimal(15,2) not null,
     discount decimal(15,2),
     date datetime not null
 );
-create table if not exists clinic_users (
+create table clinic_users (
     clinic_id bigint not null,
     user_id bigint not null,
     constraint clinic_users_fk0 foreign key (clinic_id) references clinic(id),
     constraint clinic_users_fk1 foreign key (user_id)   references users(id)
 );
-create table if not exists user_bills (
+create table user_bills (
     user_id bigint not null,
     bill_id bigint not null,
     constraint user_bills_fk0   foreign key (user_id)   references users(id),
     constraint user_bills_fk1   foreign key (bill_id)   references bill(id)
 );
+create table for_insert (
+    id bigint not null
+);
 
-create procedure if not exists digit_magic(in x int, inout y int, out z int)
+create procedure digit_magic(in x int, inout y int, out z int)
     begin
         set y = y + x;
         set z = y + x;
     end;
 
-create procedure if not exists bill_zero()
+create procedure bill_zero()
 modifies sql data
     begin
         update bill set amount = 0;
     end;
 
-create procedure if not exists discount_bill(in datedisc datetime)
+create procedure discount_bill(in datedisc datetime)
 modifies sql data
     begin
         update bill set discount = amount * 0.1 where date = datedisc;

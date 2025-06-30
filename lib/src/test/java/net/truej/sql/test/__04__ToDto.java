@@ -20,7 +20,8 @@ import java.util.List;
 
     public record User(String name, @Nullable String info, @NotNull BigDecimal amount) { }
     public record Report(String city, List<String> clinics, List<User> users) { }
-    public record User2(@Nullable String name, @Nullable String info, @Nullable BigDecimal amount) { }
+    public record User2(@Nullable String name, @Nullable String info,
+                        @Nullable BigDecimal amount) { }
     public record Report2(String city, List<String> clinics, List<User2> users) { }
 
     @TestTemplate public void test(MainConnection cn) {
@@ -31,8 +32,8 @@ import java.util.List;
         );
 
         var citiesClinics = List.of(
-            new CityClinics("Paris", List.of("Paris Neurology Hospital")),
-            new CityClinics("London", List.of("London Heart Hospital", "Diagnostic center"))
+            new CityClinics("London", List.of("Diagnostic center", "London Heart Hospital")),
+            new CityClinics("Paris", List.of("Paris Neurology Hospital"))
         );
 
         Assertions.assertEquals(
@@ -41,7 +42,9 @@ import java.util.List;
                 select
                     ci.name as city,
                     cl.name
-                from clinic cl join city ci on cl.city_id = ci.id"""
+                from clinic cl join city ci on cl.city_id = ci.id
+                order by ci.name, cl.name
+                """
             ).fetchList(CityClinics.class)
         );
 
@@ -104,5 +107,40 @@ import java.util.List;
                 order by ci.name, cl.name, u.name, u.info"""
             ).fetchList(Report2.class)
         );
+    }
+
+    @TestTemplate public void fetchAggregatedOne(MainConnection cn) {
+        Assertions.assertEquals(
+            new CityClinics("London", List.of("Diagnostic center", "London Heart Hospital")),
+            cn.q("""
+                select
+                    ci.name as city,
+                    cl.name
+                from clinic cl join city ci on cl.city_id = ci.id
+                where ci.name = 'London'
+                order by ci.name, cl.name
+                """
+            ).fetchOne(CityClinics.class)
+        );
+    }
+
+    @TestTemplate public void fetchAggregatedStream(MainConnection cn) {
+        try (
+            var stream = cn.q("""
+                select
+                    ci.name as city,
+                    cl.name
+                from clinic cl join city ci on cl.city_id = ci.id
+                order by ci.name, cl.name
+                """
+            ).fetchStream(CityClinics.class)
+        ) {
+            Assertions.assertEquals(
+                List.of(
+                    new CityClinics("London", List.of("Diagnostic center", "London Heart Hospital")),
+                    new CityClinics("Paris", List.of("Paris Neurology Hospital"))
+                ), stream.toList()
+            );
+        }
     }
 }

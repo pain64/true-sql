@@ -4,12 +4,10 @@ plugins {
     id("java")
     jacoco
     id("com.vanniktech.maven.publish") version "0.29.0"
-    // id("me.champeau.jmh") version "0.7.2"
-
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 repositories {
@@ -17,21 +15,13 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains:annotations:24.0.0")
+    implementation("org.jetbrains:annotations:26.0.1")
 
     testImplementation("org.apiguardian:apiguardian-api:1.1.2")
-    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation(platform("org.junit:junit-bom:5.11.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
-    testImplementation("org.openjdk.jmh:jmh-core:1.37")
-    testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
-
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
-    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
-
     testImplementation("org.hsqldb:hsqldb:2.7.3")
-
     testImplementation("org.postgresql:postgresql:42.7.3")
     testImplementation("org.testcontainers:postgresql:1.20.0")
 
@@ -41,13 +31,11 @@ dependencies {
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.4.1")
     testImplementation("org.testcontainers:mariadb:1.20.0")
 
-    implementation("com.microsoft.sqlserver:mssql-jdbc:12.9.0.jre11-preview")
+    testImplementation("com.microsoft.sqlserver:mssql-jdbc:12.9.0.jre11-preview")
     testImplementation("org.testcontainers:mssqlserver:1.20.0")
 
     testImplementation("org.testcontainers:oracle-xe:1.20.0")
     testImplementation("com.oracle.database.jdbc:ojdbc11:23.4.0.24.05")
-
-    // jmh("org.openjdk.jmh:jmh-generator-bytecode:1.37")
 }
 
 var exports = listOf(
@@ -60,14 +48,14 @@ var exports = listOf(
     "jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
 )
 
-
 tasks.withType<JavaCompile> {
     exports.forEach { v ->
         options.compilerArgs.add("--add-exports=${v}")
     }
-    //options.compilerArgs.add("--enable-preview")
-}
 
+    if (source().name == "compileTestJava")
+        options.compilerArgs.add("--processor-path=${System.getProperty("java.io.tmpdir")}")
+}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -79,13 +67,12 @@ tasks.withType<Javadoc> {
 
     opt.addMultilineStringsOption("-add-exports").value = exports
     opt.addStringOption("-source", "21")
-    //opt.addBooleanOption("-enable-preview", true)
 }
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
     jvmArgs = listOf(
-        // "--enable-preview",
+        "-noverify",
         "--add-opens", "java.base/java.lang=ALL-UNNAMED",
         "--add-opens", "java.base/java.util=ALL-UNNAMED",
         "--add-opens", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
@@ -114,7 +101,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("net.truej", "sql", "3.0.0-beta7")
+    coordinates("net.truej", "sql", "3.0.0-beta8")
 
     pom {
         name.set("TrueSql")

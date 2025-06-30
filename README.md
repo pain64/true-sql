@@ -4,10 +4,10 @@
 TrueSql is an ultimate sql database connector for Java.<br>
 It's development is motivated by the pain of thousands of developers. Therefore, the main focus was to make TrueSql powerful and convenient. It has no competitors. It is more convenient, easier to understand, faster and more secure than any other Java DB connector. These are irrefutable reasons why you should choose TrueSql.
 
-##### Contact us via
-tg: @overln2, @aka_naked_gun<br>
-site: [truej.net](https://truej.net)<br>
-email: [net.truej.sql@gmail.com]()
+##### Contact us
+Tg: @overln2, @aka_naked_gun<br>
+Site: [truej.net](https://truej.net)<br>
+See also: refactored with Truesql [spring-petclinic-rest](https://github.com/pain64/truesql-petclinic-rest)<br>
 
 ## FEATURES
 - [ResultSet to DTO mapping. Grouped object-tree fetching](#resultset-to-dto-mapping-grouped-object-tree-fetching)
@@ -142,8 +142,7 @@ var reportsData = ds.q("""
     group by ci.name, cl.name, u.name, u.info"""
 ).fetchList(Report.class)
 ```
-
-###### NB: Group with all null fields will be droped.
+`NB: First field of group is a key. Group with null key will be droped.`
 
 All possibilities of grouped object-tree demonstrated below.
 
@@ -215,237 +214,8 @@ var clinics = ds.q("""
         left join user u on u.id = cu.user_id
         left join bill b on u.id = b.user_id
     """).g.fetchList(Clinic.class);
-
 ```
-
-###### NB: Queries stay static. All grouping work happens in Java.
-<details>
-    <summary>The code we generated for you!</summary>
-
-```java
-
-public static class Bill {
-    @Nullable public final java.time.OffsetDateTime date;
-    @Nullable public final java.math.BigDecimal amount;
-
-    public Bill(
-        java.time.OffsetDateTime date,
-        java.math.BigDecimal amount
-    ) {
-        this.date = date;
-        this.amount = amount;
-    }
-
-    @Override public boolean equals(Object other) {
-        return this == other || (
-            other instanceof Bill o &&
-            java.util.Objects.equals(this.date, o.date) &&
-            java.util.Objects.equals(this.amount, o.amount)
-        );
-    }
-
-    @Override public int hashCode() {
-        int h = 1;
-        h = h * 59 + java.util.Objects.hashCode(this.date);
-        h = h * 59 + java.util.Objects.hashCode(this.amount);
-        return h;
-    }
-}
-public static class User {
-    @Nullable public final java.lang.String name;
-    @Nullable public final java.lang.String info;
-    public final List<Bill> bills;
-
-    public User(
-        java.lang.String name,
-        java.lang.String info,
-        List<Bill> bills
-    ) {
-        this.name = name;
-        this.info = info;
-        this.bills = bills;
-    }
-
-    @Override public boolean equals(Object other) {
-        return this == other || (
-            other instanceof User o &&
-            java.util.Objects.equals(this.name, o.name) &&
-            java.util.Objects.equals(this.info, o.info) &&
-            java.util.Objects.equals(this.bills, o.bills)
-        );
-    }
-
-    @Override public int hashCode() {
-        int h = 1;
-        h = h * 59 + java.util.Objects.hashCode(this.name);
-        h = h * 59 + java.util.Objects.hashCode(this.info);
-        h = h * 59 + java.util.Objects.hashCode(this.bills);
-        return h;
-    }
-}
-public static class Clinic {
-    @NotNull public final java.lang.String city;
-    public final List<java.lang.String> clinic;
-    public final List<User> users;
-
-    public Clinic(
-        java.lang.String city,
-        List<java.lang.String> clinic,
-        List<User> users
-    ) {
-        this.city = city;
-        this.clinic = clinic;
-        this.users = users;
-    }
-
-    @Override public boolean equals(Object other) {
-        return this == other || (
-            other instanceof Clinic o &&
-            java.util.Objects.equals(this.city, o.city) &&
-            java.util.Objects.equals(this.clinic, o.clinic) &&
-            java.util.Objects.equals(this.users, o.users)
-        );
-    }
-
-    @Override public int hashCode() {
-        int h = 1;
-        h = h * 59 + java.util.Objects.hashCode(this.city);
-        h = h * 59 + java.util.Objects.hashCode(this.clinic);
-        h = h * 59 + java.util.Objects.hashCode(this.users);
-        return h;
-    }
-}
-public static 
-List<Clinic> fetchList__line139__(
-    
-    ConnectionW source
-)  {
-    var buffer = new StringBuilder();
-    
-    buffer.append("""
-        select
-        ci.name  as "      city                   ",
-        cl.name  as "      clinic.                ",
-        u.name   as "User users .name            ",
-        u.info   as "      users .info            ",
-        b.date   as "      users .Bill bills.date ",
-        b.amount as "      users .     bills.amount"
-    from city ci
-        join clinic       cl  on ci.id         = cl.city_id
-        left join clinic_users clu on clu.clinic_id = cl.id
-        left join users        u   on clu.user_id   = u.id
-        left join user_bills   ub  on ub.user_id    = u.id
-        left join bill         b   on b.id          = ub.bill_id
-     """);
-    
-    var query = buffer.toString();
-    
-    try {
-        var connection = source.w();
-        try (var stmt = connection.prepareStatement(query)) {
-        
-            var n = 0;
-            
-            
-            stmt.execute();
-            
-            var rs = stmt.getResultSet();
-            
-            record Row(
-                java.lang.String c1,
-                java.lang.String c2,
-                java.lang.String c3,
-                java.lang.String c4,
-                java.time.OffsetDateTime c5,
-                java.math.BigDecimal c6
-            ) {}
-            record G1(
-                java.lang.String c1
-            ) {}
-            record G2(
-                java.lang.String c3,
-                java.lang.String c4
-            ) {}
-            
-            
-            var mapped = Stream.iterate(
-                rs, t -> {
-                    try {
-                        return t.next();
-                    } catch (SQLException e) {
-                        throw source.mapException(e);
-                    }
-                }, t -> t
-            ).map(t -> {
-                try {
-                    return
-                        new Row (
-                            new net.truej.sql.bindings.StringReadWrite().get(rs, 1),
-                            new net.truej.sql.bindings.StringReadWrite().get(rs, 2),
-                            new net.truej.sql.bindings.StringReadWrite().get(rs, 3),
-                            new net.truej.sql.bindings.StringReadWrite().get(rs, 4),
-                            new net.truej.sql.bindings.OffsetDateTimeReadWrite().get(rs, 5),
-                            new net.truej.sql.bindings.BigDecimalReadWrite().get(rs, 6)
-                        );
-                } catch (SQLException e) {
-                    throw source.mapException(e);
-                }
-            })
-            .collect(
-                java.util.stream.Collectors.groupingBy(
-                    r -> new G1(
-                        r.c1
-                    ), java.util.LinkedHashMap::new, Collectors.toList()
-                )
-            ).entrySet().stream()
-            .filter(g1 ->
-                java.util.Objects.nonNull(g1.getKey().c1)
-            ).map(g1 ->
-                new Clinic(
-                    EvenSoNullPointerException.check(g1.getKey().c1),
-                    g1.getValue().stream().filter(r ->
-                        java.util.Objects.nonNull(r.c2)
-                    ).map(r ->
-                        EvenSoNullPointerException.check(r.c2)
-                    ).distinct().toList(),
-                    g1.getValue().stream().collect(
-                        java.util.stream.Collectors.groupingBy(
-                            r -> new G2(
-                                r.c3,
-                                r.c4
-                            ), java.util.LinkedHashMap::new, Collectors.toList()
-                        )
-                    ).entrySet().stream()
-                    .filter(g2 ->
-                        java.util.Objects.nonNull(g2.getKey().c3) ||
-                        java.util.Objects.nonNull(g2.getKey().c4)
-                    ).map(g2 ->
-                        new User(
-                            g2.getKey().c3,
-                            g2.getKey().c4,
-                            g2.getValue().stream().filter(r ->
-                                java.util.Objects.nonNull(r.c5) ||
-                                java.util.Objects.nonNull(r.c6)
-                            ).map(r ->
-                                new Bill(
-                                    r.c5,
-                                    r.c6
-                                )
-                            ).toList()
-                        )
-                    ).toList()
-                )
-            );
-            return mapped.toList();
-        
-        }
-    } catch (SQLException e) {
-        throw source.mapException(e);
-    }
-}
-
-```
-</details>
+`NB: Queries stay static. All grouping work happens in Java.`
 
 ## Null-safety
 NullPointerException is a nightmare for every Java developer. It's important to catch null in the beginning. TrueSql get information about fields nullability from db driver. The war is end? [Unfortunately, not all databases driver calculates nullability right.](#table_with_proofs) In case you disagree with db driver, we print compilation time warning. If you found an example, you can create a ticket to db vendor and restore order!
@@ -525,7 +295,7 @@ var user = ds.q("""
     .g.fetchList(User.class);
 ```
 
-###### NB: driver can say "Unknown" nullability. Then TrueSql accept user decision and dont print warnings
+`NB: driver can say "Unknown" nullability. Then TrueSql accept user decision and dont print warnings`
 
 ## Full featured
 We save and ***improve*** all necessary JDBC possibilities.<br>
@@ -565,7 +335,7 @@ var keys = cn.q(
         v -> new Object[]{v.discount, v.date}
     ).withUpdateCount.fetchNone()
 ```
-###### NB: batching works with both asGeneratedKeys() and withUpdateCount
+`NB: batching works with both asGeneratedKeys() and withUpdateCount`
 
 ### Transactions and connection pinning
 In case you want pin connection
@@ -594,6 +364,7 @@ try {
     // transcaction was rolled back and name is `null` now
 }
 ```
+`NB: inTransaction also has overload for isolation level control`
 
 ### Streaming fetching
 If you don't want to materialize all ResultSet rows, you could use fetchStream()
@@ -617,7 +388,7 @@ import static net.truej.sql.fetch.Parameters.*;
 ds.q("call ? = some_procedure(?, ?)", out(Integer.class), 42, inout(42))
     .asCall().fetchOne(Integer.class)
 ```
-###### NB: functions out(), inout() has JDBC sense. Example provided on HSQLDB.
+`NB: functions out(), inout() has JDBC sense. Example provided on HSQLDB.`
 
 ### Unfold parameters for "in-clause"
 TrueSql can dynamicly generate query with n parameters
@@ -826,7 +597,7 @@ try {
    );
 }
 ```
-###### NB: also has overloads with database and schema
+`NB: also has overloads with database and schema`
 
 ## 100% sql-injection safety guarantee
 1. In case of unfold feature, TrueSql only adds prepared statement parameters  dynamically. In other cases query text stay static.

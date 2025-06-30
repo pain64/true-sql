@@ -1,10 +1,7 @@
-drop schema public cascade;
-create schema public;
-
 create type enum_user_sex as enum('MALE', 'FEMALE');
 
 create table users (
-    id bigserial not null,
+    id bigint not null,
     name varchar(100) not null,
     info varchar(200),
     sex enum_user_sex,
@@ -33,31 +30,8 @@ create table user_bills (
     user_id bigint not null,
     bill_id bigint not null
 );
-create table all_default_data_types(
-    bigdecimal_type decimal(15,3) not null,
-    bigdecimal_type_null decimal(15,3),
-    boolean_type boolean not null,
-    boolean_type_null boolean,
-    date_type date not null,
-    date_type_null date,
-    integer_type integer not null,
-    integer_type_null integer,
-    long_type bigint not null,
-    long_type_null bigint,
-    string_type varchar(200) not null,
-    string_type_null varchar(200),
-    short_type smallint not null,
-    short_type_null smallint,
-    time_type time not null,
-    time_type_null time,
-    timestamp_type timestamp not null,
-    timestamp_type_null timestamp,
-    float_type real not null,
-    float_type_null real,
-    double_type float not null,
-    double_type_null float,
-    offset_time_type time with time zone not null,
-    offset_time_type_null time with time zone
+create table for_insert (
+    id bigint not null
 );
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);

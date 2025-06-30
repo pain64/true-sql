@@ -1,7 +1,5 @@
 package net.truej.sql.test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests;
@@ -14,16 +12,10 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 
 @ExtendWith(TrueSqlTests.class) @TrueSqlTests.EnableOn(POSTGRESQL)
 @TrueSql public class __26__SnakeCaseToCamelCase {
-    @TestTemplate public void test(MainDataSource ds) throws JsonProcessingException {
-        Assertions.assertEquals("""
-            {
-              "helloItsMe" : 1
-            }""",
-            new ObjectMapper()
-                .writerWithDefaultPrettyPrinter().writeValueAsString(
-                    ds.q("""
-            select 1 as "hello_its_me"
-            """).g.fetchOne(SC.class))
+    @TestTemplate public void test(MainDataSource ds) {
+        Assertions.assertEquals(
+            "SC[helloItsMe=1]",
+            ((Object) ds.q("select 1 as \"hello_its_me\"").g.fetchOne(SC.class)).toString()
         );
     }
 }

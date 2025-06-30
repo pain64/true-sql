@@ -3,7 +3,7 @@ package net.truej.sql.compiler;
 import org.junit.jupiter.api.Test;
 
 public class __01__JacocoDefaultConstructorCall {
-    @Test public void test() {
+    @Test public void test() throws InterruptedException {
         new TypeFinder();
         new TypeChecker();
         new GLangParser();
@@ -13,6 +13,7 @@ public class __01__JacocoDefaultConstructorCall {
         new MapperGenerator();
         new DtoGenerator();
         new InvocationsFinder();
+        new InvocationsHandler();
         new ExistingDtoParser();
         new ConfigurationParser();
         new DatabaseNames();

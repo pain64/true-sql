@@ -3,9 +3,11 @@ package net.truej.sql.compiler;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -38,36 +40,24 @@ public record TestDataSource(
         try (
             var connection = DriverManager.getConnection(jdbcUrl, username, password)
         ) {
+            var isSchemaDefined = true;
+            try {
+                connection.createStatement().execute("select * from users");
+            } catch (SQLException e) {
+                isSchemaDefined = false;
+            }
 
-            var sql = new String(
-                TestDataSource.class.getResourceAsStream(
-                    "/schema/" + databaseName + ".create.sql"
-                ).readAllBytes()
-            );
+            if(!isSchemaDefined) {
+                var sql = new String(
+                    TestDataSource.class.getResourceAsStream(
+                        "/schema/" + databaseName + ".create.sql"
+                    ).readAllBytes()
+                );
 
-            for (var part : sql.split("---"))
-                connection.createStatement().execute(part);
+                for (var part : sql.split("---"))
+                    connection.createStatement().execute(part);
+            }
 
-        } catch (IOException | SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void publishProperties() {
-        for (var cl : List.of(
-            MainDataSource.class, MainConnection.class,
-            MssqlConnection.class, OracleConnection.class, MariaDbConnection.class
-        )) {
-            System.setProperty("truesql." + cl.getName() + ".url", jdbcUrl);
-            System.setProperty("truesql." + cl.getName() + ".username", username);
-            System.setProperty("truesql." + cl.getName() + ".password", password);
-        }
-    }
-
-    @Override public Connection getConnection() throws SQLException {
-
-        var connection = DriverManager.getConnection(jdbcUrl, username, password);
-        try {
             var sql = new String(
                 TestDataSource.class.getResourceAsStream(
                     "/schema/" + databaseName + ".cleanup.sql"
@@ -75,11 +65,29 @@ public record TestDataSource(
             );
 
             connection.createStatement().execute(sql);
-        } catch (IOException e) {
+
+        } catch (IOException | SQLException e) {
             throw new RuntimeException(e);
         }
+    }
 
-        return connection;
+    public ArrayList<String> publishProperties() {
+        var dest = new ArrayList<String>();
+
+        for (var cl : List.of(
+            MainDataSource.class, MainConnection.class, PgConnection.class,
+            MssqlConnection.class, OracleConnection.class, MariaDbConnection.class
+        )) {
+            dest.add("-Atruesql." + cl.getName() + ".url=" + jdbcUrl);
+            dest.add("-Atruesql." + cl.getName() + ".username=" + username);
+            dest.add("-Atruesql." + cl.getName() + ".password=" + password);
+        }
+
+        return dest;
+    }
+
+    @Override public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(jdbcUrl, username, password);
     }
 
     @Override public Connection getConnection(String username, String password) {

@@ -19,7 +19,7 @@ import static net.truej.sql.fetch.Parameters.*;
 
         Assertions.assertEquals(
             List.of("Joe", "Donald"),
-            cn.q("select name from users where id in (?)", unfold(ids))
+            cn.q("select name from users where id in (?) and id > ?", unfold(ids), 0L)
                 .fetchList(String.class)
         );
     }

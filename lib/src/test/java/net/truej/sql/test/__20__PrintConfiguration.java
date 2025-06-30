@@ -19,7 +19,7 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 @ExtendWith(TrueSqlTests.class) @EnableOn(HSQLDB)
 @ContainsOutput("""
     TrueSql configuration:
-    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.url=jdbc:hsqldb:mem:xxx
+    	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.url=jdbc:hsqldb:mem:parametrized
     	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.username UNDEFINED
     	truesql.net.truej.sql.test.__20__PrintConfiguration_.TestConnection.password UNDEFINED"""
 )
@@ -27,7 +27,7 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.HSQLDB;
 @TrueSql public class __20__PrintConfiguration {
 
     @Configuration(checks = @CompileTimeChecks(
-        url = "jdbc:hsqldb:mem:xxx"
+        url = "jdbc:hsqldb:mem:parametrized"
     ))
     static class TestConnection extends ConnectionW {
         public TestConnection(Connection w) { super(w); }

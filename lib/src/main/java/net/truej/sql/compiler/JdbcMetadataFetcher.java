@@ -2,6 +2,7 @@ package net.truej.sql.compiler;
 
 import com.sun.tools.javac.tree.JCTree;
 import net.truej.sql.compiler.ConfigurationParser.ParsedConfiguration;
+import net.truej.sql.compiler.StatementGenerator.Query;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +17,7 @@ import java.util.stream.IntStream;
 import static java.sql.ParameterMetaData.*;
 import static net.truej.sql.compiler.DatabaseNames.*;
 import static net.truej.sql.compiler.DatabaseNames.MARIA_DB_NAME;
+import static net.truej.sql.compiler.StatementGenerator.*;
 import static net.truej.sql.compiler.StatementGenerator.unfoldArgumentsCount;
 
 public class JdbcMetadataFetcher {
@@ -50,12 +52,10 @@ public class JdbcMetadataFetcher {
     }
 
     static String pgGetBaseColumnName(ResultSetMetaData mt, int i) {
-        try {
-            return (String) mt.getClass().getMethod("getBaseColumnName", int.class)
-                .invoke(mt, i);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        return TrueSqlAnnotationProcessor.checkedExceptionAsUnchecked(() ->
+            (String) mt.getClass().getMethod("getBaseColumnName", int.class)
+                .invoke(mt, i)
+        );
     }
 
     private static String getColumnName(
@@ -152,15 +152,11 @@ public class JdbcMetadataFetcher {
         }};
     }
 
-    private static boolean isDriversLoaded = false;
-
-
     static JdbcMetadata fetch(
-        String url, String username, String password,
-        StatementGenerator.Query queryMode,
-        StatementGenerator.StatementMode statementMode
+        Connection connection, Query queryMode, StatementMode statementMode
     ) throws SQLException {
 
+        // FIXME: renate to queryText
         var query = queryMode.parts().stream()
             .map(p -> switch (p) {
                 case InvocationsFinder.SingleParameter __ -> "?";
@@ -176,26 +172,16 @@ public class JdbcMetadataFetcher {
             })
             .collect(Collectors.joining());
 
-        if (!isDriversLoaded) {
-            isDriversLoaded = true;
-            for (var driver : ServiceLoader.load(
-                Driver.class, TrueSqlAnnotationProcessor.class.getClassLoader()
-            ))
-                DriverManager.registerDriver(driver);
-        }
-
         try (
-            var connection = DriverManager.getConnection(url, username, password);
             var stmt = switch (statementMode) {
-                case StatementGenerator.AsDefault __ -> connection.prepareStatement(query);
-                case StatementGenerator.AsCall __ -> connection.prepareCall(query);
-                case StatementGenerator.AsGeneratedKeysIndices gk -> connection.prepareStatement(
+                case AsDefault __ -> connection.prepareStatement(query);
+                case AsCall __ -> connection.prepareCall(query);
+                case AsGeneratedKeysIndices gk -> connection.prepareStatement(
                     query, gk.columnIndexes()
                 );
-                case StatementGenerator.AsGeneratedKeysColumnNames gk ->
-                    connection.prepareStatement(
-                        query, gk.columnNames()
-                    );
+                case AsGeneratedKeysColumnNames gk -> connection.prepareStatement(
+                    query, gk.columnNames()
+                );
             }
         ) {
 
@@ -204,14 +190,14 @@ public class JdbcMetadataFetcher {
 
             if (
                 onDatabase.equals(MYSQL_DB_NAME) &&
-                statementMode instanceof StatementGenerator.AsCall
+                statementMode instanceof AsCall
             ) {
                 columns = null;
             } else if (
                 onDatabase.equals(ORACLE_DB_NAME)
                 && (
-                    statementMode instanceof StatementGenerator.AsGeneratedKeysIndices ||
-                    statementMode instanceof StatementGenerator.AsGeneratedKeysColumnNames
+                    statementMode instanceof AsGeneratedKeysIndices ||
+                    statementMode instanceof AsGeneratedKeysColumnNames
                 )
             ) {
                 stmt.getMetaData(); // runs query check
@@ -221,8 +207,8 @@ public class JdbcMetadataFetcher {
                     onDatabase.equals(MYSQL_DB_NAME) ||
                     onDatabase.equals(MARIA_DB_NAME)
                 ) && (
-                    statementMode instanceof StatementGenerator.AsGeneratedKeysIndices ||
-                    statementMode instanceof StatementGenerator.AsGeneratedKeysColumnNames
+                    statementMode instanceof AsGeneratedKeysIndices ||
+                    statementMode instanceof AsGeneratedKeysColumnNames
                 )
             )
                 columns = fetchColumns(onDatabase, stmt.getGeneratedKeys().getMetaData());
@@ -252,85 +238,79 @@ public class JdbcMetadataFetcher {
     }
 
     static void checkConstraint(
-        JCTree tree, ParsedConfiguration config,
+        Connection connection, JCTree tree,
         @Nullable String catalogName, @Nullable String schemaName,
         String tableName, String constraintName
     ) throws SQLException {
-        try (
-            var connection = DriverManager.getConnection(
-                config.url(), config.username(), config.password()
+        var onDatabase = connection.getMetaData().getDatabaseProductName();
+
+        if (catalogName == null) {
+            if (onDatabase.equals(ORACLE_DB_NAME))
+                catalogName = "";
+            else if (
+                onDatabase.equals(MYSQL_DB_NAME) ||
+                onDatabase.equals(MARIA_DB_NAME)
             )
-        ) {
-            var onDatabase = connection.getMetaData().getDatabaseProductName();
+                catalogName = "def";
+            else
+                catalogName = connection.getCatalog();
+        }
 
-            if (catalogName == null) {
-                if (onDatabase.equals(ORACLE_DB_NAME))
-                    catalogName = "";
-                else if (
-                    onDatabase.equals(MYSQL_DB_NAME) ||
-                    onDatabase.equals(MARIA_DB_NAME)
-                )
-                    catalogName = "def";
-                else
-                    catalogName = connection.getCatalog();
-            }
-
-            if (schemaName == null) {
-                if (
-                    onDatabase.equals(MYSQL_DB_NAME) ||
-                    onDatabase.equals(MARIA_DB_NAME)
-                )
-                    schemaName = connection.getCatalog();
-                else
-                    schemaName = connection.getSchema();
-            }
-
-            var query = """
-                select
-                    '', ''
-                from information_schema.table_constraints
-                where
-                    upper(TABLE_CATALOG)   = upper(?) and
-                    upper(TABLE_SCHEMA)    = upper(?) and
-                    upper(TABLE_NAME)      = upper(?) and
-                    upper(CONSTRAINT_NAME) = upper(?)""";
-
+        if (schemaName == null) {
             if (
                 onDatabase.equals(MYSQL_DB_NAME) ||
                 onDatabase.equals(MARIA_DB_NAME)
             )
-                query = """
-                    select
-                        '', ?
-                    from information_schema.table_constraints
-                    where
-                        upper(TABLE_SCHEMA)    = upper(?) and
-                        upper(TABLE_NAME)      = upper(?) and
-                        upper(CONSTRAINT_NAME) = upper(?)
-                    """;
-
-            if (onDatabase.equals(ORACLE_DB_NAME))
-                query = """
-                    select
-                        '', ?
-                    from all_constraints
-                    where
-                        upper(OWNER)           = upper(?) and
-                        upper(TABLE_NAME)      = upper(?) and
-                        upper(CONSTRAINT_NAME) = upper(?)
-                    """;
-
-            var stmt = connection.prepareStatement(query);
-            stmt.setString(1, catalogName);
-            stmt.setString(2, schemaName);
-            stmt.setString(3, tableName);
-            stmt.setString(4, constraintName);
-
-            var rs = stmt.executeQuery();
-            if (!rs.next())
-                throw new TrueSqlPlugin.ValidationException(
-                    tree, "constraint not found"
-                );
+                schemaName = connection.getCatalog();
+            else
+                schemaName = connection.getSchema();
         }
+
+        var query = """
+            select
+                '', ''
+            from information_schema.table_constraints
+            where
+                upper(TABLE_CATALOG)   = upper(?) and
+                upper(TABLE_SCHEMA)    = upper(?) and
+                upper(TABLE_NAME)      = upper(?) and
+                upper(CONSTRAINT_NAME) = upper(?)""";
+
+        if (
+            onDatabase.equals(MYSQL_DB_NAME) ||
+            onDatabase.equals(MARIA_DB_NAME)
+        )
+            query = """
+                select
+                    '', ?
+                from information_schema.table_constraints
+                where
+                    upper(TABLE_SCHEMA)    = upper(?) and
+                    upper(TABLE_NAME)      = upper(?) and
+                    upper(CONSTRAINT_NAME) = upper(?)
+                """;
+
+        if (onDatabase.equals(ORACLE_DB_NAME))
+            query = """
+                select
+                    '', ?
+                from all_constraints
+                where
+                    upper(OWNER)           = upper(?) and
+                    upper(TABLE_NAME)      = upper(?) and
+                    upper(CONSTRAINT_NAME) = upper(?)
+                """;
+
+        var stmt = connection.prepareStatement(query);
+        stmt.setString(1, catalogName);
+        stmt.setString(2, schemaName);
+        stmt.setString(3, tableName);
+        stmt.setString(4, constraintName);
+
+        var rs = stmt.executeQuery();
+        if (!rs.next())
+            throw new TrueSqlPlugin.ValidationException(
+                tree, "constraint not found"
+            );
     }
 }

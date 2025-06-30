@@ -41,6 +41,14 @@ public non-sealed class DataSourceW implements
     }
 
     public final <T, E extends Exception> T inTransaction(
+        IsolationLevel isolationLevel, InTransactionAction<T, E> action
+    ) throws E {
+        return withConnection(
+            conn -> conn.inTransaction(isolationLevel, () -> action.run(conn))
+        );
+    }
+
+    public final <T, E extends Exception> T inTransaction(
         InTransactionAction<T, E> action
     ) throws E {
         return withConnection(

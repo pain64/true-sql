@@ -8,6 +8,7 @@ import com.sun.tools.javac.api.BasicJavacTask;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.comp.Attr;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -338,10 +339,17 @@ public class TrueSqlPlugin implements Plugin {
                 for (var part : bq.parts())
                     switch (part) {
                         case InParameter p:
-                            var extractor = new JCTree.JCLambda(
-                                List.of(bq.extractor().params.head),
-                                p.expression()
-                            );
+
+                            var extractor = (JCTree.JCLambda) bq.extractor().clone();
+                            extractor.params = List.of(bq.extractor().params.head);
+                            extractor.body = p.expression();
+                            extractor.paramKind = JCTree.JCLambda.ParameterKind.EXPLICIT;
+
+//                            var extractor = new JCTree.JCLambda(
+//                                List.of(bq.extractor().params.head),
+//                                p.expression()
+//                            );
+
                             var extractorType = new Type.ClassType(
                                 Type.noType,
                                 List.of(
@@ -351,8 +359,12 @@ public class TrueSqlPlugin implements Plugin {
                                 clParameterExtractor
                             );
 
+                            //extractor.clone()
+
                             extractor.type = extractorType;
                             extractor.target = extractorType;
+                            //extractor.setType()
+                            //extractor.owner = bq.extractor().owner;
 
                             tree.args = tree.args.append(extractor);
                             tree.args = tree.args.append(createRwFor.apply(p.expression().type));
@@ -388,9 +400,14 @@ public class TrueSqlPlugin implements Plugin {
                                     var partExpression =
                                         ((JCTree.JCNewArray) p.extractor().body).elems.get(i);
 
-                                    var extractor = new JCTree.JCLambda(
-                                        List.of(p.extractor().params.head), partExpression
-                                    );
+                                    var extractor = (JCTree.JCLambda) p.extractor().clone();
+                                    extractor.params = List.of(p.extractor().params.head);
+                                    extractor.body = partExpression;
+                                    extractor.paramKind = JCTree.JCLambda.ParameterKind.EXPLICIT;
+
+//                                    new JCTree.JCLambda(
+//                                        List.of(p.extractor().params.head), partExpression
+//                                    );
 
                                     var extractorType = new Type.ClassType(
                                         Type.noType,
@@ -403,6 +420,7 @@ public class TrueSqlPlugin implements Plugin {
 
                                     extractor.type = extractorType;
                                     extractor.target = extractorType;
+                                    //extractor.owner = p.extractor().owner;
 
                                     tree.args = tree.args.append(extractor);
                                     tree.args = tree.args.append(createRwFor.apply(partExpression.type));

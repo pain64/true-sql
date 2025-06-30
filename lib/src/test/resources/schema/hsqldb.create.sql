@@ -1,5 +1,5 @@
 create table users (
-    id bigint not null IDENTITY,
+    id bigint not null,
     name varchar(100) not null,
     info varchar(200),
     constraint users_pk primary key (id)
@@ -40,6 +40,9 @@ create table grouped_dto(
     flo float not null,
     doub double not null
 )
+create table for_insert (
+    id bigint not null
+);
 ---
 
 alter table clinic       add constraint clinic_fk2       foreign key (city_id)   references city(id);

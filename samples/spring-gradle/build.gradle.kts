@@ -2,6 +2,7 @@ plugins {
     id("java")
     id("org.springframework.boot") version "3.3.1"
     id("io.spring.dependency-management") version "1.1.5"
+    id("org.flywaydb.flyway") version "11.4.0"
 }
 
 group = "net.truej"
@@ -12,7 +13,13 @@ repositories {
     mavenCentral()
 }
 
-var trueSqlVersion = "3.0.0-beta7"
+buildscript {
+	dependencies {
+		classpath("org.flywaydb:flyway-database-postgresql:11.4.0")
+	}
+}
+
+var trueSqlVersion = "3.0.0-beta8"
 
 dependencies {
 	annotationProcessor("net.truej:sql:$trueSqlVersion")
@@ -39,4 +46,11 @@ java {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+flyway {
+	url = "jdbc:postgresql://localhost:5433/postgres"
+	user = "postgres"
+	password = "1234"
+	locations  = arrayOf("filesystem:./src/main/resources/db/migration")
 }

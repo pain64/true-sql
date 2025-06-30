@@ -17,7 +17,7 @@ import static net.truej.sql.test.__09__Types.*;
 
 @ExtendWith(TrueSqlTests.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __09__Types_POSTGRESQL {
-    @TestTemplate public void test(MainDataSource ds) {
+    @TestTemplate public void test(PgConnection ds) {
         // bytearray ???
 
         BOOLEAN.eq(

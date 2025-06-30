@@ -7,29 +7,45 @@ import org.jetbrains.annotations.Nullable;
 import javax.tools.*;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 
 public class TestCompiler {
+    
     public record Message(Diagnostic.Kind kind, String text) { }
 
     public static Map<String, SimpleFileManager.ClassFileData> compile(
         List<? extends SimpleJavaFileObject> compilationUnits,
-        List<Message> expectedMessages, @Nullable String containsOutputText
+        List<String> extraArguments, List<Message> expectedMessages,
+        @Nullable String containsOutputText
     ) {
-        var output = new StringWriter();
 
+        var output = new StringWriter();
         var compiler = ToolProvider.getSystemJavaCompiler();
         var fileManager = new SimpleFileManager(
-            compiler.getStandardFileManager(diagnostic -> {
-                var xx = 1;
-            }, null, null));
-
-        var arguments = asList(
-            "--enable-preview", "--source", "21",
-            "-classpath", System.getProperty("java.class.path"),
-            "-Xplugin:" + TrueSqlPlugin.NAME
+            compiler.getStandardFileManager(diagnostic -> { }, null, null)
         );
+
+        var arguments = new ArrayList<String>() {{
+            addAll(asList(
+                // "--enable-preview",
+                "--source", "21",
+                "-proc:full",
+                "-classpath",
+                Arrays.stream(System.getProperty("java.class.path").split(":"))
+                    .filter(cp ->
+                        cp.contains("true-sql") ||
+                        cp.contains("jupiter-api") ||
+                        cp.contains("jetbrains") ||
+                        cp.contains("org.postgresql") ||
+                        cp.contains("apiguardian")
+                    ).collect(Collectors.joining(":")),
+                "-Xplugin:" + TrueSqlPlugin.NAME
+            ));
+        }};
+
+        arguments.addAll(extraArguments);
 
         var hasMessages = new ArrayList<Message>();
 
@@ -58,8 +74,6 @@ public class TestCompiler {
 
         if (containsOutputText != null && !output.toString().contains(containsOutputText))
             throw new RuntimeException("Expected output not exists. Has:\n" + output);
-
-        var xx = 1;
 
         for (var expected : expectedMessages)
             if (!hasMessages.contains(expected))

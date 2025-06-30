@@ -10,6 +10,7 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import net.truej.sql.bindings.Standard;
 import net.truej.sql.compiler.GLangParser.NullMode;
+import net.truej.sql.compiler.InvocationsHandler.FetchInvocationTask;
 import net.truej.sql.compiler.StatementGenerator.AsDefault;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysColumnNames;
 import net.truej.sql.compiler.StatementGenerator.AsGeneratedKeysIndices;
@@ -27,10 +28,11 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static net.truej.sql.compiler.ExistingDtoParser.flattenedDtoType;
+import static net.truej.sql.compiler.InvocationsHandler.*;
 import static net.truej.sql.compiler.TrueSqlPlugin.*;
 
-
 public class InvocationsFinder {
+
     public sealed interface QueryPart { }
     public record TextPart(String text) implements QueryPart { }
     public sealed interface ParameterPart extends QueryPart { }
@@ -176,7 +178,9 @@ public class InvocationsFinder {
         );
     }
 
-    static LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult> find(
+    static List<InvocationsHandler.Task> find(
+        LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult> errors,
+        Map<String, String> annotationProcessorOptions,
         Symtab symtab, Names names, CompilerMessages messages,
         JCTree.JCCompilationUnit cu, JCTree tree, String generatedClassName
     ) {
@@ -188,7 +192,7 @@ public class InvocationsFinder {
             cu.modle, names.fromString(DataSourceW.class.getName())
         );
 
-        var result = new LinkedHashMap<JCTree.JCMethodInvocation, MethodInvocationResult>();
+        var result = new ArrayList<InvocationsHandler.Task>();
 
         new TreeScanner() {
             final Map<Name, Symbol.ClassSymbol> varTypes = new HashMap<>();
@@ -218,12 +222,12 @@ public class InvocationsFinder {
             }
 
             void handleConstraint(
-                JCTree.JCMethodInvocation tree, JCTree.JCExpression sourceExpression
-            ) throws SQLException {
+                List<InvocationsHandler.Task> dest, JCTree.JCMethodInvocation tree,
+                JCTree.JCExpression sourceExpression
+            ) {
                 if (
                     tree.args.length() >= 3 && tree.args.length() <= 5
                 ) {
-
                     if (
                         tree.args.get(tree.args.length() - 3) instanceof JCTree.JCLiteral l3 &&
                         l3.getValue() instanceof String tableName &&
@@ -268,22 +272,21 @@ public class InvocationsFinder {
                         );
 
                         var parsedConfig = ConfigurationParser.parseConfig(
-                            symtab, names, cu, vt, (__, ___) -> { }
+                            annotationProcessorOptions, symtab, names, cu, vt, (__, ___) -> { }
                         );
-                        if (parsedConfig.url() != null)
-                            JdbcMetadataFetcher.checkConstraint(
-                                tree, parsedConfig, catalogName, schemaName, tableName, constraintName
-                            );
+
+                        dest.add(new ConstraintCheckTask(
+                            parsedConfig, tree, catalogName, schemaName, tableName, constraintName
+                        ));
                     }
                 }
             }
 
-            @Nullable FetchInvocation handleFetch(
+            @Nullable FetchInvocationTask handleFetch(
                 JCTree.JCMethodInvocation tree, JCTree.JCFieldAccess f
-            ) throws SQLException {
+            ) {
 
                 var lastError = (ValidationException) null;
-                var warnings = new ArrayList<CompilationWarning>();
                 var fetchMethodName = f.name.toString();
 
                 if (
@@ -478,7 +481,7 @@ public class InvocationsFinder {
                             throw badSource(processorId);
 
                         parsedConfig = ConfigurationParser.parseConfig(
-                            symtab, names, cu, vt, (__, ___) -> { }
+                            annotationProcessorOptions, symtab, names, cu, vt, (__, ___) -> { }
                         );
 
                     } else throw new ValidationException(
@@ -489,224 +492,10 @@ public class InvocationsFinder {
 
                 if (lastError != null) throw lastError;
 
-                // mitigate Java language limitations
-                var _query = query;
-                var _parsedConfig = parsedConfig;
-
-                var parseExistingDto = (Function<ExistingDto, GLangParser.FetchToField>) existing ->
-                    (GLangParser.FetchToField) ExistingDtoParser.parse(
-                        _parsedConfig.typeBindings(), true, false, "result",
-                        existing.nullMode, names.init, existing.toType
-                    );
-
-                final GLangParser.FetchToField toDto;
-                var jdbcMetadata = parsedConfig.url() == null ? null :
-                    JdbcMetadataFetcher.fetch(
-                        parsedConfig.url(), parsedConfig.username(), parsedConfig.password(),
-                        query, statementMode
-                    );
-
-                var stMode = statementMode;
-
-                var makeColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () -> {
-                    var mapColumns = (Supplier<@Nullable List<GLangParser.ColumnMetadata>>) () ->
-                        jdbcMetadata.columns() == null ? null :
-                            jdbcMetadata.columns().stream().map(c ->
-                                new GLangParser.ColumnMetadata(
-                                    c.nullMode(),
-                                    c.sqlType(),
-                                    c.sqlTypeName(),
-                                    c.javaClassName(),
-                                    c.columnName(),
-                                    c.columnLabel(),
-                                    c.scale(),
-                                    c.precision()
-                                )
-                            ).toList();
-
-                    return switch (stMode) {
-                        case StatementGenerator.StatementLike __ -> mapColumns.get();
-                        case StatementGenerator.AsCall __ -> {
-                            if (jdbcMetadata.onDatabase().equals(DatabaseNames.POSTGRESQL_DB_NAME))
-                                yield mapColumns.get();
-
-                            // FIXME: проверка call и unfold одновременно? ???
-                            // FIXME: проверка batch и unfold одновременно? ???
-                            var pMetadata = jdbcMetadata.parameters();
-                            if (pMetadata == null) yield null;
-
-                            yield Arrays.stream(getOutParametersNumbers(_query))
-                                .mapToObj(i -> {
-                                    var p = pMetadata.get(i - 1);
-                                    return new GLangParser.ColumnMetadata(
-                                        p.nullMode(),
-                                        p.sqlType(),
-                                        p.sqlTypeName(),
-                                        p.javaClassName(),
-                                        null,
-                                        "c" + i,
-                                        p.scale(),
-                                        p.precision()
-                                    );
-                                }).toList();
-                        }
-                    };
-                };
-
-                var handleNullabilityMismatch = (BiConsumer<Boolean, String>)
-                    (isWarningOnly, message) -> {
-                        if (isWarningOnly)
-                            warnings.add(new CompilationWarning(tree, message));
-                        else
-                            throw new ValidationException(tree, message);
-                    };
-
-                toDto = switch (dtoMode) {
-                    case null -> null;
-                    case ExistingDto existing -> {
-                        var parsed = parseExistingDto.apply(existing);
-                        var dtoFields = flattenedDtoType(parsed);
-
-                        if (jdbcMetadata == null) yield parsed;
-                        var columns = makeColumns.get();
-                        if (columns == null) yield parsed;
-
-                        if (dtoFields.size() != columns.size())
-                            throw new ValidationException(
-                                tree, "target type implies " + dtoFields.size() + " columns but result has "
-                                      + columns.size()
-                            );
-
-                        for (var i = 0; i < dtoFields.size(); i++) {
-                            var ii = i;
-                            var field = dtoFields.get(i);
-                            var column = columns.get(i);
-
-                            TypeChecker.assertNullabilityCompatible(
-                                column.nullMode(),
-                                field.nullMode(),
-                                (isWarningOnly, sqlNullMode, javaNullMode) ->
-                                    handleNullabilityMismatch.accept(
-                                        isWarningOnly,
-                                        "nullability mismatch for column " + (ii + 1) +
-                                        " (for field `" + field.name() + "`). Your decision is " +
-                                        javaNullMode + " but driver infers " + sqlNullMode
-                                    )
-                            );
-
-                            TypeChecker.assertTypesCompatible(
-                                jdbcMetadata.onDatabase(),
-                                column.sqlType(), // FIXME: pass column ???
-                                column.sqlTypeName(),
-                                column.javaClassName(),
-                                column.scale(),
-                                field.binding(),
-                                (typeKind, expected, has) -> new ValidationException(
-                                    tree, typeKind + " mismatch for column " + (ii + 1) +
-                                          " (for field `" + field.name() + "`). Expected " +
-                                          expected + " but has " + has
-                                )
-                            );
-                        }
-
-                        yield parsed;
-                    }
-                    case GenerateDto gDto -> {
-                        if (jdbcMetadata == null)
-                            throw new ValidationException(
-                                tree, "compile time checks must be enabled for .g"
-                            );
-
-                        var columns = makeColumns.get();
-
-                        if (columns == null)
-                            throw new ValidationException(
-                                tree, ".g mode is not available because column metadata is not provided by JDBC driver"
-                            );
-
-                        var fields = GLangParser.parseResultSetColumns(
-                            columns, (column, columnIndex, javaClassNameHint, nullModeHint) -> {
-
-                                final NullMode nullMode;
-                                if (nullModeHint != NullMode.DEFAULT_NOT_NULL) {
-                                    TypeChecker.assertNullabilityCompatible(
-                                        column.nullMode(), nullModeHint,
-                                        (isWarningOnly, sqlNullMode, javaNullMode) ->
-                                            handleNullabilityMismatch.accept(
-                                                // FIXME: deduplicate message common part
-                                                isWarningOnly,
-                                                "nullability mismatch for column " + (columnIndex + 1) +
-                                                " (for generated dto field `" + column.columnLabel() + "`). Your decision is " +
-                                                javaNullMode + " but driver infers " + sqlNullMode
-                                            )
-                                    );
-                                    nullMode = nullModeHint;
-                                } else
-                                    nullMode = column.nullMode();
-
-                                final Standard.Binding binding;
-                                if (javaClassNameHint != null) {
-                                    binding = TypeChecker.getBindingForClass(
-                                        tree, _parsedConfig.typeBindings(), false, javaClassNameHint
-                                    );
-
-                                    TypeChecker.assertTypesCompatible(
-                                        jdbcMetadata.onDatabase(), column.sqlType(), column.sqlTypeName(),
-                                        column.javaClassName(), column.scale(), binding,
-                                        (typeKind, expected, has) -> new ValidationException(
-                                            tree, typeKind + " mismatch for column " + (columnIndex + 1) +
-                                                  " (for generated dto field `" + column.columnLabel() +
-                                                  "`). Expected " + expected + " but has " + has
-                                        )
-                                    );
-                                } else
-                                    binding = TypeChecker.getBindingForClass(
-                                        tree, _parsedConfig.typeBindings(), true, TypeChecker.inferType(
-                                            _parsedConfig, jdbcMetadata.onDatabase(), column, nullMode
-                                        )
-                                    );
-
-                                return new GLangParser.BindColumn.Result(
-                                    binding, nullMode
-                                );
-                            }
-                        );
-
-                        yield new GLangParser.ListOfGroupField(
-                            "result", gDto.dtoClassName.toString(), fields
-                        );
-                    }
-                };
-
-                var fetchMode = switch (fetchMethodName) {
-                    case "fetchOne" -> new StatementGenerator.FetchOne(toDto);
-                    case "fetchOneOrZero" -> new StatementGenerator.FetchOneOrZero(toDto);
-                    case "fetchList" -> new StatementGenerator.FetchList(toDto);
-                    case "fetchStream" -> new StatementGenerator.FetchStream(toDto);
-                    default /* fetchNone */ -> new StatementGenerator.FetchNone();
-                };
-
-                var generatedCode = StatementGenerator.generate(
-                    className ->
-                        _parsedConfig.typeBindings().stream()
-                            .filter(b -> b.className().equals(className))
-                            .findFirst().get().rwClassName().replace('$', '.'),
-                    lineNumber,
-                    sourceMode,
-                    query,
-                    statementMode,
-                    fetchMode,
-                    dtoMode instanceof GenerateDto,
-                    isWithUpdateCount
-                );
-
-                return new FetchInvocation(
-                    jdbcMetadata == null ? null : jdbcMetadata.onDatabase(),
-                    parsedConfig.typeBindings(),
-                    generatedClassName, fetchMethodName, lineNumber, warnings,
-                    sourceExpression, query,
-                    jdbcMetadata == null ? null : jdbcMetadata.parameters(),
-                    generatedCode
+                return new FetchInvocationTask(
+                    parsedConfig, tree, fetchMethodName, generatedClassName,
+                    lineNumber, sourceMode, sourceExpression,
+                    query, statementMode, dtoMode, isWithUpdateCount
                 );
             }
 
@@ -718,8 +507,8 @@ public class InvocationsFinder {
                             fa.name.equals(names.fromString("withConnection")) ||
                             fa.name.equals(names.fromString("inTransaction"))
                         ) &&
-                        tree.args.size() == 1 &&
-                        tree.args.head instanceof JCTree.JCLambda lmb &&
+                        (tree.args.size() == 1 || tree.args.size() == 2) &&
+                        tree.args.last() instanceof JCTree.JCLambda lmb &&
                         lmb.params.size() == 1
                     ) {
                         // Fixme: check that receiver is JCIdent
@@ -734,18 +523,15 @@ public class InvocationsFinder {
                         tree.meth instanceof JCTree.JCFieldAccess fa &&
                         fa.name.equals(names.fromString("constraint"))
                     ) {
-                        handleConstraint(tree, fa.selected);
+                        handleConstraint(result, tree, fa.selected);
                     } else if (tree.meth instanceof JCTree.JCFieldAccess f) {
                         var fetchInvocation = handleFetch(tree, f);
                         if (fetchInvocation != null)
-                            result.put(tree, fetchInvocation);
+                            result.add(fetchInvocation);
                     }
                 } catch (
                     ValidationException |
-                    GLangParser.ParseException |
-                    ExistingDtoParser.ParseException |
-                    ConfigurationParser.ParseException |
-                    SQLException e
+                    ConfigurationParser.ParseException e
                 ) {
                     // Эти ошибки нужно отдать в javac именно в этот момент.
                     // Если закончится раунд процессинга аннотаций, а ошибка не записана
@@ -755,7 +541,7 @@ public class InvocationsFinder {
                 } catch (
                     DeferredValidationException e
                 ) {
-                    result.put(tree, new ValidationError(tree, e.getMessage()));
+                    errors.put(tree, new ValidationError(e.tree, e.getMessage()));
                 }
 
                 super.visitApply(tree);
@@ -763,17 +549,5 @@ public class InvocationsFinder {
         }.scan(tree);
 
         return result;
-    }
-
-    static int[] getOutParametersNumbers(StatementGenerator.Query query) {
-        var parameters = query.parts().stream()
-            .filter(p -> !(p instanceof TextPart)).toList();
-
-        return IntStream.range(
-            0, parameters.size()
-        ).filter(i ->
-            parameters.get(i) instanceof InoutParameter ||
-            parameters.get(i) instanceof OutParameter
-        ).map(i -> i + 1).toArray();
     }
 }

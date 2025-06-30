@@ -303,38 +303,43 @@ public class StatementGenerator {
                 queryText = o -> {
                     var pIndex = new int[]{1};
 
-                    var generator = Out.each(
-                        sp.parts, "\n", (oo, __, p) -> switch (p) {
-                            case InvocationsFinder.TextPart t -> oo.w(
-                                "buffer.append(\"\"\"\n", t.text(), "\"\"\");"
-                            );
-                            case InvocationsFinder.SingleParameter ___ -> {
-                                pIndex[0]++;
-                                yield oo.w("buffer.append(\" ? \");");
-                            }
-                            case InvocationsFinder.UnfoldParameter up -> {
-                                var n = unfoldArgumentsCount(up.extractor());
-                                var unfolded = Out.each(
-                                    IntStream.range(0, n).boxed().toList(),
-                                    ", ", (ooo, ___, ____) -> ooo.w("?")
+                    if (sp.parts.stream().anyMatch(
+                        p -> p instanceof InvocationsFinder.UnfoldParameter
+                    ))
+                        return o.w(
+                            "var buffer = new StringBuilder();\n\n",
+                            Out.each(sp.parts, "\n", (oo, __, p) -> switch (p) {
+                                case InvocationsFinder.TextPart t -> oo.w(
+                                    "buffer.append(\"\"\"\n", t.text(), "\"\"\");"
                                 );
+                                case InvocationsFinder.SingleParameter ___ -> {
+                                    pIndex[0]++;
+                                    yield oo.w("buffer.append(\" ? \");");
+                                }
+                                case InvocationsFinder.UnfoldParameter up -> {
+                                    var n = unfoldArgumentsCount(up.extractor());
+                                    var unfolded = Out.each(
+                                        IntStream.range(0, n).boxed().toList(),
+                                        ", ", (ooo, ___, ____) -> ooo.w("?")
+                                    );
 
-                                yield oo.w(
-                                    "for (var i = 0; i < p", pIndex[0], ".size(); i++) {\n",
-                                    "    buffer.append(\" (", unfolded, ") \");\n",
-                                    "    if (i != p", pIndex[0]++, ".size() - 1)\n",
-                                    "        buffer.append(\", \");\n",
-                                    "}"
-                                );
-                            }
-                        }
-                    );
+                                    yield oo.w(
+                                        "for (var i = 0; i < p", pIndex[0], ".size(); i++) {\n",
+                                        "    buffer.append(\" (", unfolded, ") \");\n",
+                                        "    if (i != p", pIndex[0]++, ".size() - 1)\n",
+                                        "        buffer.append(\", \");\n",
+                                        "}"
+                                    );
+                                }
+                            }), "\n\n",
+                            "var query = buffer.toString()"
+                        );
 
-                    return o.w(
-                        "var buffer = new StringBuilder();\n\n",
-                        generator, "\n\n",
-                        "var query = buffer.toString()"
-                    );
+                    else
+                        return out.w("var query = \"\"\"\n", Out.each(sp.parts, "\n",
+                            (oo, __, p) -> p instanceof InvocationsFinder.TextPart t ?
+                                oo.w(t.text()) : oo.w(" ? ")
+                        ), "\"\"\"");
                 };
 
                 setParameters = o -> {
@@ -412,73 +417,23 @@ public class StatementGenerator {
             case AsGeneratedKeys __ -> o.w("var rs = stmt.getGeneratedKeys();");
         };
 
-        var wrapResultWithUpdateCount = (Function<String, String>) result -> {
-            var wrapper = fetchAs instanceof FetchStream ? "UpdateResultStream" : "UpdateResult";
-            return withUpdateCount
-                ? "new " + wrapper + "<>(" + updateCount + ", " + result + ")" : result;
-        };
-
         var doFetch = (WriteNext) o -> switch (fetchAs) {
             case FetchNone __ -> withUpdateCount
                 ? o.w("return ", updateCount, ";")
                 : o.w("return null;");
             case FetchTo to -> {
+
                 MapperGenerator.generate(
-                    o, to.toField(), prepareAs instanceof AsCall ?
-                        InvocationsFinder.getOutParametersNumbers(query) : null, typeToRwClass
+                    o, source, to, to.toField(),
+                    prepareAs instanceof AsCall ? InvocationsHandler.getOutParametersNumbers(query) : null,
+                    typeToRwClass
                 );
 
-                yield switch (to) {
-                    case FetchList __ ->
-                        o.w("return ", wrapResultWithUpdateCount.apply("mapped.toList()"), ";");
-                    case FetchOne __ -> prepareAs instanceof AsCall ?
-                        o.w("return ", wrapResultWithUpdateCount.apply("mapped"), ";\n") :
-                        o.w(
-                            "var iterator = mapped.iterator();\n",
-                            "if (iterator.hasNext()) {\n",
-                            "    var result = iterator.next();\n",
-                            "    if (iterator.hasNext())\n",
-                            "        throw new TooMuchRowsException();\n",
-                            "\n",
-                            "    return ", wrapResultWithUpdateCount.apply("result"), ";\n",
-                            "} else\n",
-                            "    throw new TooFewRowsException();\n"
-                        );
-                    case FetchOneOrZero __ -> o.w(
-                        "var iterator = mapped.iterator();\n",
-                        "if (iterator.hasNext()) {\n",
-                        "    var result = iterator.next();\n",
-                        "    if (iterator.hasNext())\n",
-                        "        throw new TooMuchRowsException();\n",
-                        "    return ", wrapResultWithUpdateCount.apply("result"), ";\n",
-                        "}\n",
-                        "\n",
-                        "return ", wrapResultWithUpdateCount.apply("null"), ";"
-                    );
-                    case FetchStream __ -> {
-                        var closeRoutine = (WriteNext) oo ->
-                            source == SourceMode.DATASOURCE ? oo.w(
-                                "try {\n" +
-                                "    stmt.close();\n" +
-                                "} finally {\n",
-                                "    connection.close();\n",
-                                "}"
-                            ) : oo.w(
-                                "stmt.close();"
-                            );
-
-                        yield o.w(
-                            "var closable = mapped.onClose(() -> {\n",
-                            "    try {\n",
-                            "    ", closeRoutine, "\n",
-                            "     } catch(SQLException e) {\n" +
-                            "         throw source.mapException(e);\n",
-                            "     }\n",
-                            "});\n",
-                            "return ", wrapResultWithUpdateCount.apply("closable"), ";"
-                        );
-                    }
-                };
+                var wrapper = fetchAs instanceof FetchStream ? "UpdateResultStream" : "UpdateResult";
+                yield out.w(
+                    "return ", withUpdateCount ?
+                        "new " + wrapper + "<>(" + updateCount + ", mapped)" : "mapped", ";\n"
+                );
             }
         };
 

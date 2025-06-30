@@ -126,7 +126,10 @@ public class ExistingDtoParser {
                     );
             }).toList();
 
-            return new ListOfGroupField(toFieldName, dtoType.toString(), fields);
+            return new ListOfGroupField(
+                toFieldName, ((Symbol.ClassSymbol) dtoType.tsym).isRecord(),
+                dtoType.toString(), fields
+            );
         }
     }
 

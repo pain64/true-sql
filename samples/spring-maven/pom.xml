@@ -8,32 +8,23 @@
 		<version>3.3.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
+
 	<groupId>net.truej</groupId>
 	<artifactId>truesql-samples-spring-maven</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>truesql-samples-spring-maven</name>
 	<description>Demo project for TrueSql and Spring Boot integration</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
 	<properties>
 		<java.version>21</java.version>
+        <truesql.version>3.0.0-beta8</truesql.version>
 	</properties>
+
 	<dependencies>
         <dependency>
             <groupId>net.truej</groupId>
             <artifactId>sql</artifactId>
-            <version>3.0.0-beta7</version>
+            <version>${truesql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -73,7 +64,7 @@
                         <annotationProcessorPath>
                             <groupId>net.truej</groupId>
                             <artifactId>sql</artifactId>
-                            <version>3.0.0-beta7</version>
+                            <version>${truesql.version}</version>
                         </annotationProcessorPath>
                         <annotationProcessorPath>
                             <groupId>org.postgresql</groupId>
@@ -86,6 +77,32 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
+			<plugin>
+				<groupId>org.liquibase</groupId>
+				<artifactId>liquibase-maven-plugin</artifactId>
+				<version>4.31.1</version>
+				<configuration>
+					<changeLogFile>migrations/changelog.xml</changeLogFile>
+					<url>jdbc:postgresql://localhost:5433/postgres</url>
+					<username>postgres</username>
+					<password>1234</password>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.postgresql</groupId>
+						<artifactId>postgresql</artifactId>
+						<version>42.7.3</version>
+					</dependency>
+				</dependencies>
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<phase>process-resources</phase>-->
+<!--						<goals>-->
+<!--							<goal>update</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--				</executions>-->
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

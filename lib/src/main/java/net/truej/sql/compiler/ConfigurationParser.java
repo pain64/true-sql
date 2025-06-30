@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -27,8 +28,13 @@ public class ConfigurationParser {
         String url, String username, String password, List<Standard.Binding> typeBindings
     ) { }
 
-    public static @Nullable String findProperty(String propertyName) {
-        var prop = System.getProperty(propertyName);
+    public static @Nullable String findProperty(
+        Map<String, String> annotationProcessorOptions, String propertyName
+    ) {
+        var prop = annotationProcessorOptions.get(propertyName);
+        if (prop != null) return prop;
+
+        prop = System.getProperty(propertyName);
         if (prop != null) return prop;
 
         prop = System.getenv(propertyName);
@@ -36,13 +42,14 @@ public class ConfigurationParser {
     }
 
     public static ParsedConfiguration parseConfig(
+        Map<String, String> annotationProcessorOptions,
         Symtab symtab, Names names, JCTree.JCCompilationUnit cu,
         Symbol.ClassSymbol annotated, BiConsumer<String, String> onPropertyParsed
     ) {
         var parseProperty = (BiFunction<String, String, String>)
             (parameterName, valueInAnnotation) -> {
                 var propertyName = "truesql." + annotated.className() + "." + parameterName;
-                var prop = findProperty(propertyName);
+                var prop = findProperty(annotationProcessorOptions, propertyName);
 
                 if (prop == null)
                     if (!valueInAnnotation.equals(Configuration.STRING_NOT_DEFINED))

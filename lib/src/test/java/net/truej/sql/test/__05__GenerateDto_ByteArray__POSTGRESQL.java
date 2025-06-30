@@ -1,7 +1,5 @@
 package net.truej.sql.test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainConnection;
 import net.truej.sql.compiler.TrueSqlTests;
@@ -15,16 +13,15 @@ import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 
 @ExtendWith(TrueSqlTests.class) @EnableOn(POSTGRESQL)
 @TrueSql public class __05__GenerateDto_ByteArray__POSTGRESQL {
-        @TestTemplate public void test(MainConnection cn) throws JsonProcessingException {
-            Assertions.assertEquals(
-                """
-                   [ {
-                     "data" : "AQID"
-                   } ]""",
-                new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
-                    cn.q("select decode('010203', 'hex') as data")
-                        .g.fetchList(ByteArrayWrapper.class)
-                )
-            );
-        }
+
+    @TestTemplate public void test(MainConnection cn)
+        throws NoSuchFieldException, IllegalAccessException {
+
+        var wrapper = (Object) cn.q("select decode('010203', 'hex') as data")
+            .g.fetchOne(ByteArrayWrapper.class);
+
+        var bytes = (byte[]) wrapper.getClass().getField("data").get(wrapper);
+
+        Assertions.assertArrayEquals(new byte[]{1, 2, 3}, bytes);
+    }
 }

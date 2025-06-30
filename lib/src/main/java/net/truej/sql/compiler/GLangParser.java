@@ -186,7 +186,7 @@ public class GLangParser {
     ) implements Field, Aggregated { }
 
     public record ListOfGroupField(
-        String name, String newJavaClassName, List<Field> fields
+        String name, boolean isRecord, String newJavaClassName, List<Field> fields
     ) implements FetchToField, Aggregated { }
 
     public record NumberedColumn(int n, ColumnMetadata column, Line line) { }
@@ -276,7 +276,7 @@ public class GLangParser {
                         throw new ParseException("Aggregated java class name required");
 
                     return new ListOfGroupField(
-                        groupFieldName, groupClassName,
+                        groupFieldName, false, groupClassName,
                         buildGroup(
                             bindColumn, groupLines.stream().map(nl ->
                                 new NumberedColumn(

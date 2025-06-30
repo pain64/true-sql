@@ -20,8 +20,8 @@ import java.util.List;
 
     @Configuration(
         checks = @CompileTimeChecks(
-            url = "jdbc:postgresql://localhost:5432/truesqldb",
-            username = "sa",
+            url = "jdbc:postgresql://localhost:5433/postgres",
+            username = "postgres",
             password = "1234"
         )
     ) static class MainDb extends DataSourceW {

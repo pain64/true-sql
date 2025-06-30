@@ -1,55 +1,9 @@
-drop procedure if exists hui;
----
-create procedure hui
-as begin
-    DECLARE @DropConstraints NVARCHAR(max) = ''
-    SELECT @DropConstraints += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.'
-                            +  QUOTENAME(OBJECT_NAME(parent_object_id)) + ' ' + 'DROP CONSTRAINT' + QUOTENAME(name)
-    FROM sys.foreign_keys
-    EXECUTE sp_executesql @DropConstraints;
-end;
----
-exec hui;
-
-drop table if exists users;
-drop table if exists city;
-drop table if exists clinic;
-drop table if exists bill;
-drop table if exists clinic_users;
-drop table if exists user_bills;
-
-drop sequence if exists users_id_seq;
-
-drop procedure if exists digit_magic;
-drop procedure if exists bill_zero;
-drop procedure if exists discount_bill;
-drop procedure if exists p_bit;
-drop procedure if exists p_tinyint;
-drop procedure if exists p_smallint;
-drop procedure if exists p_int;
-drop procedure if exists p_bigint;
-drop procedure if exists p_real;
-drop procedure if exists p_float;
-drop procedure if exists p_decimal;
-drop procedure if exists p_varchar;
-drop procedure if exists p_date;
-drop procedure if exists p_time;
-drop procedure if exists p_datetime;
-drop procedure if exists p_datetimeoffset;
-drop procedure if exists p_varbinary;
-drop procedure if exists p_uniqueidentifier;
----
-
-CREATE SEQUENCE users_id_seq
-AS bigint START WITH 1 INCREMENT BY 1;
-
 create table users (
-    id bigint not null DEFAULT NEXT VALUE FOR users_id_seq,
+    id bigint not null,
     name varchar(100) not null,
     info varchar(200),
     constraint users_pk PRIMARY KEY(id)
 );
-
 ---
 create table city (
     id bigint not null PRIMARY KEY,
@@ -82,6 +36,10 @@ create table user_bills (
     bill_id bigint not null,
     constraint user_bills_fk0   foreign key (user_id)   references users(id),
     constraint user_bills_fk1   foreign key (bill_id)   references bill(id)
+);
+---
+create table for_insert (
+    id bigint not null
 );
 ---
 create procedure bill_zero
