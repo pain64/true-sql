@@ -10,6 +10,7 @@ import com.sun.tools.javac.util.Names;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 public class TypeFinder {
 
@@ -20,12 +21,14 @@ public class TypeFinder {
     }
 
     static Type mapArrayOrScalarType(
-        Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
+        Names names, Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
     ) {
         if (tree instanceof JCTree.JCArrayTypeTree at)
-            return new Type.ArrayType(mapArrayOrScalarType(symtab, cu, at.elemtype), symtab.arrayClass);
+            return new Type.ArrayType(
+                mapArrayOrScalarType(names, symtab, cu, at.elemtype), symtab.arrayClass
+            );
         else {
-            var found = find(symtab, cu, tree);
+            var found = find(names, symtab, cu, tree);
             if (found == null) throw badFormat(tree);
             return found;
         }
@@ -38,7 +41,7 @@ public class TypeFinder {
         if (tree instanceof JCTree.JCFieldAccess fa) {
             if (!fa.name.equals(names.fromString("class")))
                 throw badFormat(fa);
-            return mapArrayOrScalarType(symtab, cu, fa.selected);
+            return mapArrayOrScalarType(names, symtab, cu, fa.selected);
         } else
             throw badFormat(tree);
     }
@@ -52,8 +55,11 @@ public class TypeFinder {
         return new Type.ClassType(Type.noType, List.nil(), found);
     }
 
+    private static final Pattern IS_INNER_CLASS_PATTERN =
+        Pattern.compile("(\\.\\p{Lu}\\S*\\.\\p{Lu})");
+
     public static @Nullable Type find(
-        Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
+        Names names, Symtab symtab, JCTree.JCCompilationUnit cu, JCTree.JCExpression tree
     ) {
         Predicate<Symbol> isClass = s -> s instanceof Symbol.ClassSymbol;
 
@@ -110,10 +116,20 @@ public class TypeFinder {
                 }
             }
 
-            var found = symtab.getClass(cu.modle, fqn);
+            var flatName = names.fromString(
+                IS_INNER_CLASS_PATTERN
+                    .matcher(fqn.toString())
+                    .replaceAll(m -> {
+                        var s = m.group(1);
+                        return s.substring(0, s.length() - 2)
+                               + "\\$" + s.charAt(s.length() - 1);
+                    })
+            );
+
+            var found = symtab.getClass(cu.modle, flatName);
 
             if (found == null)
-                found = symtab.getClass(symtab.java_base, fqn);
+                found = symtab.getClass(symtab.java_base, flatName);
 
             if (found == null)
                 return null;

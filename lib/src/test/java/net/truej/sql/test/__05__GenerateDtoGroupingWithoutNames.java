@@ -23,19 +23,19 @@ import static net.truej.sql.util.Formatter.pretty;
                 User[
                   name=Joe, info=null, bills=[
                     Bill2[
-                      date=2024-07-01T12:00Z, amount=2000.55]
+                      id=1, date=2024-07-01T12:00Z, amount=2000.55]
                     , Bill2[
-                      date=2024-07-01T16:00Z, amount=1000.20]
+                      id=2, date=2024-07-01T16:00Z, amount=1000.20]
                     ]
                   ]
                 , User[
                   name=Donald, info=Do not disturb, bills=[
                     Bill2[
-                      date=2024-08-01T15:00Z, amount=5000.00]
+                      id=3, date=2024-08-01T15:00Z, amount=5000.00]
                     , Bill2[
-                      date=2024-08-01T15:00Z, amount=7000.77]
+                      id=4, date=2024-08-01T15:00Z, amount=7000.77]
                     , Bill2[
-                      date=2024-09-01T15:00Z, amount=500.10]
+                      id=5, date=2024-09-01T15:00Z, amount=500.10]
                     ]
                   ]
                 ]
@@ -45,7 +45,8 @@ import static net.truej.sql.util.Formatter.pretty;
                     select
                         u.name                   ,
                         u.info                   ,
-                        b.date   as "Bill2 bills.",
+                        b.id     as "Bill2 bills.",
+                        b.date   as "      bills.",
                         b.amount as "      bills."
                     from users u
                         left join user_bills   ub  on ub.user_id    = u.id

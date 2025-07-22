@@ -73,6 +73,9 @@ import java.sql.Types;
     }
 ) public class MainDataSource extends DataSourceW {
 
+    // Checks that codegen handles inner class as binding successfully
+    public enum UserSex {FEMALE, MALE}
+
     public static class PgPointRW extends AsObjectReadWrite<PGpoint> {
         @Override public Class<PGpoint> aClass() { return PGpoint.class; }
         @Override public int sqlType() { return Types.OTHER; }

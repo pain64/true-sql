@@ -141,8 +141,8 @@ public class TrueSqlPlugin implements Plugin {
     }
 
     static String classNameToSourceCodeType(String className) {
-        return className.startsWith("[") ?
-            arrayClassNameToSourceCodeType(className) : className;
+        return (className.startsWith("[") ?
+            arrayClassNameToSourceCodeType(className) : className).replace("$", ".");
     }
 
     static String arrayTypeToClassName(Type type) {

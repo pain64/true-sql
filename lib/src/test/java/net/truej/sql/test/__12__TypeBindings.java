@@ -3,13 +3,13 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests;
-import net.truej.sql.compiler.UserSex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.geometric.PGpoint;
 
 
+import static net.truej.sql.compiler.MainDataSource.*;
 import static net.truej.sql.compiler.TrueSqlTests.*;
 import static net.truej.sql.compiler.TrueSqlTests.Database.POSTGRESQL;
 import static net.truej.sql.fetch.Parameters.*;

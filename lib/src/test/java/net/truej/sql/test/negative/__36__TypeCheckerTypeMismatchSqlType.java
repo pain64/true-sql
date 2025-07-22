@@ -7,9 +7,9 @@ import net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import net.truej.sql.compiler.TrueSqlTests.Message;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import net.truej.sql.compiler.UserSex;
 
 import static javax.tools.Diagnostic.Kind.ERROR;
+import static net.truej.sql.compiler.MainDataSource.*;
 import static net.truej.sql.compiler.TrueSqlTests.Database.MYSQL;
 
 @ExtendWith(TrueSqlTests.class) @EnableOn(MYSQL)

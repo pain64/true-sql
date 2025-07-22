@@ -13,11 +13,11 @@ import static net.truej.sql.compiler.StatementGenerator.*;
 public class MapperGenerator {
 
     private record GroupInfo(
-        String keyClassName, int offset, int count, boolean isTerminal, boolean isIndexNeeded
+        String keyClassName, int offset, int count, boolean isIndexNeeded
     ) { }
 
     private static GroupInfo dtoForGroupKeys(
-        Out out, int offset, boolean isLast, ListOfGroupField lgf
+        Out out, int offset, ListOfGroupField lgf
     ) {
 
         var locals = lgf.fields().stream()
@@ -34,31 +34,28 @@ public class MapperGenerator {
 
         var currentOffset = offset + locals.size();
         for (var i = 0; i < next.size(); i++) {
-            var isCurrentLast = i == next.size() - 1 && isLast;
 
             switch (next.get(i)) {
                 case ListOfGroupField lgf2 -> {
                     var groupInfo = dtoForGroupKeys(
-                        out, currentOffset, isCurrentLast, lgf2
+                        out, currentOffset, lgf2
                     );
 
                     currentOffset += groupInfo.count;
 
-                    if (!(isCurrentLast && groupInfo.isTerminal))
-                        indexedNext.add(
-                            ", HashMap<" +
-                            boxedClassName(groupInfo.keyClassName) + ", " + (
-                                groupInfo.isIndexNeeded ? "I" + groupInfo.offset : lgf2.newJavaClassName())
-                            + "> n" + i
-                        );
+                    indexedNext.add(
+                        ", HashMap<" +
+                        boxedClassName(groupInfo.keyClassName) + ", " + (
+                            groupInfo.isIndexNeeded ? "I" + groupInfo.offset : lgf2.newJavaClassName())
+                        + "> n" + i
+                    );
                 }
                 case ListOfScalarField lsf2 -> {
                     currentOffset++;
-                    if (!isCurrentLast)
-                        indexedNext.add(
-                            ", HashMap<" + boxedClassName(lsf2.binding().className()) + ", "
-                            + boxedClassName(lsf2.binding().className()) + "> n" + i
-                        );
+                    indexedNext.add(
+                        ", HashMap<" + boxedClassName(lsf2.binding().className()) + ", "
+                        + boxedClassName(lsf2.binding().className()) + "> n" + i
+                    );
                 }
             }
         }
@@ -71,16 +68,14 @@ public class MapperGenerator {
             );
 
         return new GroupInfo(
-            keyField.binding().className(), offset, currentOffset - offset,
-            next.isEmpty(), !indexedNext.isEmpty()
+            keyField.binding().className(), offset, currentOffset - offset, !indexedNext.isEmpty()
         );
     }
 
     private static int nextOperations(
         Function<String, String> typeToRwClass,
         Out out, int offset,
-        String idx, String to, boolean toIsRecord,
-        boolean isLast, Aggregated agg
+        String idx, String to, boolean toIsRecord, Aggregated agg
     ) {
 
         var getField = (BiFunction<Standard.Binding, Integer, String>) (b, i) ->
@@ -96,18 +91,13 @@ public class MapperGenerator {
                     "if (k", offset, " == null) continue;\n"
                 );
 
-                if (isLast)
-                    out.w(
-                        toCollection.apply(lsf.name()), ".add(k", offset, ");\n"
-                    );
-                else
-                    out.w(
-                        "var e", offset, " = ", idx, ".get(k", offset, ");\n",
-                        "if (e", offset, " == null) {\n",
-                        "    ", idx, ".put(k", offset, ", k", offset, ");\n",
-                        "    ", toCollection.apply(lsf.name()), ".add(k", offset, ");\n",
-                        "}\n"
-                    );
+                out.w(
+                    "var e", offset, " = ", idx, ".get(k", offset, ");\n",
+                    "if (e", offset, " == null) {\n",
+                    "    ", idx, ".put(k", offset, ", k", offset, ");\n",
+                    "    ", toCollection.apply(lsf.name()), ".add(k", offset, ");\n",
+                    "}\n"
+                );
                 yield 1;
             }
             case ListOfGroupField lgf -> {
@@ -122,23 +112,7 @@ public class MapperGenerator {
                     .filter(f -> f instanceof Aggregated)
                     .map(f -> (Aggregated) f).toList();
 
-                var indices = new ArrayList<Aggregated>();
-                for (var i = 0; i < next.size(); i++) {
-                    switch (next.get(i)) {
-                        case ListOfGroupField lgf2 -> {
-                            var isTerminal = lgf2.fields().stream()
-                                .noneMatch(f -> f instanceof Aggregated);
-                            if (!(isLast && i == next.size() - 1 && isTerminal))
-                                indices.add(lgf2);
-                        }
-                        case ListOfScalarField lsf2 -> {
-                            if (!(isLast && i == next.size() - 1))
-                                indices.add(lsf2);
-                        }
-                    }
-                }
-
-                var isIndexed = !indices.isEmpty();
+                var isIndexed = !next.isEmpty();
 
                 var mapFields = (WriteNext) o -> {
                     for (var i = 1; i < locals.size(); i++)
@@ -152,39 +126,29 @@ public class MapperGenerator {
                     "if (k", offset, " == null) continue;\n"
                 );
 
-                if (isLast && next.isEmpty())
-                    out.w(
-                        "var e", offset, " = new ", lgf.newJavaClassName(), "(\n",
-                        "     k", offset, "\n",
-                        "    ", mapFields, "\n",
-                        ");\n",
-                        toCollection.apply(lgf.name()), ".add(e", offset, ");\n"
-                    );
-                else
-                    out.w(
-                        "var e", offset, " = ", idx, ".get(k", offset, ");\n",
-                        "if (e", offset, " == null) {\n",
-                        "    e", offset, " = ", (isIndexed ? "new I" + offset + "(" : ""), "\n",
-                        "        new ", lgf.newJavaClassName(), "(\n",
-                        "            k", offset, "\n",
-                        "            ", mapFields, "\n",
-                        "            ", Out.each(next, "\n", (o, __, ___) -> o.w(", new ArrayList<>()")), "\n",
-                        "        )\n",
-                        "        ", Out.each(indices, "\n", (o, __, ___) -> o.w(", new HashMap<>()")), "\n",
-                        "    ", (isIndexed ? ")" : ""), ";\n",
-                        "    ", idx, ".put(k", offset, ", e", offset, ");\n",
-                        "    ", toCollection.apply(lgf.name()), ".add(e", offset, (isIndexed ? ".v" : ""), ");\n",
-                        "}\n\n"
-                    );
+                out.w(
+                    "var e", offset, " = ", idx, ".get(k", offset, ");\n",
+                    "if (e", offset, " == null) {\n",
+                    "    e", offset, " = ", (isIndexed ? "new I" + offset + "(" : ""), "\n",
+                    "        new ", lgf.newJavaClassName(), "(\n",
+                    "            k", offset, "\n",
+                    "            ", mapFields, "\n",
+                    "            ", Out.each(next, "\n", (o, __, ___) -> o.w(", new ArrayList<>()")), "\n",
+                    "        )\n",
+                    "        ", Out.each(next, "\n", (o, __, ___) -> o.w(", new HashMap<>()")), "\n",
+                    "    ", (isIndexed ? ")" : ""), ";\n",
+                    "    ", idx, ".put(k", offset, ", e", offset, ");\n",
+                    "    ", toCollection.apply(lgf.name()), ".add(e", offset, (isIndexed ? ".v" : ""), ");\n",
+                    "}\n\n"
+                );
 
                 var currentOffset = offset + locals.size();
                 for (var i = 0; i < next.size(); i++)
                     currentOffset += nextOperations(
                         typeToRwClass, out, currentOffset,
                         "e" + offset + ".n" + i,
-                        "e" + offset + (isIndexed ? ".v." : "."),
-                        lgf.isRecord(),
-                        isLast && i == next.size() - 1, next.get(i)
+                        "e" + offset + ".v.",
+                        lgf.isRecord(), next.get(i)
                     );
 
                 yield locals.size();
@@ -237,17 +201,16 @@ public class MapperGenerator {
 
                 if (hasAggregation) {
 
-                    var groupInfo = dtoForGroupKeys(out, 0, true, lgf);
+                    var groupInfo = dtoForGroupKeys(out, 0, lgf);
 
                     var mappingRoutine = (WriteNext) oo -> {
-                        nextOperations(typeToRwClass, oo, 0, "i0", "_", false, true, lgf);
+                        nextOperations(typeToRwClass, oo, 0, "i0", "_", false, lgf);
                         return null;
                     };
 
                     out.w(
                         "var i0 = new HashMap<",
-                        boxedClassName(groupInfo.keyClassName), ", ", groupInfo.isIndexNeeded ?
-                            "I0" : lgf.newJavaClassName(), ">();\n",
+                        boxedClassName(groupInfo.keyClassName), ", I0>();\n",
                         "var _result = new ArrayList<", lgf.newJavaClassName(), ">();\n\n",
                         "while (rs.next()) {\n",
                         "    ", mappingRoutine, "\n",

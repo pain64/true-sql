@@ -3,12 +3,12 @@ package net.truej.sql.test;
 import net.truej.sql.TrueSql;
 import net.truej.sql.compiler.MainDataSource;
 import net.truej.sql.compiler.TrueSqlTests;
-import net.truej.sql.compiler.UserSex;
 import net.truej.sql.test.__12__TypeBindingsG.User;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static net.truej.sql.compiler.MainDataSource.*;
 import static net.truej.sql.compiler.TrueSqlTests.Database.*;
 import static net.truej.sql.compiler.TrueSqlTests.EnableOn;
 import static net.truej.sql.fetch.Parameters.Nullable;

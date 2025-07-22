@@ -102,11 +102,11 @@ import static net.truej.sql.util.Formatter.pretty;
                       User3[
                         name=Joe, info=null, bills=[
                           Bill[
-                            date=2024-07-01T12:00Z[
+                            id=1, date=2024-07-01T12:00Z[
                               UTC]
                             , amount=2000.55]
                           , Bill[
-                            date=2024-07-01T16:00Z[
+                            id=2, date=2024-07-01T16:00Z[
                               UTC]
                             , amount=1000.2]
                           ]
@@ -120,15 +120,15 @@ import static net.truej.sql.util.Formatter.pretty;
                       User3[
                         name=Donald, info=Do not disturb, bills=[
                           Bill[
-                            date=2024-08-01T15:00Z[
+                            id=3, date=2024-08-01T15:00Z[
                               UTC]
                             , amount=5000]
                           , Bill[
-                            date=2024-08-01T15:00Z[
+                            id=4, date=2024-08-01T15:00Z[
                               UTC]
                             , amount=7000.77]
                           , Bill[
-                            date=2024-09-01T15:00Z[
+                            id=5, date=2024-09-01T15:00Z[
                               UTC]
                             , amount=500.1]
                           ]
@@ -140,11 +140,12 @@ import static net.truej.sql.util.Formatter.pretty;
             pretty(
                 cn.q("""
                     select
-                        ci.name    as "      city                   ",
-                        cl.name    as "      clinic.                ",
-                        u.name     as "User3 users .name            ",
-                        u.info     as "      users .info            ",
-                        b."date"   as "      users .Bill bills.date ",
+                        ci.name    as "      city                    ",
+                        cl.name    as "      clinic.                 ",
+                        u.name     as "User3 users .name             ",
+                        u.info     as "      users .info             ",
+                        b.id       as "      users .Bill bills.id    ",
+                        b."date"   as "      users .     bills.date  ",
                         b.amount   as "      users .     bills.amount"
                     from city ci
                              join clinic       cl  on ci.id         = cl.city_id

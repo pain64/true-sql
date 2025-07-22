@@ -203,7 +203,8 @@ public class InvocationsFinder {
                     var exprTree = tree.vartype != null ? tree.vartype :
                         tree.init instanceof JCTree.JCNewClass cl ? cl.clazz : null;
 
-                    var found = exprTree == null ? null : TypeFinder.find(symtab, cu, exprTree);
+                    var found = exprTree == null ?
+                        null : TypeFinder.find(names, symtab, cu, exprTree);
 
                     if (found != null && found.tsym instanceof Symbol.ClassSymbol cl)
                         varTypes.put(tree.name, cl);
