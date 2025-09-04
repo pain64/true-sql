@@ -40,7 +40,11 @@ public class SimpleFileManager
     @Override public JavaFileObject getJavaFileForOutput(
         Location location, String className, JavaFileObject.Kind kind, FileObject sibling
     ) {
-        var d = new ClassFileData(URI.create("file://" + className + (kind == JavaFileObject.Kind.SOURCE ? ".java" : ".class")), kind);
+        var uri = kind == JavaFileObject.Kind.SOURCE
+            ? URI.create(sibling.toUri().toString().replace(".java", "G.java"))
+            : URI.create(sibling.toUri().toString().replace(".java", ".class"));
+
+        var d = new ClassFileData(uri, kind);
         compiled2.put(className, d);
         return d;
     }

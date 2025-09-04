@@ -63,6 +63,9 @@ public class TrueSqlTests implements
         String value();
     }
 
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
+    public @interface PackagePrivateAccessModifier { }
+
     private static final Map<Database, Future<TestDataSource>> instances;
     private static final ExecutorService executor = Executors.newFixedThreadPool(
         //(int) (Runtime.getRuntime().availableProcessors() * 0.8)
@@ -197,9 +200,11 @@ public class TrueSqlTests implements
     ) throws TestInstantiationException {
 
         try {
-            return running.get(extensionContext).compileTask.get().newInstance();
-        } catch (InstantiationException | IllegalAccessException
-                 | InterruptedException | ExecutionException e) {
+            var cons = running.get(extensionContext).compileTask.get().getDeclaredConstructors();
+            cons[0].setAccessible(true);
+            return cons[0].newInstance();
+        } catch (InstantiationException | IllegalAccessException | InterruptedException |
+                 ExecutionException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -245,7 +250,10 @@ public class TrueSqlTests implements
                                 boolean ignoreEncodingErrors
                             ) {
                                 return code.replace(
-                                    "class " + simpleClassName,
+                                    (testClass
+                                         .getAnnotation(PackagePrivateAccessModifier.class) == null
+                                        ? "class " : "public class "
+                                    ) + simpleClassName,
                                     "class " + simpleClassName + "_ extends " + className
                                 ).replace(
                                     simpleClassName + "G.*",

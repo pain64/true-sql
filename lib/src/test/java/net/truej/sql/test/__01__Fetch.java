@@ -15,7 +15,6 @@ import java.util.List;
 import static net.truej.sql.fetch.Parameters.NotNull;
 import static net.truej.sql.fetch.Parameters.Nullable;
 
-
 @ExtendWith(TrueSqlTests.class)
 @TrueSql public class __01__Fetch {
 

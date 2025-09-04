@@ -167,6 +167,7 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                 try (var out = new PrintWriter(
                     env.getFiler().createSourceFile(generatedClassFqn, element).openWriter()
                 )) {
+
                     out.write("package " +
                               elementSymbol.getQualifiedName().toString()
                                   .replace("." + elementSymbol.getSimpleName().toString(), "") +
@@ -198,7 +199,8 @@ public class TrueSqlAnnotationProcessor extends AbstractProcessor {
                     // FIXME: uncomment, set isolating mode for annotation processor
                     // out.write("import jstack.greact.SafeSqlPlugin.Depends;\n\n");
                     // out.write("@Depends(%s.class)\n".formatted(elementSymbol.getQualifiedName()));
-                    out.write("class %s { \n".formatted(
+                    out.write("%s class %s { \n".formatted(
+                        elementSymbol.isPublic() ? "public" : "",
                         elementSymbol.getSimpleName() + GENERATED_CLASS_NAME_SUFFIX
                     ));
 
