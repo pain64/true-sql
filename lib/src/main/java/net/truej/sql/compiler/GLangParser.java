@@ -200,9 +200,13 @@ public class GLangParser {
     }
 
     private static List<Field> buildGroup(BindColumn bindColumn, List<NumberedColumn> lines) {
-        // FIXME: check that at least one local ???
         var locals = lines.stream()
             .filter(nl -> nl.line.chain.next == null).toList();
+
+        if (locals.isEmpty())
+            throw new ParseException(
+                "Group must have at least one non-aggregated field (key)"
+            );
 
         var baseNumber = locals.getFirst().n;
         for (var i = 0; i < locals.size(); i++) {

@@ -17,7 +17,7 @@
 
 	<properties>
 		<java.version>21</java.version>
-        <truesql.version>3.0.0-beta10</truesql.version>
+        <truesql.version>3.0.0-beta11</truesql.version>
 	</properties>
 
 	<dependencies>

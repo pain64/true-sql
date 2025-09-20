@@ -5,10 +5,12 @@ import net.truej.sql.compiler.GLangParser.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static net.truej.sql.compiler.StatementGenerator.*;
+import static net.truej.sql.compiler.TrueSqlPlugin.boxedClassName;
 
 public class MapperGenerator {
 
@@ -84,20 +86,25 @@ public class MapperGenerator {
         var toCollection = (Function<String, String>) (collectionName) ->
             to + collectionName + (toIsRecord ? "()" : "");
 
+
+        var withGroupHeader = (BiConsumer<Standard.Binding, WriteNext>) (binding, next) ->
+            out.w(
+                "var k", offset, " = ", getField.apply(binding, offset), ";\n",
+                "if (k", offset, " != null) {\n",
+                "    var e", offset, " = ", idx, ".get(k", offset, ");\n",
+                "    if (e", offset, " == null) {\n",
+                "    ", next, "\n",
+                "}\n"
+            );
+
+
         return switch (agg) {
             case ListOfScalarField lsf -> {
-                out.w(
-                    "var k", offset, " = ", getField.apply(lsf.binding(), offset), ";\n",
-                    "if (k", offset, " == null) continue;\n"
-                );
-
-                out.w(
-                    "var e", offset, " = ", idx, ".get(k", offset, ");\n",
-                    "if (e", offset, " == null) {\n",
+                withGroupHeader.accept(lsf.binding(), o -> o.w(
                     "    ", idx, ".put(k", offset, ", k", offset, ");\n",
-                    "    ", toCollection.apply(lsf.name()), ".add(k", offset, ");\n",
-                    "}\n"
-                );
+                    "    ", toCollection.apply(lsf.name()), ".add(k", offset, ");\n}"
+                ));
+
                 yield 1;
             }
             case ListOfGroupField lgf -> {
@@ -121,35 +128,31 @@ public class MapperGenerator {
                     return null;
                 };
 
-                out.w(
-                    "var k", offset, " = ", getField.apply(keyField.binding(), offset), ";\n",
-                    "if (k", offset, " == null) continue;\n"
-                );
-
-                out.w(
-                    "var e", offset, " = ", idx, ".get(k", offset, ");\n",
-                    "if (e", offset, " == null) {\n",
-                    "    e", offset, " = ", (isIndexed ? "new I" + offset + "(" : ""), "\n",
-                    "        new ", lgf.newJavaClassName(), "(\n",
-                    "            k", offset, "\n",
-                    "            ", mapFields, "\n",
-                    "            ", Out.each(next, "\n", (o, __, ___) -> o.w(", new ArrayList<>()")), "\n",
-                    "        )\n",
-                    "        ", Out.each(next, "\n", (o, __, ___) -> o.w(", new HashMap<>()")), "\n",
-                    "    ", (isIndexed ? ")" : ""), ";\n",
-                    "    ", idx, ".put(k", offset, ", e", offset, ");\n",
-                    "    ", toCollection.apply(lgf.name()), ".add(e", offset, (isIndexed ? ".v" : ""), ");\n",
-                    "}\n\n"
-                );
-
-                var currentOffset = offset + locals.size();
-                for (var i = 0; i < next.size(); i++)
-                    currentOffset += nextOperations(
-                        typeToRwClass, out, currentOffset,
-                        "e" + offset + ".n" + i,
-                        "e" + offset + ".v.",
-                        lgf.isRecord(), next.get(i)
+                withGroupHeader.accept(keyField.binding(), o -> {
+                    o.w(
+                        "    e", offset, " = ", (isIndexed ? "new I" + offset + "(" : ""), "\n",
+                        "        new ", lgf.newJavaClassName(), "(\n",
+                        "            k", offset, "\n",
+                        "            ", mapFields, "\n",
+                        "            ", Out.each(next, "\n", (oo, __, ___) -> oo.w(", new ArrayList<>()")), "\n",
+                        "        )\n",
+                        "    ", Out.each(next, "\n", (oo, __, ___) -> oo.w(", new HashMap<>()")), "\n",
+                        "    ", (isIndexed ? ")" : ""), ";\n",
+                        "    ", idx, ".put(k", offset, ", e", offset, ");\n",
+                        "    ", toCollection.apply(lgf.name()), ".add(e", offset, (isIndexed ? ".v" : ""), ");\n}\n"
                     );
+
+                    var currentOffset = offset + locals.size();
+                    for (var i = 0; i < next.size(); i++)
+                        currentOffset += nextOperations(
+                            typeToRwClass, out, currentOffset,
+                            "e" + offset + ".n" + i,
+                            "e" + offset + ".v.",
+                            lgf.isRecord(), next.get(i)
+                        );
+
+                    return null;
+                });
 
                 yield locals.size();
             }
@@ -159,20 +162,6 @@ public class MapperGenerator {
     private static String wrapWithActualNullCheck(String expr, NullMode nullMode) {
         return nullMode != NullMode.EXACTLY_NULLABLE ?
             "EvenSoNullPointerException.check(" + expr + ")" : expr;
-    }
-
-    static String boxedClassName(String className) {
-        return switch (className) {
-            case "boolean" -> Boolean.class.getName();
-            case "byte" -> Byte.class.getName();
-            case "char" -> Character.class.getName();
-            case "short" -> Short.class.getName();
-            case "int" -> Integer.class.getName();
-            case "long" -> Long.class.getName();
-            case "float" -> Float.class.getName();
-            case "double" -> Double.class.getName();
-            default -> className;
-        };
     }
 
     public static void generate(

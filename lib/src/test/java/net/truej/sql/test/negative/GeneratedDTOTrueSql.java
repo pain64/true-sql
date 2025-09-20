@@ -8,4 +8,5 @@ public class GeneratedDTOTrueSql {
     class Name {}
     class PointSome {}
     class TestSome {}
+    class GroupTest1 {}
 }

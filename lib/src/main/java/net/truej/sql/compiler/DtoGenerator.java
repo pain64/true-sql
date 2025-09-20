@@ -3,6 +3,7 @@ package net.truej.sql.compiler;
 import static net.truej.sql.compiler.GLangParser.*;
 import static net.truej.sql.compiler.StatementGenerator.*;
 import static net.truej.sql.compiler.StatementGenerator.Out.each;
+import static net.truej.sql.compiler.TrueSqlPlugin.boxedClassName;
 import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
 
 public class DtoGenerator {
@@ -11,7 +12,9 @@ public class DtoGenerator {
         return switch (field) {
             case Aggregated ag -> "List<" + switch (ag) {
                 case ListOfGroupField lgf -> lgf.newJavaClassName();
-                case ListOfScalarField lsf -> classNameToSourceCodeType(lsf.binding().className());
+                case ListOfScalarField lsf -> boxedClassName(
+                    classNameToSourceCodeType(lsf.binding().className())
+                );
             } + ">";
             case ScalarField sf -> classNameToSourceCodeType(sf.binding().className());
         };

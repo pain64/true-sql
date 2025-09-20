@@ -9,7 +9,7 @@ public class __03__CharTestUnreachable {
     @Test public void test() {
         Assertions.assertEquals(
             Character.class.getName(),
-            MapperGenerator.boxedClassName("char")
+            TrueSqlPlugin.boxedClassName("char")
         );
         Assertions.assertEquals(
             "char",

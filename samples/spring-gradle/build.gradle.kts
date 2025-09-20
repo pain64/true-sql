@@ -19,7 +19,7 @@ buildscript {
 	}
 }
 
-var trueSqlVersion = "3.0.0-beta10"
+var trueSqlVersion = "3.0.0-beta11"
 
 dependencies {
 	annotationProcessor("net.truej:sql:$trueSqlVersion")

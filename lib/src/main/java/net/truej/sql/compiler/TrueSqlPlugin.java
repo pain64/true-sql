@@ -124,6 +124,20 @@ public class TrueSqlPlugin implements Plugin {
     @Override public String getName() { return NAME; }
 
 
+    static String boxedClassName(String className) {
+        return switch (className) {
+            case "boolean" -> Boolean.class.getName();
+            case "byte" -> Byte.class.getName();
+            case "char" -> Character.class.getName();
+            case "short" -> Short.class.getName();
+            case "int" -> Integer.class.getName();
+            case "long" -> Long.class.getName();
+            case "float" -> Float.class.getName();
+            case "double" -> Double.class.getName();
+            default -> className;
+        };
+    }
+
     static String arrayClassNameToSourceCodeType(String className) {
         return switch (className.charAt(0)) {
             case '[' -> arrayClassNameToSourceCodeType(className.substring(1)) + "[]";

@@ -14,6 +14,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.truej.sql.compiler.GLangParser.*;
+import static net.truej.sql.compiler.TrueSqlPlugin.boxedClassName;
 import static net.truej.sql.compiler.TrueSqlPlugin.classNameToSourceCodeType;
 
 public class StatementGenerator {
@@ -137,7 +138,7 @@ public class StatementGenerator {
         var updateCountType = query instanceof BatchedQuery ? "long[]" : "Long";
 
         var wrapTypeWithUpdateCount = (BiFunction<@Nullable String, String, String>) (collectionT, t) -> {
-            var boxed = MapperGenerator.boxedClassName(t);
+            var boxed = boxedClassName(t);
             if (fetchAs instanceof FetchNone) return updateCountType;
 
             var toCollectionType = (Supplier<String>) () ->
